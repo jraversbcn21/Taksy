@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Fondo transparente para evitar bordes negros -->
+    <item android:drawable="@android:color/transparent" />
+    <!-- Icono centrado con un pequeño margen -->
+    <item android:drawable="@drawable/launcher_icono"
+          android:width="82dp"
+          android:height="82dp"
+          android:gravity="center" />
+</layer-list>

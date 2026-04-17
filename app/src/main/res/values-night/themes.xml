@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Ticksy" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <!-- Colores del gradiente del icono -->
+        <item name="colorPrimary">@color/icon_green</item>
+        <item name="colorPrimaryDark">@color/icon_dark_green</item>
+        <item name="colorAccent">@color/icon_teal</item>
+        <item name="android:statusBarColor">@color/icon_dark_teal</item>
+        <item name="android:navigationBarColor">@color/icon_green</item>
+        
+        <!-- Colores para modo oscuro -->
+        <item name="android:windowBackground">@color/drawer_background</item>
+        <item name="colorSurface">@color/drawer_background</item>
+        <item name="colorOnSurface">@android:color/white</item>
+    </style>
+</resources>

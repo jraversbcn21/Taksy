@@ -1,0 +1,213 @@
+<resources>
+    <string name="app_name">Ticksy</string>
+    
+    <!-- Pantalla principal -->
+    <string name="tasks_title">Tareas</string>
+    <string name="app_subtitle">Gestiona tus tareas</string>
+    <string name="add_task">Añadir tarea</string>
+    <string name="task_title_hint">Título de la tarea</string>
+    <string name="task_description_hint">Descripción (opcional)</string>
+    <string name="no_due_date">Sin fecha de vencimiento</string>
+    <string name="save">Guardar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="edit_task">Editar tarea</string>
+    <string name="delete_task">Eliminar tarea</string>
+    <string name="mark_completed">Marcar como completada</string>
+    <string name="mark_pending">Marcar como pendiente</string>
+    
+    <!-- Filtros de tareas -->
+    <string name="filter_all">Todas</string>
+    <string name="filter_pending">Pendientes</string>
+    <string name="filter_completed">Completadas</string>
+    
+    <!-- Filtros de categorías -->
+    <string name="filter_recent">Recientes</string>
+    <string name="filter_favorites">Favoritas</string>
+    <string name="filter_active">Activas</string>
+    <string name="filter_empty">Vacías</string>
+    
+    <!-- Estados -->
+    <string name="task_pending">Pendiente</string>
+    <string name="task_completed">Completada</string>
+    
+    <!-- Mensajes -->
+    <string name="no_tasks">No hay tareas</string>
+    <string name="no_pending_tasks">No hay tareas pendientes</string>
+    <string name="no_completed_tasks">No hay tareas completadas</string>
+    <string name="no_tasks_in_category">No hay tareas en %1$s</string>
+    <string name="add_first_task_to_category">Añade tu primera tarea a esta categoría</string>
+    <string name="create_first_category">Crea tu primera categoría para organizar mejor tus tareas</string>
+    <string name="delete_completed_tasks">Eliminar tareas completadas</string>
+    <string name="confirm_delete">¿Eliminar esta tarea?</string>
+    <string name="confirm_delete_completed">¿Eliminar todas las tareas completadas?</string>
+    <string name="add_subtask">Añadir subtarea</string>
+    <string name="add_subtask_hint">Título de la subtarea</string>
+    <string name="new_subtask">Nueva subtarea</string>
+    <string name="all_subtasks_completed">¡Todas las subtareas completadas!</string>
+    <string name="subtasks_title">Subtareas</string>
+    <string name="add_subtask_description">Añadir subtarea</string>
+    <string name="task_locked_message">Esta tarea está bloqueada porque todas sus subtareas están completadas</string>
+    <string name="pending_subtasks_message">Tienes tareas pendientes</string>
+    <string name="view_subtasks">Ver subtareas</string>
+    
+    <!-- Categorías -->
+    <string name="task_count_singular">%d tarea</string>
+    <string name="task_count_plural">%d tareas</string>
+    <string name="category_work">Trabajo</string>
+    <string name="category_personal">Personal</string>
+    <string name="category_shopping">Compras</string>
+    <string name="category_health">Salud</string>
+    <string name="category_home">Hogar</string>
+    <string name="category_study">Estudios</string>
+    <string name="category_exercise">Ejercicio</string>
+    <string name="category_others">Otros</string>
+    
+    <!-- Diálogo de categorías -->
+    <string name="add_category">Añadir Categoría</string>
+    <string name="edit_category">Editar Categoría</string>
+    <string name="category_name">Nombre de la categoría</string>
+    <string name="category_name_hint">Nombre de la categoría</string>
+    <string name="category_color">Color</string>
+    <string name="category_icon">Icono</string>
+    <string name="delete_category">Eliminar categoría</string>
+    <string name="edit_category_action">Editar categoría</string>
+    
+    <!-- Configuración -->
+    <string name="settings">Configuración</string>
+    <string name="language">Idioma</string>
+    <string name="theme">Tema</string>
+    <string name="theme_system">Sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Oscuro</string>
+    
+    <!-- Errores -->
+    <string name="error_generic">Ha ocurrido un error</string>
+    <string name="error_empty_title">El título no puede estar vacío</string>
+    <string name="error_add_task">Error al añadir tarea</string>
+    <string name="error_update_task">Error al actualizar tarea</string>
+    <string name="error_delete_task">Error al eliminar tarea</string>
+    <string name="error_toggle_task">Error al cambiar estado de tarea</string>
+    <string name="error_add_subtask">Error al añadir subtarea</string>
+    <string name="error_update_subtask">Error al cambiar estado de subtarea</string>
+    <string name="error_delete_subtask">Error al eliminar subtarea</string>
+    <string name="error_create_category">Error al crear categoría</string>
+    <string name="error_update_category">Error al actualizar categoría</string>
+    <string name="error_delete_category">Error al eliminar categoría</string>
+    <string name="error_reorder_categories">Error al reordenar categorías</string>
+    <string name="error_add_reminder">Error al añadir recordatorio</string>
+    <string name="error_update_reminder">Error al actualizar recordatorio</string>
+    <string name="error_delete_reminder">Error al eliminar recordatorio</string>
+    <string name="error_toggle_reminder">Error al actualizar estado del recordatorio</string>
+    
+    <!-- Splash Screen -->
+    <string name="splash_subtitle">Gestiona tus tareas de forma eficiente</string>
+    
+    <!-- Diálogos -->
+    <string name="new_task">Nueva Tarea</string>
+    
+    <!-- Settings Modal -->
+    <string name="settings_modal_title">Configuración</string>
+    <string name="theme_settings">Configuración de Tema</string>
+    <string name="language_settings">Configuración de Idioma</string>
+    <string name="reminders_settings">Recordatorios</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_english">English</string>
+    <string name="theme_preview">Vista Previa del Tema</string>
+    <string name="language_preview">Vista Previa del Idioma</string>
+    <string name="close">Cerrar</string>
+    
+    <!-- Theme Settings -->
+    <string name="select_theme">Seleccionar Tema</string>
+    <string name="theme_light_description">Tema claro para mejor visibilidad durante el día</string>
+    <string name="theme_dark_description">Tema oscuro para mejor experiencia nocturna</string>
+    <string name="quick_change">Cambio Rápido</string>
+    <string name="quick_change_description">Usa el toggle para cambiar entre temas</string>
+    
+    <!-- Language Settings -->
+    <string name="select_language">Seleccionar Idioma</string>
+    <string name="language_spanish_description">Interfaz en español para usuarios hispanohablantes</string>
+    <string name="language_english_description">English interface for English-speaking users</string>
+    <string name="language_change_info">El cambio de idioma se aplicará inmediatamente y reiniciará la aplicación para una mejor experiencia.</string>
+    
+    <!-- Language Change Dialog -->
+    <string name="change_language">Cambiar Idioma</string>
+    <string name="change_language_message">¿Estás seguro de que quieres cambiar el idioma? La aplicación se reiniciará para aplicar el cambio.</string>
+    <string name="change">Cambiar</string>
+    <string name="delete_task_title">Eliminar Tarea</string>
+    <string name="delete_task_message">¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer.</string>
+    <string name="delete">Eliminar</string>
+    <string name="back">Atrás</string>
+    <string name="all_reminders_completed">Todas las tareas completadas</string>
+    
+    <!-- Toast messages -->
+    <string name="task_deleted_toast">Tarea eliminada</string>
+    <string name="subtask_completed_toast">Subtarea completada</string>
+    <string name="all_subtasks_completed_toast">¡Todas las subtareas completadas!</string>
+    
+    <!-- Recordatorios -->
+    <string name="reminders">Recordatorios</string>
+    <string name="add_reminder">Añadir recordatorio</string>
+    <string name="reminder_title">Título del recordatorio</string>
+    <string name="reminder_description">Descripción (opcional)</string>
+    <string name="reminder_date">Fecha y hora</string>
+    <string name="reminder_type">Tipo de recordatorio</string>
+    <string name="reminder_once">Una vez</string>
+    <string name="reminder_daily">Diario</string>
+    <string name="reminder_weekly">Semanal</string>
+    <string name="reminder_monthly">Mensual</string>
+    <string name="reminder_active">Activo</string>
+    <string name="reminder_inactive">Inactivo</string>
+    <string name="no_reminders">No hay recordatorios</string>
+    <string name="reminder_created">Recordatorio creado</string>
+    <string name="reminder_deleted">Recordatorio eliminado</string>
+    <string name="reminder_updated">Recordatorio actualizado</string>
+    <string name="select_date">Seleccionar fecha</string>
+    <string name="select_time">Seleccionar hora</string>
+    
+    <!-- Gestión de Categorías -->
+    <string name="categories">Categorías</string>
+    <string name="manage_categories">Gestionar Categorías</string>
+    <string name="no_categories">No hay categorías</string>
+    <string name="category_created">Categoría creada</string>
+    <string name="category_updated">Categoría actualizada</string>
+    <string name="category_deleted">Categoría eliminada</string>
+    <string name="confirm_delete_category">¿Eliminar esta categoría?</string>
+    <string name="category_in_use">Esta categoría está siendo usada por algunas tareas. ¿Seguro que quieres eliminarla?</string>
+    <string name="category_name_empty">El nombre de la categoría no puede estar vacío</string>
+    <string name="category_already_exists">Ya existe una categoría con este nombre</string>
+    
+    <!-- Recordatorios diarios -->
+    <string name="notifications_title">Notificaciones</string>
+    <string name="notifications_subtitle">Configura tus recordatorios y alertas para mantener tus tareas activas</string>
+    <string name="daily_reminders">Recordatorios Diarios</string>
+    <string name="daily_reminders_description">Recibe notificaciones diarias para recordarte tus tareas</string>
+    <string name="reminder_times">Horarios de Recordatorio</string>
+    <string name="reminder_time_1">Recordatorio Matutino</string>
+    <string name="reminder_time_2">Recordatorio Vespertino</string>
+    <string name="save_reminders">Guardar Recordatorios</string>
+    <string name="reminders_info">Los recordatorios te ayudarán a mantener tus tareas y revisar tus tareas pendientes</string>
+    
+    <!-- Mensajes de notificaciones -->
+    <string name="morning_reminder_title">¡Buenos días! 🌅</string>
+    <string name="evening_reminder_title">¡Buenas tardes! 🌆</string>
+    <string name="reminder_with_tasks_single">Tienes %d tarea pendiente. ¡Es hora de revisar tu lista!</string>
+    <string name="reminder_with_tasks_multiple">Tienes %d tareas pendientes. ¡Es hora de revisar tu lista!</string>
+    <string name="reminder_no_tasks">¡Excelente! No tienes tareas pendientes. ¿Por qué no añades una nueva tarea?</string>
+    <string name="reminder_generic_message">¡Es hora de revisar tu aplicación de tareas!</string>
+    
+    <!-- Búsqueda -->
+    <string name="search_tasks">Buscar tareas</string>
+    <string name="no_search_results">No se encontraron resultados</string>
+
+    <!-- Menú lateral -->
+    <string name="menu_title">Menú</string>
+    <string name="menu_home">Inicio</string>
+    <string name="menu_active_habits">Hábitos Activos</string>
+    <string name="menu_dashboard">Dashboard</string>
+    <string name="menu_achieved_habits">Hábitos Logrados</string>
+    <string name="menu_badges">Insignias</string>
+    <string name="menu_premium">Premium</string>
+    <string name="menu_notifications">Notificaciones</string>
+    <string name="menu_language">Idioma</string>
+    <string name="menu_about">Acerca de Hábitos</string>
+</resources>

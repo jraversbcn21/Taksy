@@ -1,0 +1,374 @@
+package com.example.taksy
+
+import android.content.Context
+import android.os.Build
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.google.android.material.navigation.NavigationView
+import dagger.hilt.android.AndroidEntryPoint
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.taksy.ui.screens.CategoryListScreen
+import com.example.taksy.ui.screens.DailyReminderScreen
+import com.example.taksy.ui.screens.LanguageSettingsScreen
+import com.example.taksy.ui.screens.RemindersScreen
+import com.example.taksy.ui.screens.TaskDetailScreen
+import com.example.taksy.ui.screens.TasksByCategoryScreen
+import com.example.taksy.ui.screens.ThemeSettingsScreen
+import com.example.taksy.ui.theme.TicksyTheme
+import com.example.taksy.utils.LocaleHelper
+import com.example.taksy.viewmodel.CategoryViewModel
+import com.example.taksy.viewmodel.TaskViewModel
+import com.example.taksy.viewmodel.ThemeViewModel
+
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+
+    private val themeViewModel: ThemeViewModel by viewModels()
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* permission result handled silently */ }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+                requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        // Aplicar el idioma guardado antes de renderizar la UI
+        LocaleHelper.applyLocale(this, LocaleHelper.getCurrentLanguage(this))
+
+        setContent {
+            MainScreen(activity = this)
+        }
+    }
+}
+
+@Composable
+fun MainScreen(activity: ComponentActivity) {
+    val themeViewModel: ThemeViewModel = hiltViewModel()
+    val taskViewModel: TaskViewModel = hiltViewModel()
+    val categoryViewModel: CategoryViewModel = hiltViewModel()
+    val navController = rememberNavController()
+
+    val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
+    val currentLanguage by themeViewModel.currentLanguage.collectAsStateWithLifecycle()
+
+    TicksyTheme(darkTheme = isDarkMode) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            DrawerScreen(
+                navController = navController,
+                taskViewModel = taskViewModel,
+                categoryViewModel = categoryViewModel,
+                isDarkMode = isDarkMode,
+                currentLanguage = currentLanguage,
+                themeViewModel = themeViewModel,
+                context = LocalContext.current,
+                activity = activity
+            )
+        }
+    }
+}
+
+@Composable
+fun MainContent(
+    navController: androidx.navigation.NavHostController,
+    taskViewModel: TaskViewModel,
+    categoryViewModel: CategoryViewModel,
+    isDarkMode: Boolean,
+    currentLanguage: String,
+    themeViewModel: ThemeViewModel,
+    context: Context,
+    onMenuClick: () -> Unit,
+    activity: ComponentActivity,
+    onShowDeleteDialog: (com.example.taksy.data.Task) -> Unit,
+    onShowLanguageChangeDialog: (String) -> Unit
+) {
+    NavHost(
+        navController = navController,
+        startDestination = "category_list"
+    ) {
+        composable("category_list") {
+            val categories by categoryViewModel.getAllCategories().collectAsState(initial = emptyList())
+            val allTasks by taskViewModel.getAllTasks().collectAsState(initial = emptyList())
+
+            val taskCountByCategory = remember(allTasks) {
+                allTasks
+                    .filter { it.estado != com.example.taksy.data.TaskEstado.COMPLETADA && it.categoriaId != null }
+                    .groupBy { it.categoriaId!! }
+                    .mapValues { it.value.size }
+            }
+
+            CategoryListScreen(
+                categories = categories,
+                taskCountByCategory = taskCountByCategory,
+                isDarkMode = isDarkMode,
+                currentLanguage = currentLanguage,
+                onSettingsClick = onMenuClick,
+                onCategoryClick = { category ->
+                    navController.navigate("tasks_by_category/${category.id}")
+                },
+                onReorderCategories = { reorderedCategories ->
+                    categoryViewModel.reorderCategories(reorderedCategories)
+                },
+                showToast = {}
+            )
+        }
+
+        composable("reminders") {
+            val reminders by taskViewModel.getAllActiveReminders().collectAsState(initial = emptyList())
+
+            RemindersScreen(
+                reminders = reminders,
+                onBackClick = { navController.popBackStack() },
+                onAddReminder = { titulo, descripcion, fecha, tipo ->
+                    taskViewModel.addReminder(0, titulo, descripcion, fecha, tipo)
+                },
+                onToggleReminder = { reminderId, activo ->
+                    taskViewModel.updateReminderStatus(reminderId, activo)
+                },
+                onDeleteReminder = { reminder ->
+                    taskViewModel.deleteReminder(reminder)
+                }
+            )
+        }
+
+        composable("daily_reminders") {
+            DailyReminderScreen(
+                onBackClick = { navController.popBackStack() },
+                isDarkMode = isDarkMode,
+                activity = activity
+            )
+        }
+
+        composable("tasks_by_category/{categoryId}") { backStackEntry ->
+            val categoryId = backStackEntry.arguments?.getString("categoryId")?.toLongOrNull()
+            if (categoryId != null) {
+                var category by remember { mutableStateOf<com.example.taksy.data.Category?>(null) }
+                val tasks by taskViewModel.getTasksByCategoryId(categoryId).collectAsState(initial = emptyList())
+
+                LaunchedEffect(categoryId) {
+                    category = categoryViewModel.getCategoryById(categoryId)
+                }
+
+                if (category != null) {
+                    TasksByCategoryScreen(
+                        category = category!!,
+                        tasks = tasks,
+                        taskViewModel = taskViewModel,
+                        onBackClick = { navController.popBackStack() },
+                        onTaskClick = { task -> navController.navigate("task_detail/${task.id}") },
+                        onTaskToggle = { task -> taskViewModel.toggleTaskStatus(task) },
+                        onTaskDelete = { task -> taskViewModel.deleteTask(task) },
+                        onAddTask = { title, dueDate -> taskViewModel.addTask(title, dueDate, categoryId) },
+                        showToast = {},
+                        onNavigateToSubtasks = { task -> navController.navigate("task_detail/${task.id}") },
+                        onShowDeleteDialog = onShowDeleteDialog
+                    )
+                }
+            }
+        }
+
+        composable("theme_settings") {
+            ThemeSettingsScreen(
+                isDarkMode = isDarkMode,
+                onThemeChange = { isDark -> themeViewModel.setDarkMode(isDark) },
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("language_settings") {
+            LanguageSettingsScreen(
+                currentLanguage = currentLanguage,
+                onLanguageChange = { language -> themeViewModel.setLanguage(language) },
+                onShowLanguageChangeDialog = onShowLanguageChangeDialog,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("task_detail/{taskId}") { backStackEntry ->
+            val taskId = backStackEntry.arguments?.getString("taskId")?.toLongOrNull()
+            if (taskId != null) {
+                var task by remember { mutableStateOf<com.example.taksy.data.Task?>(null) }
+                val subtasks by taskViewModel.getSubtasksByTaskId(taskId).collectAsState(initial = emptyList())
+
+                LaunchedEffect(taskId) {
+                    task = taskViewModel.getTaskById(taskId)
+                }
+
+                if (task != null) {
+                    TaskDetailScreen(
+                        task = task!!,
+                        subtasks = subtasks,
+                        onBackClick = { navController.popBackStack() },
+                        onAddSubtask = { title -> taskViewModel.addSubtask(taskId, title) },
+                        onToggleSubtask = { subtask -> taskViewModel.toggleSubtaskStatus(subtask) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DrawerScreen(
+    navController: androidx.navigation.NavHostController,
+    taskViewModel: TaskViewModel,
+    categoryViewModel: CategoryViewModel,
+    isDarkMode: Boolean,
+    currentLanguage: String,
+    themeViewModel: ThemeViewModel,
+    context: Context,
+    activity: ComponentActivity
+) {
+    var drawerLayout by remember { mutableStateOf<DrawerLayout?>(null) }
+    var taskToDelete by remember { mutableStateOf<com.example.taksy.data.Task?>(null) }
+    var showLanguageChangeDialog by remember { mutableStateOf(false) }
+    var selectedLanguage by remember { mutableStateOf("") }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(
+            factory = { ctx ->
+                val themeRes = R.style.Theme_Ticksy
+                val themedContext = androidx.appcompat.view.ContextThemeWrapper(ctx, themeRes)
+
+                DrawerLayout(themedContext).apply {
+                    drawerLayout = this
+                    layoutParams = DrawerLayout.LayoutParams(
+                        DrawerLayout.LayoutParams.MATCH_PARENT,
+                        DrawerLayout.LayoutParams.MATCH_PARENT
+                    )
+
+                    val contentView = androidx.compose.ui.platform.ComposeView(themedContext).apply {
+                        layoutParams = DrawerLayout.LayoutParams(
+                            DrawerLayout.LayoutParams.MATCH_PARENT,
+                            DrawerLayout.LayoutParams.MATCH_PARENT
+                        )
+                        setContent {
+                            MainContent(
+                                navController = navController,
+                                taskViewModel = taskViewModel,
+                                categoryViewModel = categoryViewModel,
+                                isDarkMode = isDarkMode,
+                                currentLanguage = currentLanguage,
+                                themeViewModel = themeViewModel,
+                                context = context,
+                                onMenuClick = { drawerLayout?.openDrawer(GravityCompat.START) },
+                                activity = activity,
+                                onShowDeleteDialog = { taskToDelete = it },
+                                onShowLanguageChangeDialog = { language ->
+                                    selectedLanguage = language
+                                    showLanguageChangeDialog = true
+                                }
+                            )
+                        }
+                    }
+                    addView(contentView)
+
+                    val navigationView = NavigationView(themedContext).apply {
+                        layoutParams = DrawerLayout.LayoutParams(
+                            DrawerLayout.LayoutParams.WRAP_CONTENT,
+                            DrawerLayout.LayoutParams.MATCH_PARENT
+                        ).apply {
+                            gravity = GravityCompat.START
+                            width = (ctx.resources.displayMetrics.widthPixels * 0.75f).toInt()
+                        }
+
+                        if (isDarkMode) {
+                            setBackgroundColor(android.graphics.Color.parseColor("#121212"))
+                            itemTextColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
+                            itemIconTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
+                        } else {
+                            setBackgroundColor(android.graphics.Color.parseColor("#FFFFFF"))
+                            itemTextColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.BLACK)
+                            itemIconTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.BLACK)
+                        }
+
+                        inflateHeaderView(R.layout.drawer_header)
+                        inflateMenu(R.menu.drawer_menu)
+
+                        setNavigationItemSelectedListener { menuItem ->
+                            drawerLayout?.closeDrawer(GravityCompat.START)
+                            when (menuItem.itemId) {
+                                R.id.nav_theme -> navController.navigate("theme_settings")
+                                R.id.nav_language -> navController.navigate("language_settings")
+                                R.id.nav_reminders -> navController.navigate("daily_reminders")
+                            }
+                            true
+                        }
+                    }
+                    addView(navigationView)
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Diálogo de confirmación para borrar tarea
+        if (taskToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { taskToDelete = null },
+                title = { Text(stringResource(R.string.delete_task_title)) },
+                text = { Text(stringResource(R.string.delete_task_message)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        taskToDelete?.let { taskViewModel.deleteTask(it) }
+                        taskToDelete = null
+                    }) { Text(stringResource(R.string.delete)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { taskToDelete = null }) { Text(stringResource(R.string.cancel)) }
+                }
+            )
+        }
+
+        // Diálogo de confirmación para cambio de idioma
+        if (showLanguageChangeDialog) {
+            AlertDialog(
+                onDismissRequest = { showLanguageChangeDialog = false },
+                title = { Text(stringResource(R.string.change_language)) },
+                text = { Text(stringResource(R.string.change_language_message)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        themeViewModel.setLanguage(selectedLanguage)
+                        showLanguageChangeDialog = false
+                    }) { Text(stringResource(R.string.change)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLanguageChangeDialog = false }) { Text(stringResource(R.string.cancel)) }
+                }
+            )
+        }
+    }
+}

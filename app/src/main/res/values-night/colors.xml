@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colores para modo oscuro del drawer -->
+    <color name="drawer_header_teal">#FF1E1E1E</color>  <!-- Fondo oscuro para el header -->
+    <color name="drawer_background">#FF121212</color>   <!-- Fondo oscuro para el drawer -->
+</resources>
