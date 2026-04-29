@@ -217,7 +217,7 @@
     <string name="about_version">Versión %s</string>
     <string name="about_description">Ticksy es tu gestor de tareas personal. Organiza tus tareas por categorías, establece recordatorios y mantén el control de tu día a día.</string>
     <string name="about_developer">Desarrollador</string>
-    <string name="about_developer_name">Orjan</string>
+    <string name="about_developer_name">Sid Maier</string>
     <string name="about_contact">Contacto</string>
     <string name="about_features_title">Características</string>
     <string name="about_feature_categories">Organización por categorías</string>
@@ -234,4 +234,20 @@
     <string name="delete_reminder">Eliminar recordatorio</string>
     <string name="reminder_set_confirmation">Recordatorio establecido</string>
     <string name="reminder_deleted_confirmation">Recordatorio eliminado</string>
+
+    <!-- Backup -->
+    <string name="backup">Copia de seguridad</string>
+    <string name="backup_title">Copia de seguridad</string>
+    <string name="backup_export">Exportar datos</string>
+    <string name="backup_export_description">Guarda todas tus categorías, tareas, subtareas y recordatorios en un archivo JSON</string>
+    <string name="backup_import">Importar datos</string>
+    <string name="backup_import_description">Restaura tus datos desde un archivo JSON previamente exportado</string>
+    <string name="backup_import_warning">Esto reemplazará todos los datos actuales de la aplicación</string>
+    <string name="backup_export_success">Datos exportados correctamente</string>
+    <string name="backup_import_success">Datos importados: %1$d categorías, %2$d tareas, %3$d subtareas, %4$d recordatorios</string>
+    <string name="backup_error">Error: %s</string>
+    <string name="backup_confirm_import_title">Confirmar importación</string>
+    <string name="backup_confirm_import_message">Se reemplazarán todos los datos actuales con los del archivo seleccionado. ¿Deseas continuar?</string>
+    <string name="backup_processing">Procesando…</string>
+    <string name="confirm">Confirmar</string>
 </resources>

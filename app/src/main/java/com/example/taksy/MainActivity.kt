@@ -39,6 +39,8 @@ import com.example.taksy.ui.screens.RemindersScreen
 import com.example.taksy.ui.screens.TaskDetailScreen
 import com.example.taksy.ui.screens.TasksByCategoryScreen
 import com.example.taksy.ui.screens.AboutScreen
+import com.example.taksy.ui.screens.BackupScreen
+import com.example.taksy.viewmodel.BackupViewModel
 import com.example.taksy.ui.screens.ThemeSettingsScreen
 import com.example.taksy.ui.theme.TicksyTheme
 import com.example.taksy.utils.LocaleHelper
@@ -232,6 +234,14 @@ fun MainContent(
             )
         }
 
+        composable("backup") {
+            val backupViewModel: BackupViewModel = hiltViewModel()
+            BackupScreen(
+                backupViewModel = backupViewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
         composable("task_detail/{taskId}") { backStackEntry ->
             val taskId = backStackEntry.arguments?.getString("taskId")?.toLongOrNull()
             if (taskId != null) {
@@ -343,6 +353,7 @@ fun DrawerScreen(
                                 R.id.nav_theme -> navController.navigate("theme_settings")
                                 R.id.nav_language -> navController.navigate("language_settings")
                                 R.id.nav_reminders -> navController.navigate("daily_reminders")
+                                R.id.nav_backup -> navController.navigate("backup")
                                 R.id.nav_about -> navController.navigate("about")
                             }
                             true

@@ -80,6 +80,12 @@ interface TaskDao {
      */
     @Query("SELECT * FROM tasks WHERE categoriaId IS NULL ORDER BY fechaCreacion DESC")
     fun getTasksWithoutCategory(): Flow<List<Task>>
+
+    @Query("SELECT * FROM tasks ORDER BY id ASC")
+    suspend fun getAllTasksSync(): List<Task>
+
+    @Query("DELETE FROM tasks")
+    suspend fun deleteAllTasks()
     
     /**
      * Obtiene tareas que vencen hoy

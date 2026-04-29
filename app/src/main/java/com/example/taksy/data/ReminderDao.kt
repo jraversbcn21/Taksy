@@ -41,4 +41,10 @@ interface ReminderDao {
     
     @Query("SELECT * FROM reminders WHERE taskId = :taskId")
     suspend fun getRemindersByTaskIdSync(taskId: Long): List<Reminder>
+
+    @Query("SELECT * FROM reminders ORDER BY id ASC")
+    suspend fun getAllRemindersSync(): List<Reminder>
+
+    @Query("DELETE FROM reminders")
+    suspend fun deleteAllReminders()
 }

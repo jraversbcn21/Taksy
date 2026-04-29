@@ -23,4 +23,10 @@ interface SubtaskDao {
     
     @Query("DELETE FROM subtasks WHERE taskId = :taskId")
     suspend fun deleteSubtasksByTaskId(taskId: Long)
+
+    @Query("SELECT * FROM subtasks ORDER BY id ASC")
+    suspend fun getAllSubtasksSync(): List<Subtask>
+
+    @Query("DELETE FROM subtasks")
+    suspend fun deleteAllSubtasks()
 }
