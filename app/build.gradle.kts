@@ -70,6 +70,9 @@ dependencies {
     // Navigation
     implementation(libs.androidx.navigation.compose)
     
+    // AppCompat (needed for AppCompatActivity and locale support)
+    implementation("androidx.appcompat:appcompat:1.7.0")
+
     // Navigation Drawer
     implementation("androidx.drawerlayout:drawerlayout:1.2.0")
     implementation("com.google.android.material:material:1.11.0")

@@ -43,12 +43,16 @@ Room Database (AppDatabase, v8)
 
 Key business rule: when all subtasks of a task are completed, the parent task auto-completes (logic lives in `TaskViewModel`).
 
-### Repository (`TaskRepository`)
-Single repository handles all four entity types. Reminder scheduling is delegated to `ReminderScheduler` (AlarmManager-based).
+### Dependency Injection (Hilt)
+`DatabaseModule` (`di/`) is the single `@Module` with `@InstallIn(SingletonComponent::class)`. It provides `AppDatabase`, all DAOs, `TaskRepository`, and `CategoryRepository` as singletons. ViewModels use `@HiltViewModel` + `@Inject` constructor — screens obtain them via `hiltViewModel()`, `MainActivity` uses `by viewModels()`.
+
+### Repository
+`TaskRepository` and `CategoryRepository` handle their respective entity types. Reminder scheduling is delegated to `ReminderScheduler` (AlarmManager-based).
 
 ### ViewModels
-- **`TaskViewModel`** — central ViewModel; all task/subtask/category/reminder mutations go through here. Uses `flatMapLatest` to reactively switch the task list query when the filter changes.
-- **`ThemeViewModel`** — singleton for dark mode and language; must call `initialize(context)` before use (done in `MainActivity.onCreate`). Persists to SharedPreferences.
+- **`TaskViewModel`** — central ViewModel (extends `AndroidViewModel`); all task/subtask/reminder mutations go through here. Uses `flatMapLatest` to reactively switch the task list query when the filter changes.
+- **`CategoryViewModel`** — category CRUD operations.
+- **`ThemeViewModel`** — singleton for dark mode and language; must call `initialize(context)` before use (done in `MainActivity.onCreate`). Persists to SharedPreferences (`"theme_pref"` / `"language_pref"`).
 - **`SplashViewModel`** — controls the 5.5-second splash animation.
 
 ### Navigation
@@ -61,18 +65,24 @@ NavHost start destination: `"category_list"`. Routes:
 Navigation drawer (hamburger menu) is an Android `DrawerLayout` wrapping a `ComposeView`, not a pure Compose drawer.
 
 ### Background Work
-- `ReminderScheduler` — schedules exact alarms via `AlarmManager.setExactAndAllowWhileIdle()`
-- `ReminderReceiver` — BroadcastReceiver that handles alarm fires and triggers `NotificationService`
-- Boot receiver re-schedules reminders after device restart
+- `ReminderScheduler` — schedules exact alarms via `AlarmManager.setExactAndAllowWhileIdle()`. Falls back to `setAndAllowWhileIdle()` if exact alarms are not permitted.
+- `ReminderReceiver` — BroadcastReceiver that handles alarm fires, triggers `NotificationService`, and reschedules recurring reminders. Uses `goAsync()` for async DB access.
+- `DailyReminderService` — separate BroadcastReceiver (in `services/` package, note plural) for morning/evening daily reminders.
+- Boot receiver (`RECEIVE_BOOT_COMPLETED`) re-schedules all reminders after device restart.
+- **Notification channels:** `"taksy_reminders"` (task reminders) and `"daily_reminders"` (daily summaries), both IMPORTANCE_HIGH.
 
 ## Key Tech Details
 
 - **Min SDK 26**, Target SDK 35, Java 11, Kotlin 2.0.21
 - **Compose BOM** 2024.09.00 — do not specify individual Compose library versions
 - **Room** 2.6.1 with KSP for annotation processing (not kapt)
-- **Hilt** 2.48 configured but minimally used — `TaksyApplication` extends `HiltAndroidApp`
+- **Hilt** 2.48 — `TaksyApplication` extends `HiltAndroidApp`; all DI wiring is in `DatabaseModule`
 - **Localization:** Spanish (`values/strings.xml`) is the default; English in `values-en/strings.xml`. Locale changes are applied via `LocaleHelper` and require activity recreation.
 - **Database name:** `ticksy_database` (note spelling differs from app name)
+
+- **Permissions:** `POST_NOTIFICATIONS`, `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, `SCHEDULE_EXACT_ALARM`
+- **ProGuard/R8** enabled for release builds
+- **Room schema** exported to `app/schemas/` via KSP arg `room.schemaLocation`
 
 ## Adding Database Migrations
 

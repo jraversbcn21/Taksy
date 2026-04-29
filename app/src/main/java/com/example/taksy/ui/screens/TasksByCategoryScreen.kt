@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +31,7 @@ import com.example.taksy.data.Category
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.ui.components.DeleteTaskDialog
+import com.example.taksy.ui.components.QuickReminderDialog
 import com.example.taksy.ui.components.TaskListItem
 import com.example.taksy.utils.CategoryUtils
 import com.example.taksy.utils.DeviceUtils
@@ -58,6 +60,7 @@ fun TasksByCategoryScreen(
     var newTaskTitle by remember { mutableStateOf("") }
     var searchQuery by remember { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
+    var taskForReminder by remember { mutableStateOf<Task?>(null) }
     val focusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -208,18 +211,22 @@ fun TasksByCategoryScreen(
                         items(displayedTasks) { task ->
                             val subtasks by taskViewModel.getSubtasksByTaskId(task.id).collectAsState(initial = emptyList())
                             val pendingSubtasksCount = subtasks.count { it.estado == TaskEstado.PENDIENTE }
+                            val reminders by taskViewModel.getRemindersByTaskId(task.id).collectAsState(initial = emptyList())
+                            val hasActiveReminder = reminders.any { it.activo }
 
                             TaskListItem(
                                 task = task,
                                 pendingSubtasksCount = pendingSubtasksCount,
                                 isTaskCompleted = pendingSubtasksCount == 0 && subtasks.isNotEmpty(),
                                 category = category,
+                                hasActiveReminder = hasActiveReminder,
                                 onTaskClick = onTaskClick,
                                 onTaskToggle = onTaskToggle,
                                 onTaskDelete = onTaskDelete,
                                 onShowDeleteDialog = onShowDeleteDialog,
                                 onShowToast = { message -> showSnackbar(message) },
-                                onNavigateToSubtasks = onNavigateToSubtasks
+                                onNavigateToSubtasks = onNavigateToSubtasks,
+                                onReminderClick = { taskForReminder = it }
                             )
                         }
                     }
@@ -253,7 +260,27 @@ fun TasksByCategoryScreen(
                 }
             }
         }
-        
+
+        // Quick reminder dialog
+        if (taskForReminder != null) {
+            val reminderTask = taskForReminder!!
+            val taskReminders by taskViewModel.getRemindersByTaskId(reminderTask.id).collectAsState(initial = emptyList())
+            val existingReminder = taskReminders.firstOrNull { it.activo }
+
+            QuickReminderDialog(
+                taskTitle = reminderTask.titulo,
+                existingReminder = existingReminder,
+                onSetReminder = { date ->
+                    taskViewModel.setQuickReminder(reminderTask.id, reminderTask.titulo, date)
+                    taskForReminder = null
+                },
+                onDeleteReminder = {
+                    taskViewModel.deleteReminderForTask(reminderTask.id)
+                    taskForReminder = null
+                },
+                onDismiss = { taskForReminder = null }
+            )
+        }
     }
 }
 
@@ -291,6 +318,7 @@ private fun InlineTaskInput(
                 .weight(1f)
                 .focusRequester(focusRequester),
             singleLine = true,
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             textStyle = TextStyle(
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = MaterialTheme.typography.bodyLarge.fontSize

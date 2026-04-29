@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import com.example.taksy.data.Reminder
 import com.example.taksy.receiver.ReminderReceiver
 
@@ -50,13 +51,22 @@ class ReminderScheduler(private val context: Context) {
             android.util.Log.w("ReminderScheduler", "Diferencia: ${timeUntilTrigger}ms")
         }
         
-        // Programar la alarma
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            triggerTime,
-            pendingIntent
-        )
-        
+        // Schedule the alarm, with fallback for missing exact alarm permission (API 31+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+            android.util.Log.w("ReminderScheduler", "No exact alarm permission, using inexact alarm")
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerTime,
+                pendingIntent
+            )
+        } else {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerTime,
+                pendingIntent
+            )
+        }
+
         android.util.Log.d("ReminderScheduler", "Alarma programada exitosamente")
     }
     

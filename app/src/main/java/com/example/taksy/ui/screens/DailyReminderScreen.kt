@@ -519,7 +519,8 @@ fun DailyReminderScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 80.dp),
             contentAlignment = Alignment.BottomCenter
         ) {
             Card(

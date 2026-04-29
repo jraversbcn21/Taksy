@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
@@ -37,6 +38,7 @@ import com.example.taksy.ui.screens.LanguageSettingsScreen
 import com.example.taksy.ui.screens.RemindersScreen
 import com.example.taksy.ui.screens.TaskDetailScreen
 import com.example.taksy.ui.screens.TasksByCategoryScreen
+import com.example.taksy.ui.screens.AboutScreen
 import com.example.taksy.ui.screens.ThemeSettingsScreen
 import com.example.taksy.ui.theme.TicksyTheme
 import com.example.taksy.utils.LocaleHelper
@@ -45,7 +47,7 @@ import com.example.taksy.viewmodel.TaskViewModel
 import com.example.taksy.viewmodel.ThemeViewModel
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private val themeViewModel: ThemeViewModel by viewModels()
 
@@ -57,6 +59,12 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Smooth fade-in when activity is recreated (e.g., language change)
+        if (savedInstanceState != null) {
+            window.decorView.alpha = 0f
+            window.decorView.animate().alpha(1f).setDuration(350).start()
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
@@ -218,6 +226,12 @@ fun MainContent(
             )
         }
 
+        composable("about") {
+            AboutScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
         composable("task_detail/{taskId}") { backStackEntry ->
             val taskId = backStackEntry.arguments?.getString("taskId")?.toLongOrNull()
             if (taskId != null) {
@@ -277,22 +291,26 @@ fun DrawerScreen(
                             DrawerLayout.LayoutParams.MATCH_PARENT
                         )
                         setContent {
-                            MainContent(
-                                navController = navController,
-                                taskViewModel = taskViewModel,
-                                categoryViewModel = categoryViewModel,
-                                isDarkMode = isDarkMode,
-                                currentLanguage = currentLanguage,
-                                themeViewModel = themeViewModel,
-                                context = context,
-                                onMenuClick = { drawerLayout?.openDrawer(GravityCompat.START) },
-                                activity = activity,
-                                onShowDeleteDialog = { taskToDelete = it },
-                                onShowLanguageChangeDialog = { language ->
-                                    selectedLanguage = language
-                                    showLanguageChangeDialog = true
-                                }
-                            )
+                            val innerIsDarkMode by themeViewModel.isDarkMode.collectAsState()
+                            val innerCurrentLanguage by themeViewModel.currentLanguage.collectAsState()
+                            TicksyTheme(darkTheme = innerIsDarkMode) {
+                                MainContent(
+                                    navController = navController,
+                                    taskViewModel = taskViewModel,
+                                    categoryViewModel = categoryViewModel,
+                                    isDarkMode = innerIsDarkMode,
+                                    currentLanguage = innerCurrentLanguage,
+                                    themeViewModel = themeViewModel,
+                                    context = context,
+                                    onMenuClick = { drawerLayout?.openDrawer(GravityCompat.START) },
+                                    activity = activity,
+                                    onShowDeleteDialog = { taskToDelete = it },
+                                    onShowLanguageChangeDialog = { language ->
+                                        selectedLanguage = language
+                                        showLanguageChangeDialog = true
+                                    }
+                                )
+                            }
                         }
                     }
                     addView(contentView)
@@ -325,11 +343,29 @@ fun DrawerScreen(
                                 R.id.nav_theme -> navController.navigate("theme_settings")
                                 R.id.nav_language -> navController.navigate("language_settings")
                                 R.id.nav_reminders -> navController.navigate("daily_reminders")
+                                R.id.nav_about -> navController.navigate("about")
                             }
                             true
                         }
                     }
                     addView(navigationView)
+                }
+            },
+            update = { drawer ->
+                // Update NavigationView colors when theme changes
+                for (i in 0 until drawer.childCount) {
+                    val child = drawer.getChildAt(i)
+                    if (child is NavigationView) {
+                        if (isDarkMode) {
+                            child.setBackgroundColor(android.graphics.Color.parseColor("#121212"))
+                            child.itemTextColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
+                            child.itemIconTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
+                        } else {
+                            child.setBackgroundColor(android.graphics.Color.parseColor("#FFFFFF"))
+                            child.itemTextColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.BLACK)
+                            child.itemIconTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.BLACK)
+                        }
+                    }
                 }
             },
             modifier = Modifier.fillMaxSize()

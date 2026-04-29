@@ -7,7 +7,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -15,6 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,18 +42,21 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TaskListItem(
     task: Task,
     pendingSubtasksCount: Int = 0,
-    isTaskCompleted: Boolean = false, // Nueva propiedad para indicar si la tarea está completamente terminada
-    category: Category? = null, // Categoría de la tarea
+    isTaskCompleted: Boolean = false,
+    category: Category? = null,
+    hasActiveReminder: Boolean = false,
     onTaskClick: (Task) -> Unit,
     onTaskToggle: (Task) -> Unit,
     onTaskDelete: (Task) -> Unit,
-    onShowDeleteDialog: (Task) -> Unit = {}, // Nueva función para mostrar diálogo de borrado
+    onShowDeleteDialog: (Task) -> Unit = {},
     onShowToast: (String) -> Unit = {},
-    onNavigateToSubtasks: (Task) -> Unit = {}, // Nueva función para navegar a subtareas
+    onNavigateToSubtasks: (Task) -> Unit = {},
+    onReminderClick: (Task) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var offsetX by remember(task.id) { mutableStateOf(0f) }
@@ -140,7 +147,10 @@ fun TaskListItem(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onTaskClick(task) }
+                    .combinedClickable(
+                        onClick = { onTaskClick(task) },
+                        onLongClick = { onReminderClick(task) }
+                    )
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -226,11 +236,27 @@ fun TaskListItem(
                     }
                 }
                 
-                // Contador de subtareas pendientes e icono de información
+                // Bell icon, subtask counter, and info icon
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    // Bell icon for reminder
+                    Icon(
+                        imageVector = if (hasActiveReminder)
+                            Icons.Default.Notifications
+                        else
+                            Icons.Outlined.Notifications,
+                        contentDescription = stringResource(R.string.set_reminder),
+                        tint = if (hasActiveReminder)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f),
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable { onReminderClick(task) }
+                    )
+
                     // Contador de subtareas pendientes
                     if (pendingSubtasksCount > 0) {
                         Box(

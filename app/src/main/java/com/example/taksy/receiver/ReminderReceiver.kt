@@ -18,9 +18,18 @@ import kotlinx.coroutines.launch
 class ReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        when (intent.action) {
-            Intent.ACTION_BOOT_COMPLETED -> rescheduleAllRemindersAfterBoot(context)
-            else -> handleReminderAlarm(context, intent)
+        // goAsync() keeps the process alive while the coroutine runs.
+        // Without it, Android may kill the process before DB query + notification completes.
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                when (intent.action) {
+                    Intent.ACTION_BOOT_COMPLETED -> rescheduleAllRemindersAfterBoot(context)
+                    else -> handleReminderAlarm(context, intent)
+                }
+            } finally {
+                pendingResult.finish()
+            }
         }
     }
 
@@ -28,38 +37,32 @@ class ReminderReceiver : BroadcastReceiver() {
      * Reprograma todos los recordatorios activos tras un reinicio del dispositivo.
      * AlarmManager no persiste alarmas entre reinicios.
      */
-    private fun rescheduleAllRemindersAfterBoot(context: Context) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val database = AppDatabase.getDatabase(context)
-            val activeReminders = database.reminderDao().getAllActiveRemindersSync()
-            val scheduler = com.example.taksy.service.ReminderScheduler(context)
-            activeReminders.forEach { reminder ->
-                // Solo reprogramar si la fecha es futura
-                if (reminder.fechaRecordatorio.time > System.currentTimeMillis()) {
-                    scheduler.scheduleReminder(reminder)
-                }
+    private suspend fun rescheduleAllRemindersAfterBoot(context: Context) {
+        val database = AppDatabase.getDatabase(context)
+        val activeReminders = database.reminderDao().getAllActiveRemindersSync()
+        val scheduler = com.example.taksy.service.ReminderScheduler(context)
+        activeReminders.forEach { reminder ->
+            if (reminder.fechaRecordatorio.time > System.currentTimeMillis()) {
+                scheduler.scheduleReminder(reminder)
             }
         }
     }
 
-    private fun handleReminderAlarm(context: Context, intent: Intent) {
+    private suspend fun handleReminderAlarm(context: Context, intent: Intent) {
         val reminderId = intent.getLongExtra("reminder_id", -1)
+        if (reminderId == -1L) return
 
-        if (reminderId != -1L) {
-            CoroutineScope(Dispatchers.IO).launch {
-                val database = AppDatabase.getDatabase(context)
-                val reminder = database.reminderDao().getReminderById(reminderId)
-                val task = database.taskDao().getTaskById(reminder?.taskId ?: -1)
+        val database = AppDatabase.getDatabase(context)
+        val reminder = database.reminderDao().getReminderById(reminderId)
+        val task = database.taskDao().getTaskById(reminder?.taskId ?: -1)
 
-                if (reminder != null && task != null) {
-                    val notificationService = NotificationService(context)
-                    notificationService.showReminderNotification(reminder, task)
+        if (reminder != null && task != null) {
+            val notificationService = NotificationService(context)
+            notificationService.showReminderNotification(reminder, task)
 
-                    // Si es un recordatorio recurrente, programar el siguiente
-                    if (reminder.tipoRecordatorio != com.example.taksy.data.TipoRecordatorio.UNA_VEZ) {
-                        scheduleNextRecurringReminder(context, reminder)
-                    }
-                }
+            // Si es un recordatorio recurrente, programar el siguiente
+            if (reminder.tipoRecordatorio != com.example.taksy.data.TipoRecordatorio.UNA_VEZ) {
+                scheduleNextRecurringReminder(context, reminder)
             }
         }
     }
@@ -67,50 +70,24 @@ class ReminderReceiver : BroadcastReceiver() {
     /**
      * Programa el siguiente recordatorio recurrente
      */
-    private fun scheduleNextRecurringReminder(context: Context, reminder: Reminder) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val database = AppDatabase.getDatabase(context)
-            val task = database.taskDao().getTaskById(reminder.taskId)
-            
-            // Solo programar el siguiente recordatorio si la tarea no está completada
-            if (task?.estado != com.example.taksy.data.TaskEstado.COMPLETADA) {
-                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-                val intent = Intent(context, ReminderReceiver::class.java).apply {
-                    putExtra("reminder_id", reminder.id)
-                }
-                
-                val pendingIntent = PendingIntent.getBroadcast(
-                    context,
-                    reminder.id.toInt(),
-                    intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-                
-                val calendar = java.util.Calendar.getInstance()
-                calendar.time = reminder.fechaRecordatorio
-                
-                val nextTime = when (reminder.tipoRecordatorio) {
-                    com.example.taksy.data.TipoRecordatorio.DIARIO -> {
-                        calendar.add(java.util.Calendar.DAY_OF_MONTH, 1)
-                        calendar.timeInMillis
-                    }
-                    com.example.taksy.data.TipoRecordatorio.SEMANAL -> {
-                        calendar.add(java.util.Calendar.WEEK_OF_YEAR, 1)
-                        calendar.timeInMillis
-                    }
-                    com.example.taksy.data.TipoRecordatorio.MENSUAL -> {
-                        calendar.add(java.util.Calendar.MONTH, 1)
-                        calendar.timeInMillis
-                    }
-                    else -> return@launch
-                }
-                
-                alarmManager.setExactAndAllowWhileIdle(
-                    android.app.AlarmManager.RTC_WAKEUP,
-                    nextTime,
-                    pendingIntent
-                )
+    private suspend fun scheduleNextRecurringReminder(context: Context, reminder: Reminder) {
+        val database = AppDatabase.getDatabase(context)
+        val task = database.taskDao().getTaskById(reminder.taskId)
+
+        if (task?.estado != com.example.taksy.data.TaskEstado.COMPLETADA) {
+            val calendar = java.util.Calendar.getInstance()
+            calendar.time = reminder.fechaRecordatorio
+
+            when (reminder.tipoRecordatorio) {
+                com.example.taksy.data.TipoRecordatorio.DIARIO -> calendar.add(java.util.Calendar.DAY_OF_MONTH, 1)
+                com.example.taksy.data.TipoRecordatorio.SEMANAL -> calendar.add(java.util.Calendar.WEEK_OF_YEAR, 1)
+                com.example.taksy.data.TipoRecordatorio.MENSUAL -> calendar.add(java.util.Calendar.MONTH, 1)
+                else -> return
             }
+
+            val updatedReminder = reminder.copy(fechaRecordatorio = calendar.time)
+            database.reminderDao().updateReminder(updatedReminder)
+            com.example.taksy.service.ReminderScheduler(context).scheduleReminder(updatedReminder)
         }
     }
 }

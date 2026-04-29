@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -122,27 +123,22 @@ fun AddCategoryDialog(
                     ) {
                         BasicTextField(
                             value = categoryName,
-                            onValueChange = { 
-                                categoryName = it
-                                Log.d("TEXT_COLOR_DEBUG", "=== AddCategoryDialog (BasicTextField) ===")
-                                Log.d("TEXT_COLOR_DEBUG", "Text changed to: '$it'")
-                                Log.d("TEXT_COLOR_DEBUG", "Forcing WHITE text color")
-                                Log.d("TEXT_COLOR_DEBUG", "=========================================")
-                            },
+                            onValueChange = { categoryName = it },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
                             textStyle = TextStyle(
-                                color = Color.White, // FORZAR BLANCO SIEMPRE
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = MaterialTheme.typography.bodyLarge.fontSize
                             ),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                             singleLine = true,
                             decorationBox = { innerTextField ->
                                 if (categoryName.isEmpty()) {
                                     Text(
                                         text = stringResource(R.string.category_name_hint),
-                                        color = Color.White.copy(alpha = 0.6f),
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                 }

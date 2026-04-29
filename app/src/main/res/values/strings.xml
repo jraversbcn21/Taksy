@@ -210,4 +210,28 @@
     <string name="menu_notifications">Notificaciones</string>
     <string name="menu_language">Idioma</string>
     <string name="menu_about">Acerca de Hábitos</string>
+
+    <!-- Acerca de -->
+    <string name="about">Acerca de</string>
+    <string name="about_title">Acerca de Ticksy</string>
+    <string name="about_version">Versión %s</string>
+    <string name="about_description">Ticksy es tu gestor de tareas personal. Organiza tus tareas por categorías, establece recordatorios y mantén el control de tu día a día.</string>
+    <string name="about_developer">Desarrollador</string>
+    <string name="about_developer_name">Orjan</string>
+    <string name="about_contact">Contacto</string>
+    <string name="about_features_title">Características</string>
+    <string name="about_feature_categories">Organización por categorías</string>
+    <string name="about_feature_subtasks">Subtareas con auto-completado</string>
+    <string name="about_feature_reminders">Recordatorios personalizables</string>
+    <string name="about_feature_themes">Tema claro y oscuro</string>
+    <string name="about_feature_languages">Soporte multilingüe</string>
+    <string name="about_made_with">Hecho con ❤️</string>
+
+    <!-- Quick Reminder -->
+    <string name="set_reminder">Establecer recordatorio</string>
+    <string name="edit_reminder">Editar recordatorio</string>
+    <string name="reminder_for_task">Recordatorio para: %s</string>
+    <string name="delete_reminder">Eliminar recordatorio</string>
+    <string name="reminder_set_confirmation">Recordatorio establecido</string>
+    <string name="reminder_deleted_confirmation">Recordatorio eliminado</string>
 </resources>

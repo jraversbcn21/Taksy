@@ -201,4 +201,28 @@
     <string name="menu_notifications">Notifications</string>
     <string name="menu_language">Language</string>
     <string name="menu_about">About Habits</string>
+
+    <!-- About -->
+    <string name="about">About</string>
+    <string name="about_title">About Ticksy</string>
+    <string name="about_version">Version %s</string>
+    <string name="about_description">Ticksy is your personal task manager. Organize your tasks by categories, set reminders, and stay on top of your day.</string>
+    <string name="about_developer">Developer</string>
+    <string name="about_developer_name">Orjan</string>
+    <string name="about_contact">Contact</string>
+    <string name="about_features_title">Features</string>
+    <string name="about_feature_categories">Category-based organization</string>
+    <string name="about_feature_subtasks">Subtasks with auto-completion</string>
+    <string name="about_feature_reminders">Customizable reminders</string>
+    <string name="about_feature_themes">Light and dark theme</string>
+    <string name="about_feature_languages">Multilingual support</string>
+    <string name="about_made_with">Made with ❤️</string>
+
+    <!-- Quick Reminder -->
+    <string name="set_reminder">Set reminder</string>
+    <string name="edit_reminder">Edit reminder</string>
+    <string name="reminder_for_task">Reminder for: %s</string>
+    <string name="delete_reminder">Delete reminder</string>
+    <string name="reminder_set_confirmation">Reminder set</string>
+    <string name="reminder_deleted_confirmation">Reminder deleted</string>
 </resources>

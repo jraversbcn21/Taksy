@@ -186,7 +186,47 @@ class TaskViewModel @Inject constructor(
         viewModelScope.launch { runCatching { repository.updateReminderStatus(id, activo) }.onFailure { setError(it.message) } }
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────
+    /**
+     * Sets a single quick reminder for a task, replacing any existing ones.
+     */
+    fun setQuickReminder(taskId: Long, taskTitle: String, fecha: Date) {
+        viewModelScope.launch {
+            runCatching {
+                val scheduler = ReminderScheduler(context)
+                // Remove existing reminders for this task
+                repository.getRemindersByTaskIdSync(taskId).forEach {
+                    scheduler.cancelReminder(it.id)
+                    repository.deleteReminder(it)
+                }
+                // Create new one
+                val reminder = Reminder(
+                    taskId = taskId,
+                    titulo = taskTitle,
+                    fechaRecordatorio = fecha,
+                    tipoRecordatorio = TipoRecordatorio.UNA_VEZ
+                )
+                val id = repository.insertReminder(reminder)
+                scheduler.scheduleReminder(reminder.copy(id = id))
+            }.onFailure { setError(it.message) }
+        }
+    }
+
+    /**
+     * Deletes all reminders for a task.
+     */
+    fun deleteReminderForTask(taskId: Long) {
+        viewModelScope.launch {
+            runCatching {
+                val scheduler = ReminderScheduler(context)
+                repository.getRemindersByTaskIdSync(taskId).forEach {
+                    scheduler.cancelReminder(it.id)
+                    repository.deleteReminder(it)
+                }
+            }.onFailure { setError(it.message) }
+        }
+    }
+
+    // ─��� Helpers ─────────────────────���──────────────────────────���───────────
 
     private fun setError(message: String?) {
         _uiState.value = _uiState.value.copy(error = message ?: "Error desconocido")

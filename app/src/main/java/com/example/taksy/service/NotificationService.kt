@@ -39,10 +39,11 @@ class NotificationService(private val context: Context) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = CHANNEL_DESCRIPTION
                 enableVibration(true)
+                vibrationPattern = longArrayOf(0, 300, 200, 300)
                 setShowBadge(true)
             }
             

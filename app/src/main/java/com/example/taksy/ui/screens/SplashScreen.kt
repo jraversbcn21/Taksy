@@ -123,7 +123,7 @@ fun SplashScreen(
                 painter = painterResource(id = R.drawable.ticksy_icon),
                 contentDescription = "Ticksy Icon",
                 modifier = Modifier
-                    .size(140.dp)
+                    .size(80.dp)
                     .scale(scaleAnimation.value * pulseAnimation.value)
                     .alpha(alphaAnimation.value)
             )

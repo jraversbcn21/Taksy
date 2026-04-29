@@ -13,5 +13,9 @@
             android:id="@+id/nav_reminders"
             android:icon="@drawable/ic_date_range"
             android:title="@string/reminders_settings" />
+        <item
+            android:id="@+id/nav_about"
+            android:icon="@drawable/ic_info"
+            android:title="@string/about" />
     </group>
 </menu>
