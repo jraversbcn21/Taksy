@@ -51,7 +51,19 @@ class DailyReminderService : BroadcastReceiver() {
         android.util.Log.d("DailyReminderService", "=== RECIBIENDO ALARMA ===")
         android.util.Log.d("DailyReminderService", "Tipo de recordatorio: $reminderType")
         android.util.Log.d("DailyReminderService", "Tiempo actual: ${java.util.Date()}")
-        
+
+        // Reprogramar la siguiente alarma para mañana a la misma hora
+        val prefs = com.example.taksy.viewmodel.ReminderViewModel.loadPrefs(context)
+        if (prefs.enabled) {
+            val requestCode = if (reminderType == "morning") 1001 else 1002
+            val hour = if (reminderType == "morning") prefs.morningHour else prefs.eveningHour
+            val minute = if (reminderType == "morning") prefs.morningMinute else prefs.eveningMinute
+            com.example.taksy.viewmodel.ReminderViewModel.scheduleExactAlarm(
+                context, hour, minute, requestCode, reminderType
+            )
+        }
+
+        val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 // Obtener información de tareas pendientes
@@ -65,15 +77,17 @@ class DailyReminderService : BroadcastReceiver() {
                     com.example.taksy.repository.TaskFilter.PENDIENTES
                 )
                 val pendingTasks = pendingTasksFlow.first()
-                
+
                 // Crear notificación
                 android.util.Log.d("DailyReminderService", "Creando notificación con ${pendingTasks.size} tareas pendientes")
                 createNotification(context, pendingTasks, reminderType)
-                
+
             } catch (e: Exception) {
                 // En caso de error, crear notificación genérica
                 android.util.Log.e("DailyReminderService", "Error creando notificación: ${e.message}")
                 createGenericNotification(context, reminderType)
+            } finally {
+                pendingResult.finish()
             }
         }
     }

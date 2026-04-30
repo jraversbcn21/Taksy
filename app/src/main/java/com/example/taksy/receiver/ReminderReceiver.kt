@@ -24,7 +24,10 @@ class ReminderReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 when (intent.action) {
-                    Intent.ACTION_BOOT_COMPLETED -> rescheduleAllRemindersAfterBoot(context)
+                    Intent.ACTION_BOOT_COMPLETED -> {
+                        rescheduleAllRemindersAfterBoot(context)
+                        com.example.taksy.viewmodel.ReminderViewModel.rescheduleFromPrefs(context)
+                    }
                     else -> handleReminderAlarm(context, intent)
                 }
             } finally {

@@ -39,20 +39,22 @@ fun DailyReminderScreen(
 ) {
     val context = LocalContext.current
     val reminderViewModel = remember { ReminderViewModel() }
-    
-    var isDailyReminderEnabled by remember { mutableStateOf(true) }
-    var reminderTime1 by remember { mutableStateOf("10:00") }
-    var reminderTime2 by remember { mutableStateOf("18:00") }
+
+    // Cargar preferencias guardadas
+    val savedPrefs = remember { ReminderViewModel.loadPrefs(context) }
+    var isDailyReminderEnabled by remember { mutableStateOf(savedPrefs.enabled) }
+    var reminderTime1 by remember {
+        mutableStateOf(String.format("%02d:%02d", savedPrefs.morningHour, savedPrefs.morningMinute))
+    }
+    var reminderTime2 by remember {
+        mutableStateOf(String.format("%02d:%02d", savedPrefs.eveningHour, savedPrefs.eveningMinute))
+    }
     var showSaveSuccess by remember { mutableStateOf(false) }
     var timePickerKey1 by remember { mutableStateOf(0) }
     var timePickerKey2 by remember { mutableStateOf(0) }
-    
+
     // Inicializar el AlarmManager
     LaunchedEffect(Unit) {
-        android.util.Log.d("DailyReminderScreen", "=== INICIALIZANDO PANTALLA ===")
-        android.util.Log.d("DailyReminderScreen", "Context: $context")
-        android.util.Log.d("DailyReminderScreen", "Hora inicial 1: $reminderTime1")
-        android.util.Log.d("DailyReminderScreen", "Hora inicial 2: $reminderTime2")
         reminderViewModel.initializeAlarmManager(context)
     }
     

@@ -1,7 +1,10 @@
 package com.example.taksy.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
@@ -10,13 +13,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.taksy.R
 import com.example.taksy.data.Reminder
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,11 +45,48 @@ fun QuickReminderDialog(
         }
     }
 
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = calendar.timeInMillis
+    )
+
     val timePickerState = rememberTimePickerState(
         initialHour = calendar.get(Calendar.HOUR_OF_DAY),
         initialMinute = calendar.get(Calendar.MINUTE),
         is24Hour = true
     )
+
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    val selectedDateText = remember(datePickerState.selectedDateMillis) {
+        datePickerState.selectedDateMillis?.let { millis ->
+            val cal = Calendar.getInstance().apply { timeInMillis = millis }
+            val today = Calendar.getInstance()
+            // DatePicker returns UTC midnight, adjust for display
+            SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault()).format(cal.time)
+        } ?: ""
+    }
+
+    // Date picker fullscreen dialog
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text(stringResource(R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        ) {
+            DatePicker(
+                state = datePickerState,
+                showModeToggle = false
+            )
+        }
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -62,7 +105,9 @@ fun QuickReminderDialog(
             tonalElevation = 6.dp
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header icon
@@ -96,6 +141,26 @@ fun QuickReminderDialog(
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
+
+                // Date selector button
+                OutlinedButton(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DateRange,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = selectedDateText,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Time picker
                 TimePicker(
@@ -144,16 +209,19 @@ fun QuickReminderDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = {
+                                val selectedMillis = datePickerState.selectedDateMillis
+                                    ?: System.currentTimeMillis()
+                                val selectedDate = Calendar.getInstance().apply {
+                                    timeInMillis = selectedMillis
+                                }
                                 val result = Calendar.getInstance().apply {
-                                    // Use today's date
+                                    set(Calendar.YEAR, selectedDate.get(Calendar.YEAR))
+                                    set(Calendar.MONTH, selectedDate.get(Calendar.MONTH))
+                                    set(Calendar.DAY_OF_MONTH, selectedDate.get(Calendar.DAY_OF_MONTH))
                                     set(Calendar.HOUR_OF_DAY, timePickerState.hour)
                                     set(Calendar.MINUTE, timePickerState.minute)
                                     set(Calendar.SECOND, 0)
                                     set(Calendar.MILLISECOND, 0)
-                                    // If the time is in the past, schedule for tomorrow
-                                    if (before(Calendar.getInstance())) {
-                                        add(Calendar.DAY_OF_MONTH, 1)
-                                    }
                                 }
                                 onSetReminder(result.time)
                             }
@@ -162,7 +230,8 @@ fun QuickReminderDialog(
                                 text = if (existingReminder != null)
                                     stringResource(R.string.save)
                                 else
-                                    stringResource(R.string.set_reminder)
+                                    stringResource(R.string.set_reminder),
+                                textAlign = TextAlign.Center
                             )
                         }
                     }

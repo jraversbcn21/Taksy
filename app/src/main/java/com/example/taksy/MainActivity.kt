@@ -177,7 +177,11 @@ fun MainContent(
 
         composable("daily_reminders") {
             DailyReminderScreen(
-                onBackClick = { navController.popBackStack() },
+                onBackClick = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate("category_list") { launchSingleTop = true }
+                    }
+                },
                 isDarkMode = isDarkMode,
                 activity = activity
             )
@@ -215,7 +219,11 @@ fun MainContent(
             ThemeSettingsScreen(
                 isDarkMode = isDarkMode,
                 onThemeChange = { isDark -> themeViewModel.setDarkMode(isDark) },
-                onBackClick = { navController.popBackStack() }
+                onBackClick = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate("category_list") { launchSingleTop = true }
+                    }
+                }
             )
         }
 
@@ -224,13 +232,21 @@ fun MainContent(
                 currentLanguage = currentLanguage,
                 onLanguageChange = { language -> themeViewModel.setLanguage(language) },
                 onShowLanguageChangeDialog = onShowLanguageChangeDialog,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate("category_list") { launchSingleTop = true }
+                    }
+                }
             )
         }
 
         composable("about") {
             AboutScreen(
-                onBackClick = { navController.popBackStack() }
+                onBackClick = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate("category_list") { launchSingleTop = true }
+                    }
+                }
             )
         }
 
@@ -238,7 +254,11 @@ fun MainContent(
             val backupViewModel: BackupViewModel = hiltViewModel()
             BackupScreen(
                 backupViewModel = backupViewModel,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate("category_list") { launchSingleTop = true }
+                    }
+                }
             )
         }
 
@@ -349,12 +369,19 @@ fun DrawerScreen(
 
                         setNavigationItemSelectedListener { menuItem ->
                             drawerLayout?.closeDrawer(GravityCompat.START)
-                            when (menuItem.itemId) {
-                                R.id.nav_theme -> navController.navigate("theme_settings")
-                                R.id.nav_language -> navController.navigate("language_settings")
-                                R.id.nav_reminders -> navController.navigate("daily_reminders")
-                                R.id.nav_backup -> navController.navigate("backup")
-                                R.id.nav_about -> navController.navigate("about")
+                            val route = when (menuItem.itemId) {
+                                R.id.nav_theme -> "theme_settings"
+                                R.id.nav_language -> "language_settings"
+                                R.id.nav_reminders -> "daily_reminders"
+                                R.id.nav_backup -> "backup"
+                                R.id.nav_about -> "about"
+                                else -> null
+                            }
+                            route?.let {
+                                navController.navigate(it) {
+                                    popUpTo("category_list") { inclusive = false }
+                                    launchSingleTop = true
+                                }
                             }
                             true
                         }

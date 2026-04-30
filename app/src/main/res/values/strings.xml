@@ -10,6 +10,7 @@
     <string name="no_due_date">Sin fecha de vencimiento</string>
     <string name="save">Guardar</string>
     <string name="cancel">Cancelar</string>
+    <string name="ok">Aceptar</string>
     <string name="edit_task">Editar tarea</string>
     <string name="delete_task">Eliminar tarea</string>
     <string name="mark_completed">Marcar como completada</string>

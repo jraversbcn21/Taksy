@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import com.example.taksy.services.DailyReminderService
 import java.util.*
@@ -12,20 +13,123 @@ import java.util.*
  * ViewModel para manejar recordatorios diarios
  */
 class ReminderViewModel : ViewModel() {
-    
+
     companion object {
         private const val REQUEST_CODE_MORNING = 1001
         private const val REQUEST_CODE_EVENING = 1002
+        private const val PREFS_NAME = "daily_reminder_prefs"
+        private const val KEY_ENABLED = "enabled"
+        private const val KEY_MORNING_HOUR = "morning_hour"
+        private const val KEY_MORNING_MINUTE = "morning_minute"
+        private const val KEY_EVENING_HOUR = "evening_hour"
+        private const val KEY_EVENING_MINUTE = "evening_minute"
+
+        /**
+         * Carga las preferencias guardadas de recordatorios diarios.
+         */
+        fun loadPrefs(context: Context): DailyReminderPrefs {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return DailyReminderPrefs(
+                enabled = prefs.getBoolean(KEY_ENABLED, false),
+                morningHour = prefs.getInt(KEY_MORNING_HOUR, 10),
+                morningMinute = prefs.getInt(KEY_MORNING_MINUTE, 0),
+                eveningHour = prefs.getInt(KEY_EVENING_HOUR, 18),
+                eveningMinute = prefs.getInt(KEY_EVENING_MINUTE, 0)
+            )
+        }
+
+        /**
+         * Programa una alarma exacta para recordatorios diarios.
+         * Se usa desde el ViewModel y desde el BroadcastReceiver para reprogramar.
+         */
+        fun scheduleExactAlarm(
+            context: Context,
+            hour: Int,
+            minute: Int,
+            requestCode: Int,
+            reminderType: String
+        ) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+            val intent = Intent(context, DailyReminderService::class.java).apply {
+                putExtra("reminder_type", reminderType)
+            }
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val calendar = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, hour)
+                set(Calendar.MINUTE, minute)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+                if (timeInMillis <= System.currentTimeMillis()) {
+                    add(Calendar.DAY_OF_MONTH, 1)
+                }
+            }
+
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (alarmManager.canScheduleExactAlarms()) {
+                        alarmManager.setExactAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP,
+                            calendar.timeInMillis,
+                            pendingIntent
+                        )
+                    } else {
+                        alarmManager.setAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP,
+                            calendar.timeInMillis,
+                            pendingIntent
+                        )
+                    }
+                } else {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        calendar.timeInMillis,
+                        pendingIntent
+                    )
+                }
+                android.util.Log.d("ReminderViewModel", "Alarma $reminderType programada para: ${Date(calendar.timeInMillis)}")
+            } catch (e: Exception) {
+                android.util.Log.e("ReminderViewModel", "Error programando alarma $reminderType: ${e.message}")
+            }
+        }
+
+        /**
+         * Reprograma ambos recordatorios diarios desde las preferencias guardadas.
+         * Usado tras reinicio del dispositivo.
+         */
+        fun rescheduleFromPrefs(context: Context) {
+            val prefs = loadPrefs(context)
+            if (!prefs.enabled) return
+
+            DailyReminderService.createNotificationChannel(context)
+            scheduleExactAlarm(context, prefs.morningHour, prefs.morningMinute, REQUEST_CODE_MORNING, "morning")
+            scheduleExactAlarm(context, prefs.eveningHour, prefs.eveningMinute, REQUEST_CODE_EVENING, "evening")
+            android.util.Log.d("ReminderViewModel", "Recordatorios diarios reprogramados desde preferencias")
+        }
     }
-    
+
+    data class DailyReminderPrefs(
+        val enabled: Boolean,
+        val morningHour: Int,
+        val morningMinute: Int,
+        val eveningHour: Int,
+        val eveningMinute: Int
+    )
+
     private var alarmManager: AlarmManager? = null
-    
+
     fun initializeAlarmManager(context: Context) {
         alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     }
-    
+
     /**
-     * Programa recordatorios diarios
+     * Programa recordatorios diarios y persiste la configuración.
      */
     fun scheduleDailyReminders(
         context: Context,
@@ -35,112 +139,31 @@ class ReminderViewModel : ViewModel() {
         eveningMinute: Int,
         enabled: Boolean
     ) {
-        android.util.Log.d("ReminderViewModel", "=== PROGRAMANDO RECORDATORIOS ===")
-        android.util.Log.d("ReminderViewModel", "Habilitado: $enabled")
-        android.util.Log.d("ReminderViewModel", "Hora matutina: $morningHour:$morningMinute")
-        android.util.Log.d("ReminderViewModel", "Hora vespertina: $eveningHour:$eveningMinute")
-        
-        if (alarmManager == null) {
-            initializeAlarmManager(context)
+        // Persistir configuración
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().apply {
+            putBoolean(KEY_ENABLED, enabled)
+            putInt(KEY_MORNING_HOUR, morningHour)
+            putInt(KEY_MORNING_MINUTE, morningMinute)
+            putInt(KEY_EVENING_HOUR, eveningHour)
+            putInt(KEY_EVENING_MINUTE, eveningMinute)
+            apply()
         }
-        
+
         // Cancelar recordatorios existentes
-        android.util.Log.d("ReminderViewModel", "Cancelando recordatorios existentes...")
         cancelDailyReminders(context)
-        
-        if (!enabled) {
-            android.util.Log.d("ReminderViewModel", "Recordatorios deshabilitados, no se programan")
-            return
-        }
-        
+
+        if (!enabled) return
+
         // Crear canal de notificaciones
-        android.util.Log.d("ReminderViewModel", "Creando canal de notificaciones...")
         DailyReminderService.createNotificationChannel(context)
-        
-        val calendar = Calendar.getInstance()
-        
-        // Programar recordatorio matutino
-        android.util.Log.d("ReminderViewModel", "Programando recordatorio matutino...")
-        val morningIntent = Intent(context, DailyReminderService::class.java).apply {
-            putExtra("reminder_type", "morning")
-        }
-        val morningPendingIntent = PendingIntent.getBroadcast(
-            context,
-            REQUEST_CODE_MORNING,
-            morningIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        
-        calendar.set(Calendar.HOUR_OF_DAY, morningHour)
-        calendar.set(Calendar.MINUTE, morningMinute)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        
-        val currentTime = System.currentTimeMillis()
-        val triggerTime = calendar.timeInMillis
-        
-        android.util.Log.d("ReminderViewModel", "Tiempo actual: ${java.util.Date(currentTime)}")
-        android.util.Log.d("ReminderViewModel", "Tiempo programado: ${java.util.Date(triggerTime)}")
-        
-        // Si la hora ya pasó hoy, programar para mañana
-        if (triggerTime <= currentTime) {
-            calendar.add(Calendar.DAY_OF_MONTH, 1)
-            android.util.Log.d("ReminderViewModel", "Hora ya pasó hoy, programando para mañana: ${java.util.Date(calendar.timeInMillis)}")
-        }
-        
-        try {
-            alarmManager?.setRepeating(
-                AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
-                AlarmManager.INTERVAL_DAY,
-                morningPendingIntent
-            )
-            android.util.Log.d("ReminderViewModel", "Recordatorio matutino programado exitosamente")
-        } catch (e: Exception) {
-            android.util.Log.e("ReminderViewModel", "Error programando recordatorio matutino: ${e.message}")
-        }
-        
-        // Programar recordatorio vespertino
-        android.util.Log.d("ReminderViewModel", "Programando recordatorio vespertino...")
-        val eveningIntent = Intent(context, DailyReminderService::class.java).apply {
-            putExtra("reminder_type", "evening")
-        }
-        val eveningPendingIntent = PendingIntent.getBroadcast(
-            context,
-            REQUEST_CODE_EVENING,
-            eveningIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        
-        calendar.set(Calendar.HOUR_OF_DAY, eveningHour)
-        calendar.set(Calendar.MINUTE, eveningMinute)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        
-        val eveningTriggerTime = calendar.timeInMillis
-        android.util.Log.d("ReminderViewModel", "Tiempo programado vespertino: ${java.util.Date(eveningTriggerTime)}")
-        
-        // Si la hora ya pasó hoy, programar para mañana
-        if (eveningTriggerTime <= currentTime) {
-            calendar.add(Calendar.DAY_OF_MONTH, 1)
-            android.util.Log.d("ReminderViewModel", "Hora vespertina ya pasó hoy, programando para mañana: ${java.util.Date(calendar.timeInMillis)}")
-        }
-        
-        try {
-            alarmManager?.setRepeating(
-                AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
-                AlarmManager.INTERVAL_DAY,
-                eveningPendingIntent
-            )
-            android.util.Log.d("ReminderViewModel", "Recordatorio vespertino programado exitosamente")
-        } catch (e: Exception) {
-            android.util.Log.e("ReminderViewModel", "Error programando recordatorio vespertino: ${e.message}")
-        }
-        
-        android.util.Log.d("ReminderViewModel", "=== RECORDATORIOS PROGRAMADOS COMPLETAMENTE ===")
+
+        // Programar alarmas exactas
+        scheduleExactAlarm(context, morningHour, morningMinute, REQUEST_CODE_MORNING, "morning")
+        scheduleExactAlarm(context, eveningHour, eveningMinute, REQUEST_CODE_EVENING, "evening")
+
+        android.util.Log.d("ReminderViewModel", "Recordatorios diarios programados: matutino $morningHour:$morningMinute, vespertino $eveningHour:$eveningMinute")
     }
-    
+
     /**
      * Cancela todos los recordatorios diarios
      */
@@ -148,7 +171,7 @@ class ReminderViewModel : ViewModel() {
         if (alarmManager == null) {
             initializeAlarmManager(context)
         }
-        
+
         val morningIntent = Intent(context, DailyReminderService::class.java)
         val morningPendingIntent = PendingIntent.getBroadcast(
             context,
@@ -156,7 +179,7 @@ class ReminderViewModel : ViewModel() {
             morningIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        
+
         val eveningIntent = Intent(context, DailyReminderService::class.java)
         val eveningPendingIntent = PendingIntent.getBroadcast(
             context,
@@ -164,23 +187,8 @@ class ReminderViewModel : ViewModel() {
             eveningIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        
+
         alarmManager?.cancel(morningPendingIntent)
         alarmManager?.cancel(eveningPendingIntent)
-    }
-    
-    /**
-     * Verifica si los recordatorios están programados
-     */
-    fun areRemindersScheduled(context: Context): Boolean {
-        val morningIntent = Intent(context, DailyReminderService::class.java)
-        val morningPendingIntent = PendingIntent.getBroadcast(
-            context,
-            REQUEST_CODE_MORNING,
-            morningIntent,
-            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-        )
-        
-        return morningPendingIntent != null
     }
 }
