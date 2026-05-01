@@ -8,7 +8,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -109,7 +109,7 @@ fun TasksByCategoryScreen(
                             showSearch = false
                             searchQuery = ""
                         }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -126,7 +126,7 @@ fun TasksByCategoryScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = onBackClick) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                         }
                     },
                     actions = {

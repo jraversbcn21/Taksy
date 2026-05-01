@@ -2,10 +2,12 @@ package com.example.taksy.ui.screens
 
 import android.app.TimePickerDialog
 import android.content.Context
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -177,7 +179,7 @@ fun DailyReminderScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            Icons.Default.ArrowBack,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back)
                         )
                     }
@@ -389,11 +391,7 @@ fun DailyReminderScreen(
                                 colors = ButtonDefaults.outlinedButtonColors(
                                     contentColor = IconTeal40
                                 ),
-                                border = ButtonDefaults.outlinedButtonBorder.copy(
-                                    brush = Brush.horizontalGradient(
-                                        colors = listOf(IconTeal40, IconTeal40)
-                                    )
-                                ),
+                                border = BorderStroke(1.dp, IconTeal40),
                                 modifier = Modifier.widthIn(min = 80.dp)
                             ) {
                                 Text(
@@ -443,11 +441,7 @@ fun DailyReminderScreen(
                                 colors = ButtonDefaults.outlinedButtonColors(
                                     contentColor = IconTeal40
                                 ),
-                                border = ButtonDefaults.outlinedButtonBorder.copy(
-                                    brush = Brush.horizontalGradient(
-                                        colors = listOf(IconTeal40, IconTeal40)
-                                    )
-                                ),
+                                border = BorderStroke(1.dp, IconTeal40),
                                 modifier = Modifier.widthIn(min = 80.dp)
                             ) {
                                 Text(

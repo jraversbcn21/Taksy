@@ -240,7 +240,7 @@ fun CategoryListScreen(
                                 onClick = { onCategoryClick(category) },
                                 isDragging = draggingIndex == index,
                                 modifier = Modifier
-                                    .animateItemPlacement()
+                                    .animateItem()
                                     .draggable(
                                         state = rememberDraggableState { delta ->
                                             accumulatedDelta += delta
