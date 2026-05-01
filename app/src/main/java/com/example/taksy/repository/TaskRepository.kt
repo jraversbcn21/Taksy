@@ -23,6 +23,8 @@ class TaskRepository @Inject constructor(
     fun getTasksByCategoryId(categoryId: Long): Flow<List<Task>> = taskDao.getTasksByCategory(categoryId)
     fun searchTasksByCategory(categoryId: Long, query: String): Flow<List<Task>> =
         taskDao.searchTasksByCategory(categoryId, query)
+    fun searchAllTasks(query: String): Flow<List<Task>> =
+        taskDao.searchAllTasks(query)
 
     fun getTasksByFilter(filter: TaskFilter): Flow<List<Task>> = when (filter) {
         TaskFilter.TODAS -> getAllTasks()

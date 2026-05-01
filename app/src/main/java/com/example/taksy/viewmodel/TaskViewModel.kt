@@ -61,6 +61,9 @@ class TaskViewModel @Inject constructor(
     fun searchTasksByCategory(categoryId: Long, query: String): Flow<List<Task>> =
         repository.searchTasksByCategory(categoryId, query)
 
+    fun searchAllTasks(query: String): Flow<List<Task>> =
+        repository.searchAllTasks(query)
+
     fun addTask(titulo: String) = addTask(titulo, null, null)
 
     fun addTask(titulo: String, fechaVencimiento: Date?) = addTask(titulo, fechaVencimiento, null)

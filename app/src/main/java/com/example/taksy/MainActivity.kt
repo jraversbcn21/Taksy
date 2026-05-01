@@ -141,6 +141,10 @@ fun MainContent(
                     .mapValues { it.value.size }
             }
 
+            var globalSearchQuery by remember { mutableStateOf("") }
+            val searchResults by taskViewModel.searchAllTasks(globalSearchQuery)
+                .collectAsState(initial = emptyList())
+
             CategoryListScreen(
                 categories = categories,
                 taskCountByCategory = taskCountByCategory,
@@ -153,7 +157,12 @@ fun MainContent(
                 onReorderCategories = { reorderedCategories ->
                     categoryViewModel.reorderCategories(reorderedCategories)
                 },
-                showToast = {}
+                showToast = {},
+                searchResults = searchResults,
+                onSearchQueryChanged = { globalSearchQuery = it },
+                onTaskClick = { task ->
+                    navController.navigate("task_detail/${task.id}")
+                }
             )
         }
 
@@ -208,7 +217,6 @@ fun MainContent(
                         onTaskDelete = { task -> taskViewModel.deleteTask(task) },
                         onAddTask = { title, dueDate -> taskViewModel.addTask(title, dueDate, categoryId) },
                         showToast = {},
-                        onNavigateToSubtasks = { task -> navController.navigate("task_detail/${task.id}") },
                         onShowDeleteDialog = onShowDeleteDialog
                     )
                 }

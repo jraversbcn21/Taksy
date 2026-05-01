@@ -130,6 +130,12 @@ interface TaskDao {
     fun searchTasksByCategory(categoryId: Long, query: String): Flow<List<Task>>
 
     /**
+     * Busca tareas por título en todas las categorías
+     */
+    @Query("SELECT * FROM tasks WHERE titulo LIKE '%' || :query || '%' ORDER BY CASE WHEN estado = 'PENDIENTE' THEN 0 ELSE 1 END, fechaCreacion DESC")
+    fun searchAllTasks(query: String): Flow<List<Task>>
+
+    /**
      * Obtiene tareas que están realmente completadas (con todas las subtareas completadas)
      * Esto requiere una consulta más compleja que considere las subtareas
      */

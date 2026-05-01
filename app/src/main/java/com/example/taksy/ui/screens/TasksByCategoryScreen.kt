@@ -52,7 +52,6 @@ fun TasksByCategoryScreen(
     onTaskDelete: (Task) -> Unit = {},
     onAddTask: (String, Date?) -> Unit = { _, _ -> },
     showToast: (String) -> Unit = {},
-    onNavigateToSubtasks: (Task) -> Unit = {}, // Nueva función para navegar a subtareas
     onShowDeleteDialog: (Task) -> Unit = {}, // Nueva función para mostrar diálogo de borrado
     modifier: Modifier = Modifier
 ) {
@@ -225,7 +224,6 @@ fun TasksByCategoryScreen(
                                 onTaskDelete = onTaskDelete,
                                 onShowDeleteDialog = onShowDeleteDialog,
                                 onShowToast = { message -> showSnackbar(message) },
-                                onNavigateToSubtasks = onNavigateToSubtasks,
                                 onReminderClick = { taskForReminder = it }
                             )
                         }

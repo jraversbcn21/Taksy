@@ -50,7 +50,7 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 `TaskRepository` and `CategoryRepository` handle their respective entity types. Reminder scheduling is delegated to `ReminderScheduler` (AlarmManager-based).
 
 ### ViewModels
-- **`TaskViewModel`** — central ViewModel (extends `AndroidViewModel`); all task/subtask/reminder mutations go through here. Uses `flatMapLatest` to reactively switch the task list query when the filter changes. Includes quick reminder support (`setQuickReminder`, `deleteReminderForTask`). The `QuickReminderDialog` includes both a `DatePicker` and `TimePicker` so reminders can be set for any future date+time.
+- **`TaskViewModel`** — central ViewModel (extends `AndroidViewModel`); all task/subtask/reminder mutations go through here. Uses `flatMapLatest` to reactively switch the task list query when the filter changes. Includes quick reminder support (`setQuickReminder`, `deleteReminderForTask`). The `QuickReminderDialog` includes both a `DatePicker` and `TimePicker` so reminders can be set for any future date+time. Exposes `searchAllTasks(query)` for global search across all categories.
 - **`CategoryViewModel`** — category CRUD operations.
 - **`ThemeViewModel`** — singleton for dark mode and language; persists to SharedPreferences (`"theme_pref"` / `"language_pref"`).
 - **`SplashViewModel`** — controls the splash animation.
@@ -104,13 +104,17 @@ Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true` to 
 
 When modifying Room entities, always add a migration in `AppDatabase.kt` and increment the version. The current version is **8**. Never use `fallbackToDestructiveMigration` in production builds.
 
+## Recently Completed
+
+- **Swipe-to-delete** — implemented on both tasks (`TaskListItem`) and subtasks (`SubtaskItem`) using Material3 `SwipeToDismissBox` (end-to-start only). Tasks trigger a confirmation dialog; subtasks delete directly. Replaced the previous manual `detectDragGestures` implementation in tasks, and removed the visible delete `IconButton` from subtasks.
+- **Global search** — search icon in `CategoryListScreen` TopAppBar opens a search field (auto-focused) that queries `TaskDao.searchAllTasks()` across all categories. Results show task title, due date with urgency colors, and category name. Tapping a result navigates to `task_detail/{taskId}`.
+- **UI cleanup** — removed redundant creation date (`fechaCreacion`) from task list items (only due date shown now); removed non-functional info icon from task items and cleaned up `onNavigateToSubtasks` parameter from the entire call chain.
+
 ## Pending / Future Work
 
-- **Unit tests** — no tests exist yet; add tests for `BackupManager` (round-trip JSON), `TaskViewModel` (auto-complete logic), and repositories
+- **Task priority levels** — add priority field to Task entity (requires DB migration v9)
 - **Backup: reschedule reminders on import** — after importing, active reminders should be rescheduled via `ReminderScheduler` so alarms fire correctly on the new device
 - **Backup: error handling for malformed JSON** — add more granular user feedback for parse errors
-- **Swipe-to-delete** on tasks and subtasks for better UX
-- **Task priority levels** — add priority field to Task entity (requires DB migration v9)
-- **Search across all categories** — global task search from the category list screen
+- **Unit tests** — no tests exist yet; add tests for `BackupManager` (round-trip JSON), `TaskViewModel` (auto-complete logic), and repositories
 - **Widget** — home screen widget showing today's pending tasks
 - **Deprecation cleanup** — replace `Icons.Default.ArrowBack` with `Icons.AutoMirrored.Filled.ArrowBack` and other deprecated API usages flagged by the compiler
