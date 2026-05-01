@@ -30,6 +30,7 @@ import com.example.taksy.R
 import com.example.taksy.data.Category
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
+import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.ui.components.DeleteTaskDialog
 import com.example.taksy.ui.components.QuickReminderDialog
 import com.example.taksy.ui.components.TaskListItem
@@ -50,13 +51,14 @@ fun TasksByCategoryScreen(
     onTaskClick: (Task) -> Unit = {},
     onTaskToggle: (Task) -> Unit = {},
     onTaskDelete: (Task) -> Unit = {},
-    onAddTask: (String, Date?) -> Unit = { _, _ -> },
+    onAddTask: (String, Date?, TaskPrioridad) -> Unit = { _, _, _ -> },
     showToast: (String) -> Unit = {},
     onShowDeleteDialog: (Task) -> Unit = {}, // Nueva función para mostrar diálogo de borrado
     modifier: Modifier = Modifier
 ) {
     var showInlineInput by remember { mutableStateOf(false) }
     var newTaskTitle by remember { mutableStateOf("") }
+    var selectedPriority by remember { mutableStateOf(TaskPrioridad.NINGUNA) }
     var searchQuery by remember { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
     var taskForReminder by remember { mutableStateOf<Task?>(null) }
@@ -148,17 +150,19 @@ fun TasksByCategoryScreen(
                 InlineTaskInput(
                     taskTitle = newTaskTitle,
                     onTaskTitleChange = { newTaskTitle = it },
+                    selectedPriority = selectedPriority,
+                    onPriorityChange = { selectedPriority = it },
                     onAddTask = { title ->
                         if (title.isNotBlank()) {
-                            // Añadir la tarea con fecha actual y categoría
                             val currentDate = java.util.Date()
-                            onAddTask(title.trim(), currentDate)
-                            newTaskTitle = "" // Limpiar el campo pero mantener el input visible
-                            // No cambiar showInlineInput = false para mantener el input activo
+                            onAddTask(title.trim(), currentDate, selectedPriority)
+                            newTaskTitle = ""
+                            selectedPriority = TaskPrioridad.NINGUNA
                         }
                     },
                     onCancel = {
                         newTaskTitle = ""
+                        selectedPriority = TaskPrioridad.NINGUNA
                         showInlineInput = false
                     },
                     focusRequester = focusRequester
@@ -232,13 +236,12 @@ fun TasksByCategoryScreen(
                 
                 // Botón flotante para añadir tarea
                 FloatingActionButton(
-                    onClick = { 
+                    onClick = {
                         if (showInlineInput && newTaskTitle.isNotBlank()) {
-                            // Si hay texto en el input, añadir la tarea
-                            onAddTask(newTaskTitle.trim(), null)
-                            newTaskTitle = "" // Limpiar el campo pero mantener el input visible
+                            onAddTask(newTaskTitle.trim(), null, selectedPriority)
+                            newTaskTitle = ""
+                            selectedPriority = TaskPrioridad.NINGUNA
                         } else {
-                            // Si no hay input visible o está vacío, mostrar el input
                             showInlineInput = true
                         }
                     },
@@ -286,65 +289,121 @@ fun TasksByCategoryScreen(
 private fun InlineTaskInput(
     taskTitle: String,
     onTaskTitleChange: (String) -> Unit,
+    selectedPriority: TaskPrioridad,
+    onPriorityChange: (TaskPrioridad) -> Unit,
     onAddTask: (String) -> Unit,
     onCancel: () -> Unit,
     focusRequester: FocusRequester
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RadioButton(
+                selected = false,
+                onClick = { },
+                enabled = false,
+                colors = RadioButtonDefaults.colors(
+                    unselectedColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                )
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            BasicTextField(
+                value = taskTitle,
+                onValueChange = onTaskTitleChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(focusRequester),
+                singleLine = true,
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                textStyle = TextStyle(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = MaterialTheme.typography.bodyLarge.fontSize
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        if (taskTitle.isNotBlank()) {
+                            onAddTask(taskTitle.trim())
+                        }
+                    }
+                ),
+                decorationBox = { innerTextField ->
+                    if (taskTitle.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.add_task),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                    innerTextField()
+                }
+            )
+
+            if (taskTitle.isNotBlank()) {
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(onClick = onCancel) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        }
+
+        // Priority selector row
+        PrioritySelector(
+            selectedPriority = selectedPriority,
+            onPriorityChange = onPriorityChange,
+            modifier = Modifier.padding(start = 48.dp, top = 4.dp)
+        )
+    }
+}
+
+@Composable
+private fun PrioritySelector(
+    selectedPriority: TaskPrioridad,
+    onPriorityChange: (TaskPrioridad) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val priorities = listOf(
+        TaskPrioridad.NINGUNA to Triple(R.string.priority_none, Color.Gray, MaterialTheme.colorScheme.outline),
+        TaskPrioridad.BAJA to Triple(R.string.priority_low, Color(0xFF4CAF50), Color(0xFF4CAF50)),
+        TaskPrioridad.MEDIA to Triple(R.string.priority_medium, Color(0xFFFF9800), Color(0xFFFF9800)),
+        TaskPrioridad.ALTA to Triple(R.string.priority_high, Color(0xFFE53935), Color(0xFFE53935))
+    )
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Radio button (vacío, como en la imagen)
-        RadioButton(
-            selected = false,
-            onClick = { /* No hacer nada */ },
-            enabled = false,
-            colors = RadioButtonDefaults.colors(
-                unselectedColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-            )
-        )
-        
-        Spacer(modifier = Modifier.width(12.dp))
-        
-        // Campo de texto sin borde
-        BasicTextField(
-            value = taskTitle,
-            onValueChange = onTaskTitleChange,
-            modifier = Modifier
-                .weight(1f)
-                .focusRequester(focusRequester),
-            singleLine = true,
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-            textStyle = TextStyle(
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = MaterialTheme.typography.bodyLarge.fontSize
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    if (taskTitle.isNotBlank()) {
-                        onAddTask(taskTitle.trim())
-                    }
-                }
-            ),
-            decorationBox = { innerTextField ->
-                if (taskTitle.isEmpty()) {
+        priorities.forEach { (priority, triple) ->
+            val (labelRes, _, accentColor) = triple
+            val isSelected = selectedPriority == priority
+
+            FilterChip(
+                selected = isSelected,
+                onClick = { onPriorityChange(priority) },
+                label = {
                     Text(
-                        text = stringResource(R.string.add_task),
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        text = stringResource(labelRes),
+                        style = MaterialTheme.typography.labelSmall
                     )
-                }
-                innerTextField()
-            }
-        )
-        
-        // Botón de cancelar
-        if (taskTitle.isNotBlank()) {
-            Spacer(modifier = Modifier.width(8.dp))
-            TextButton(onClick = onCancel) {
-                Text(stringResource(R.string.cancel))
-            }
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = accentColor.copy(alpha = 0.15f),
+                    selectedLabelColor = accentColor
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = isSelected,
+                    borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    selectedBorderColor = accentColor
+                ),
+                modifier = Modifier.height(28.dp)
+            )
         }
     }
 }

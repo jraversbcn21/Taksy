@@ -1,11 +1,13 @@
 package com.example.taksy.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -29,6 +31,7 @@ import com.example.taksy.R
 import com.example.taksy.data.Category
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
+import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.ui.components.CategoryItem
 import com.example.taksy.ui.components.HamburgerMenu
 import com.example.taksy.ui.components.Toast
@@ -318,15 +321,31 @@ private fun SearchResultItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = task.titulo,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (isCompleted)
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                    else
-                        MaterialTheme.colorScheme.onSurface,
-                    textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (task.prioridad != TaskPrioridad.NINGUNA && !isCompleted) {
+                        val priorityColor = when (task.prioridad) {
+                            TaskPrioridad.ALTA -> Color(0xFFE53935)
+                            TaskPrioridad.MEDIA -> Color(0xFFFF9800)
+                            TaskPrioridad.BAJA -> Color(0xFF4CAF50)
+                            else -> Color.Transparent
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(priorityColor, CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+                    Text(
+                        text = task.titulo,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (isCompleted)
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        else
+                            MaterialTheme.colorScheme.onSurface,
+                        textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                    )
+                }
 
                 // Fecha de vencimiento
                 if (!isCompleted && task.fechaVencimiento != null) {

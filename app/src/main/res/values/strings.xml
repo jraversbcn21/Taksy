@@ -196,6 +196,13 @@
     <string name="reminder_no_tasks">¡Excelente! No tienes tareas pendientes. ¿Por qué no añades una nueva tarea?</string>
     <string name="reminder_generic_message">¡Es hora de revisar tu aplicación de tareas!</string>
     
+    <!-- Prioridad -->
+    <string name="priority">Prioridad</string>
+    <string name="priority_none">Sin prioridad</string>
+    <string name="priority_low">Baja</string>
+    <string name="priority_medium">Media</string>
+    <string name="priority_high">Alta</string>
+
     <!-- Búsqueda -->
     <string name="search_tasks">Buscar tareas</string>
     <string name="no_search_results">No se encontraron resultados</string>
@@ -250,5 +257,12 @@
     <string name="backup_confirm_import_title">Confirmar importación</string>
     <string name="backup_confirm_import_message">Se reemplazarán todos los datos actuales con los del archivo seleccionado. ¿Deseas continuar?</string>
     <string name="backup_processing">Procesando…</string>
+    <string name="backup_error_invalid_json">El archivo no es un JSON válido</string>
+    <string name="backup_error_missing_section">Falta la sección requerida: %s</string>
+    <string name="backup_error_invalid_category">Error en la categoría %s: datos incompletos o inválidos</string>
+    <string name="backup_error_invalid_task">Error en la tarea %s: datos incompletos o inválidos</string>
+    <string name="backup_error_invalid_subtask">Error en la subtarea %s: datos incompletos o inválidos</string>
+    <string name="backup_error_invalid_reminder">Error en el recordatorio %s: datos incompletos o inválidos</string>
+    <string name="backup_error_invalid_date">Formato de fecha inválido: %s</string>
     <string name="confirm">Confirmar</string>
 </resources>

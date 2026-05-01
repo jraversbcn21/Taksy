@@ -187,6 +187,13 @@
     <string name="reminder_no_tasks">Great! You have no pending tasks. Why not add a new task?</string>
     <string name="reminder_generic_message">Time to review your task app!</string>
     
+    <!-- Priority -->
+    <string name="priority">Priority</string>
+    <string name="priority_none">No priority</string>
+    <string name="priority_low">Low</string>
+    <string name="priority_medium">Medium</string>
+    <string name="priority_high">High</string>
+
     <!-- Search -->
     <string name="search_tasks">Search tasks</string>
     <string name="no_search_results">No results found</string>
@@ -241,5 +248,12 @@
     <string name="backup_confirm_import_title">Confirm import</string>
     <string name="backup_confirm_import_message">All current data will be replaced with the selected file. Do you want to continue?</string>
     <string name="backup_processing">Processing…</string>
+    <string name="backup_error_invalid_json">The file is not valid JSON</string>
+    <string name="backup_error_missing_section">Missing required section: %s</string>
+    <string name="backup_error_invalid_category">Error in category %s: incomplete or invalid data</string>
+    <string name="backup_error_invalid_task">Error in task %s: incomplete or invalid data</string>
+    <string name="backup_error_invalid_subtask">Error in subtask %s: incomplete or invalid data</string>
+    <string name="backup_error_invalid_reminder">Error in reminder %s: incomplete or invalid data</string>
+    <string name="backup_error_invalid_date">Invalid date format: %s</string>
     <string name="confirm">Confirm</string>
 </resources>

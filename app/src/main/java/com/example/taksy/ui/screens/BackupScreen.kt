@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.taksy.R
+import com.example.taksy.utils.BackupManager
 import com.example.taksy.viewmodel.BackupState
 import com.example.taksy.viewmodel.BackupViewModel
 import java.text.SimpleDateFormat
@@ -73,6 +74,26 @@ fun BackupScreen(
                         state.categories, state.tasks, state.subtasks, state.reminders
                     )
                 )
+                backupViewModel.resetState()
+            }
+            is BackupState.ImportError -> {
+                val msg = when (state.errorType) {
+                    BackupManager.ImportErrorType.INVALID_JSON ->
+                        context.getString(R.string.backup_error_invalid_json)
+                    BackupManager.ImportErrorType.MISSING_SECTION ->
+                        context.getString(R.string.backup_error_missing_section, state.detail ?: "")
+                    BackupManager.ImportErrorType.INVALID_CATEGORY ->
+                        context.getString(R.string.backup_error_invalid_category, state.detail ?: "")
+                    BackupManager.ImportErrorType.INVALID_TASK ->
+                        context.getString(R.string.backup_error_invalid_task, state.detail ?: "")
+                    BackupManager.ImportErrorType.INVALID_SUBTASK ->
+                        context.getString(R.string.backup_error_invalid_subtask, state.detail ?: "")
+                    BackupManager.ImportErrorType.INVALID_REMINDER ->
+                        context.getString(R.string.backup_error_invalid_reminder, state.detail ?: "")
+                    BackupManager.ImportErrorType.INVALID_DATE ->
+                        context.getString(R.string.backup_error_invalid_date, state.detail ?: "")
+                }
+                snackbarHostState.showSnackbar(msg)
                 backupViewModel.resetState()
             }
             is BackupState.Error -> {

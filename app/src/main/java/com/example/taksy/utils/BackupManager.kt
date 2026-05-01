@@ -1,6 +1,12 @@
 package com.example.taksy.utils
 
-import com.example.taksy.data.*
+import com.example.taksy.data.Category
+import com.example.taksy.data.Reminder
+import com.example.taksy.data.Subtask
+import com.example.taksy.data.Task
+import com.example.taksy.data.TaskEstado
+import com.example.taksy.data.TaskPrioridad
+import com.example.taksy.data.TipoRecordatorio
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -11,6 +17,21 @@ object BackupManager {
 
     private const val BACKUP_VERSION = 1
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.US)
+
+    enum class ImportErrorType {
+        INVALID_JSON,
+        MISSING_SECTION,
+        INVALID_CATEGORY,
+        INVALID_TASK,
+        INVALID_SUBTASK,
+        INVALID_REMINDER,
+        INVALID_DATE
+    }
+
+    class BackupImportException(
+        val errorType: ImportErrorType,
+        val detail: String? = null
+    ) : Exception("$errorType${detail?.let { ": $it" } ?: ""}")
 
     data class BackupData(
         val categories: List<Category>,
@@ -46,6 +67,7 @@ object BackupManager {
                     put("fechaVencimiento", t.fechaVencimiento?.let { dateFormat.format(it) })
                     put("categoriaId", t.categoriaId ?: JSONObject.NULL)
                     put("estado", t.estado.name)
+                    put("prioridad", t.prioridad.name)
                 })
             }
         })
@@ -80,72 +102,119 @@ object BackupManager {
     }
 
     fun importFromJson(json: String): BackupData {
-        val root = JSONObject(json)
-
-        val categories = mutableListOf<Category>()
-        val categoriesArray = root.getJSONArray("categories")
-        for (i in 0 until categoriesArray.length()) {
-            val c = categoriesArray.getJSONObject(i)
-            categories.add(
-                Category(
-                    id = c.getLong("id"),
-                    nombre = c.getString("nombre"),
-                    color = c.getString("color"),
-                    icono = c.optString("icono", "label"),
-                    orden = c.optInt("orden", 0)
-                )
-            )
+        val root = try {
+            JSONObject(json)
+        } catch (_: Exception) {
+            throw BackupImportException(ImportErrorType.INVALID_JSON)
         }
 
-        val tasks = mutableListOf<Task>()
-        val tasksArray = root.getJSONArray("tasks")
-        for (i in 0 until tasksArray.length()) {
-            val t = tasksArray.getJSONObject(i)
-            tasks.add(
-                Task(
-                    id = t.getLong("id"),
-                    titulo = t.getString("titulo"),
-                    fechaCreacion = dateFormat.parse(t.getString("fechaCreacion")) ?: Date(),
-                    fechaVencimiento = if (t.isNull("fechaVencimiento")) null
-                        else dateFormat.parse(t.getString("fechaVencimiento")),
-                    categoriaId = if (t.isNull("categoriaId")) null else t.getLong("categoriaId"),
-                    estado = TaskEstado.valueOf(t.getString("estado"))
-                )
-            )
+        val requiredSections = listOf("categories", "tasks", "subtasks", "reminders")
+        for (section in requiredSections) {
+            if (!root.has(section)) {
+                throw BackupImportException(ImportErrorType.MISSING_SECTION, section)
+            }
         }
 
-        val subtasks = mutableListOf<Subtask>()
-        val subtasksArray = root.getJSONArray("subtasks")
-        for (i in 0 until subtasksArray.length()) {
-            val s = subtasksArray.getJSONObject(i)
-            subtasks.add(
-                Subtask(
-                    id = s.getLong("id"),
-                    taskId = s.getLong("taskId"),
-                    titulo = s.getString("titulo"),
-                    estado = TaskEstado.valueOf(s.getString("estado"))
-                )
-            )
-        }
-
-        val reminders = mutableListOf<Reminder>()
-        val remindersArray = root.getJSONArray("reminders")
-        for (i in 0 until remindersArray.length()) {
-            val r = remindersArray.getJSONObject(i)
-            reminders.add(
-                Reminder(
-                    id = r.getLong("id"),
-                    taskId = r.getLong("taskId"),
-                    titulo = r.getString("titulo"),
-                    descripcion = if (r.isNull("descripcion")) null else r.getString("descripcion"),
-                    fechaRecordatorio = dateFormat.parse(r.getString("fechaRecordatorio")) ?: Date(),
-                    activo = r.getBoolean("activo"),
-                    tipoRecordatorio = TipoRecordatorio.valueOf(r.getString("tipoRecordatorio")),
-                    fechaCreacion = dateFormat.parse(r.getString("fechaCreacion")) ?: Date()
-                )
-            )
-        }
+        val categories = parseCategories(root.getJSONArray("categories"))
+        val tasks = parseTasks(root.getJSONArray("tasks"))
+        val subtasks = parseSubtasks(root.getJSONArray("subtasks"))
+        val reminders = parseReminders(root.getJSONArray("reminders"))
 
         return BackupData(categories, tasks, subtasks, reminders)
+    }
+
+    private fun parseCategories(array: JSONArray): List<Category> {
+        val result = mutableListOf<Category>()
+        for (i in 0 until array.length()) {
+            try {
+                val c = array.getJSONObject(i)
+                result.add(
+                    Category(
+                        id = c.getLong("id"),
+                        nombre = c.getString("nombre"),
+                        color = c.getString("color"),
+                        icono = c.optString("icono", "label"),
+                        orden = c.optInt("orden", 0)
+                    )
+                )
+            } catch (_: Exception) {
+                throw BackupImportException(ImportErrorType.INVALID_CATEGORY, "#${i + 1}")
+            }
+        }
+        return result
+    }
+
+    private fun parseTasks(array: JSONArray): List<Task> {
+        val result = mutableListOf<Task>()
+        for (i in 0 until array.length()) {
+            try {
+                val t = array.getJSONObject(i)
+                val titulo = t.getString("titulo")
+                val fechaCreacionStr = t.getString("fechaCreacion")
+                val fechaCreacion = dateFormat.parse(fechaCreacionStr)
+                    ?: throw BackupImportException(ImportErrorType.INVALID_DATE, "fechaCreacion: $fechaCreacionStr")
+                result.add(
+                    Task(
+                        id = t.getLong("id"),
+                        titulo = titulo,
+                        fechaCreacion = fechaCreacion,
+                        fechaVencimiento = if (t.isNull("fechaVencimiento")) null
+                            else dateFormat.parse(t.getString("fechaVencimiento")),
+                        categoriaId = if (t.isNull("categoriaId")) null else t.getLong("categoriaId"),
+                        estado = TaskEstado.valueOf(t.getString("estado")),
+                        prioridad = try { TaskPrioridad.valueOf(t.optString("prioridad", "NINGUNA")) } catch (_: Exception) { TaskPrioridad.NINGUNA }
+                    )
+                )
+            } catch (e: BackupImportException) {
+                throw e
+            } catch (_: Exception) {
+                throw BackupImportException(ImportErrorType.INVALID_TASK, "#${i + 1}")
+            }
+        }
+        return result
+    }
+
+    private fun parseSubtasks(array: JSONArray): List<Subtask> {
+        val result = mutableListOf<Subtask>()
+        for (i in 0 until array.length()) {
+            try {
+                val s = array.getJSONObject(i)
+                result.add(
+                    Subtask(
+                        id = s.getLong("id"),
+                        taskId = s.getLong("taskId"),
+                        titulo = s.getString("titulo"),
+                        estado = TaskEstado.valueOf(s.getString("estado"))
+                    )
+                )
+            } catch (_: Exception) {
+                throw BackupImportException(ImportErrorType.INVALID_SUBTASK, "#${i + 1}")
+            }
+        }
+        return result
+    }
+
+    private fun parseReminders(array: JSONArray): List<Reminder> {
+        val result = mutableListOf<Reminder>()
+        for (i in 0 until array.length()) {
+            try {
+                val r = array.getJSONObject(i)
+                result.add(
+                    Reminder(
+                        id = r.getLong("id"),
+                        taskId = r.getLong("taskId"),
+                        titulo = r.getString("titulo"),
+                        descripcion = if (r.isNull("descripcion")) null else r.getString("descripcion"),
+                        fechaRecordatorio = dateFormat.parse(r.getString("fechaRecordatorio")) ?: throw Exception(),
+                        activo = r.getBoolean("activo"),
+                        tipoRecordatorio = TipoRecordatorio.valueOf(r.getString("tipoRecordatorio")),
+                        fechaCreacion = dateFormat.parse(r.getString("fechaCreacion")) ?: throw Exception()
+                    )
+                )
+            } catch (_: Exception) {
+                throw BackupImportException(ImportErrorType.INVALID_REMINDER, "#${i + 1}")
+            }
+        }
+        return result
     }
 }

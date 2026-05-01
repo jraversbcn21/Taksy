@@ -13,7 +13,7 @@ import android.content.Context
  */
 @Database(
     entities = [Task::class, Subtask::class, Category::class, Reminder::class],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -157,12 +157,19 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // Agregar columna orden a la tabla categories
                 database.execSQL("ALTER TABLE categories ADD COLUMN orden INTEGER NOT NULL DEFAULT 0")
-                
+
                 // Actualizar el orden de las categorías existentes
                 database.execSQL("UPDATE categories SET orden = id WHERE orden = 0")
             }
         }
-        
+
+        // Migración de la versión 8 a la 9 - Agregar prioridad a tareas
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE tasks ADD COLUMN prioridad TEXT NOT NULL DEFAULT 'NINGUNA'")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -177,7 +184,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_4_5,
                     MIGRATION_5_6,
                     MIGRATION_6_7,
-                    MIGRATION_7_8
+                    MIGRATION_7_8,
+                    MIGRATION_8_9
                 )
                 .build()
                 INSTANCE = instance

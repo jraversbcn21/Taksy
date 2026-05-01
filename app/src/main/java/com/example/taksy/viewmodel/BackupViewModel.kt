@@ -47,7 +47,6 @@ class BackupViewModel @Inject constructor(
             try {
                 val data = BackupManager.importFromJson(json)
 
-                // Clear existing data in reverse dependency order
                 reminderDao.deleteAllReminders()
                 subtaskDao.deleteAllSubtasks()
                 taskDao.deleteAllTasks()
@@ -64,6 +63,8 @@ class BackupViewModel @Inject constructor(
                     subtasks = data.subtasks.size,
                     reminders = data.reminders.size
                 )
+            } catch (e: BackupManager.BackupImportException) {
+                _backupState.value = BackupState.ImportError(e.errorType, e.detail)
             } catch (e: Exception) {
                 _backupState.value = BackupState.Error(e.message ?: "Import error")
             }
@@ -84,6 +85,10 @@ sealed class BackupState {
         val tasks: Int,
         val subtasks: Int,
         val reminders: Int
+    ) : BackupState()
+    data class ImportError(
+        val errorType: BackupManager.ImportErrorType,
+        val detail: String?
     ) : BackupState()
     data class Error(val message: String) : BackupState()
 }

@@ -22,6 +22,7 @@ import com.example.taksy.R
 import com.example.taksy.data.Category
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
+import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.utils.DateUtils
 import com.example.taksy.utils.DueDateStatus
 
@@ -125,17 +126,35 @@ fun TaskListItem(
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {
-                        // Titulo de la tarea
-                        Text(
-                            text = task.titulo,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = when {
-                                isFullyCompleted -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                isCompleted -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                else -> MaterialTheme.colorScheme.onSurface
-                            },
-                            textDecoration = if (isFullyCompleted) TextDecoration.LineThrough else TextDecoration.None
-                        )
+                        // Titulo con indicador de prioridad
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (task.prioridad != TaskPrioridad.NINGUNA && !isFullyCompleted) {
+                                val priorityColor = when (task.prioridad) {
+                                    TaskPrioridad.ALTA -> Color(0xFFE53935)
+                                    TaskPrioridad.MEDIA -> Color(0xFFFF9800)
+                                    TaskPrioridad.BAJA -> Color(0xFF4CAF50)
+                                    else -> Color.Transparent
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .background(priorityColor, CircleShape)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+                            Text(
+                                text = task.titulo,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = when {
+                                    isFullyCompleted -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    isCompleted -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    else -> MaterialTheme.colorScheme.onSurface
+                                },
+                                textDecoration = if (isFullyCompleted) TextDecoration.LineThrough else TextDecoration.None
+                            )
+                        }
 
                         // Fecha de vencimiento (si existe y la tarea no esta completada)
                         if (!isCompleted && task.fechaVencimiento != null) {

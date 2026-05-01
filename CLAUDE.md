@@ -33,13 +33,13 @@ ViewModels (TaskViewModel, ThemeViewModel, SplashViewModel, BackupViewModel)
   ↓ calls suspend funs / collects Flow
 Repository (TaskRepository, CategoryRepository)
   ↓ delegates to DAOs
-Room Database (AppDatabase, v8)
+Room Database (AppDatabase, v9)
 ```
 
 ### Data Layer
-- **Entities:** `Task`, `Subtask`, `Category`, `Reminder`
+- **Entities:** `Task` (with `TaskPrioridad` enum: NINGUNA/BAJA/MEDIA/ALTA), `Subtask`, `Category`, `Reminder`
 - **DAOs:** `TaskDao`, `SubtaskDao`, `CategoryDao`, `ReminderDao` — each has `getAllXxxSync()` and `deleteAllXxx()` methods for backup operations
-- **AppDatabase** uses TypeConverters for `Date` serialization and has 8 tracked migrations
+- **AppDatabase** uses TypeConverters for `Date` serialization and has 9 tracked migrations
 
 Key business rule: when all subtasks of a task are completed, the parent task auto-completes (logic lives in `TaskViewModel`).
 
@@ -78,8 +78,8 @@ Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true` to 
 - **Notification channels:** `"taksy_reminders"` (task reminders) and `"daily_reminders"` (daily summaries), both IMPORTANCE_HIGH.
 
 ### Backup System
-- **`BackupManager`** (`utils/`) — stateless utility that serializes/deserializes all entities to/from JSON using `org.json` (no external dependencies). Format includes `backupVersion`, `exportDate`, and arrays for categories, tasks, subtasks, reminders.
-- **`BackupScreen`** — export creates a timestamped JSON file via SAF (`ActivityResultContracts.CreateDocument`); import reads via SAF (`ActivityResultContracts.OpenDocument`) with a confirmation dialog warning that all data will be replaced.
+- **`BackupManager`** (`utils/`) — stateless utility that serializes/deserializes all entities to/from JSON using `org.json` (no external dependencies). Format includes `backupVersion`, `exportDate`, and arrays for categories, tasks, subtasks, reminders. Uses `BackupImportException` with `ImportErrorType` enum (INVALID_JSON, MISSING_SECTION, INVALID_CATEGORY/TASK/SUBTASK/REMINDER, INVALID_DATE) for granular error reporting on malformed files — errors identify the exact record index that failed.
+- **`BackupScreen`** — export creates a timestamped JSON file via SAF (`ActivityResultContracts.CreateDocument`); import reads via SAF (`ActivityResultContracts.OpenDocument`) with a confirmation dialog warning that all data will be replaced. Import errors show localized messages via `BackupState.ImportError`.
 - Import clears all tables (reminders → subtasks → tasks → categories) then inserts from the JSON preserving original IDs.
 
 ### Splash Screen
@@ -102,19 +102,19 @@ Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true` to 
 
 ## Adding Database Migrations
 
-When modifying Room entities, always add a migration in `AppDatabase.kt` and increment the version. The current version is **8**. Never use `fallbackToDestructiveMigration` in production builds.
+When modifying Room entities, always add a migration in `AppDatabase.kt` and increment the version. The current version is **9**. Never use `fallbackToDestructiveMigration` in production builds.
 
 ## Recently Completed
 
 - **Swipe-to-delete** — implemented on both tasks (`TaskListItem`) and subtasks (`SubtaskItem`) using Material3 `SwipeToDismissBox` (end-to-start only). Tasks trigger a confirmation dialog; subtasks delete directly. Replaced the previous manual `detectDragGestures` implementation in tasks, and removed the visible delete `IconButton` from subtasks.
 - **Global search** — search icon in `CategoryListScreen` TopAppBar opens a search field (auto-focused) that queries `TaskDao.searchAllTasks()` across all categories. Results show task title, due date with urgency colors, and category name. Tapping a result navigates to `task_detail/{taskId}`.
 - **UI cleanup** — removed redundant creation date (`fechaCreacion`) from task list items (only due date shown now); removed non-functional info icon from task items and cleaned up `onNavigateToSubtasks` parameter from the entire call chain.
+- **Task priority levels** — added `TaskPrioridad` enum (NINGUNA/BAJA/MEDIA/ALTA) and `prioridad` field to Task entity (DB migration v8→v9). Tasks are sorted by priority (ALTA first) in all DAO queries. Priority selector (FilterChip row) shown in inline task input. Visual indicator: colored dot (red/orange/green) next to task title in list items and search results. BackupManager serializes priority with backward-compatible import (`optString` with NINGUNA default).
+- **Backup error handling** — `BackupManager.importFromJson()` now validates JSON structure before parsing: checks valid JSON, required sections, and parses each entity type in dedicated methods with per-record error catching. `BackupImportException` carries `ImportErrorType` + detail (record index). `BackupViewModel` exposes `BackupState.ImportError` separately from generic errors. `BackupScreen` maps each error type to a localized user-friendly message (ES/EN).
 
 ## Pending / Future Work
 
-- **Task priority levels** — add priority field to Task entity (requires DB migration v9)
 - **Backup: reschedule reminders on import** — after importing, active reminders should be rescheduled via `ReminderScheduler` so alarms fire correctly on the new device
-- **Backup: error handling for malformed JSON** — add more granular user feedback for parse errors
 - **Unit tests** — no tests exist yet; add tests for `BackupManager` (round-trip JSON), `TaskViewModel` (auto-complete logic), and repositories
 - **Widget** — home screen widget showing today's pending tasks
 - **Deprecation cleanup** — replace `Icons.Default.ArrowBack` with `Icons.AutoMirrored.Filled.ArrowBack` and other deprecated API usages flagged by the compiler

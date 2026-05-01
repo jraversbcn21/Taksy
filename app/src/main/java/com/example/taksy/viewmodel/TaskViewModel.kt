@@ -8,6 +8,7 @@ import com.example.taksy.data.Reminder
 import com.example.taksy.data.Subtask
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
+import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TipoRecordatorio
 import com.example.taksy.repository.TaskFilter
 import com.example.taksy.repository.TaskRepository
@@ -64,15 +65,17 @@ class TaskViewModel @Inject constructor(
     fun searchAllTasks(query: String): Flow<List<Task>> =
         repository.searchAllTasks(query)
 
-    fun addTask(titulo: String) = addTask(titulo, null, null)
+    fun addTask(titulo: String) = addTask(titulo, null, null, TaskPrioridad.NINGUNA)
 
-    fun addTask(titulo: String, fechaVencimiento: Date?) = addTask(titulo, fechaVencimiento, null)
+    fun addTask(titulo: String, fechaVencimiento: Date?) = addTask(titulo, fechaVencimiento, null, TaskPrioridad.NINGUNA)
 
-    fun addTask(titulo: String, fechaVencimiento: Date?, categoriaId: Long?) {
+    fun addTask(titulo: String, fechaVencimiento: Date?, categoriaId: Long?) = addTask(titulo, fechaVencimiento, categoriaId, TaskPrioridad.NINGUNA)
+
+    fun addTask(titulo: String, fechaVencimiento: Date?, categoriaId: Long?, prioridad: TaskPrioridad) {
         if (titulo.isBlank()) return
         viewModelScope.launch {
             runCatching {
-                repository.insertTask(Task(titulo = titulo.trim(), fechaVencimiento = fechaVencimiento, categoriaId = categoriaId))
+                repository.insertTask(Task(titulo = titulo.trim(), fechaVencimiento = fechaVencimiento, categoriaId = categoriaId, prioridad = prioridad))
             }.onFailure { setError(it.message) }
         }
     }
