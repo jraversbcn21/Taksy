@@ -50,11 +50,11 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 `TaskRepository` and `CategoryRepository` handle their respective entity types. Reminder scheduling is delegated to `ReminderScheduler` (AlarmManager-based).
 
 ### ViewModels
-- **`TaskViewModel`** — central ViewModel (extends `AndroidViewModel`); all task/subtask/reminder mutations go through here. Uses `flatMapLatest` to reactively switch the task list query when the filter changes. Includes quick reminder support (`setQuickReminder`, `deleteReminderForTask`). The `QuickReminderDialog` includes both a `DatePicker` and `TimePicker` so reminders can be set for any future date+time. Exposes `searchAllTasks(query)` for global search across all categories.
+- **`TaskViewModel`** — central ViewModel (extends `AndroidViewModel`); all task/subtask/reminder mutations go through here. Uses `flatMapLatest` to reactively switch the task list query when the filter changes. Includes quick reminder support (`setQuickReminder`, `deleteReminderForTask`). The `QuickReminderDialog` includes both a `DatePicker` and `TimePicker` so reminders can be set for any future date+time. Exposes `searchAllTasks(query)` for global search across all categories. Calls `TaskWidgetProvider.refreshAll()` after task mutations to keep the widget in sync.
 - **`CategoryViewModel`** — category CRUD operations.
 - **`ThemeViewModel`** — singleton for dark mode and language; persists to SharedPreferences (`"theme_pref"` / `"language_pref"`).
 - **`SplashViewModel`** — controls the splash animation.
-- **`BackupViewModel`** — export/import all app data as JSON via `BackupManager`. Injects DAOs directly (not repositories) to access sync queries and bulk delete.
+- **`BackupViewModel`** — export/import all app data as JSON via `BackupManager`. Injects `@ApplicationContext` and DAOs directly (not repositories) to access sync queries and bulk delete. After import, reschedules active future reminders via `ReminderScheduler`.
 
 ### Navigation
 NavHost start destination: `"category_list"`. Routes:
@@ -80,7 +80,13 @@ Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true` to 
 ### Backup System
 - **`BackupManager`** (`utils/`) — stateless utility that serializes/deserializes all entities to/from JSON using `org.json` (no external dependencies). Format includes `backupVersion`, `exportDate`, and arrays for categories, tasks, subtasks, reminders. Uses `BackupImportException` with `ImportErrorType` enum (INVALID_JSON, MISSING_SECTION, INVALID_CATEGORY/TASK/SUBTASK/REMINDER, INVALID_DATE) for granular error reporting on malformed files — errors identify the exact record index that failed.
 - **`BackupScreen`** — export creates a timestamped JSON file via SAF (`ActivityResultContracts.CreateDocument`); import reads via SAF (`ActivityResultContracts.OpenDocument`) with a confirmation dialog warning that all data will be replaced. Import errors show localized messages via `BackupState.ImportError`.
-- Import clears all tables (reminders → subtasks → tasks → categories) then inserts from the JSON preserving original IDs.
+- Import clears all tables (reminders → subtasks → tasks → categories) then inserts from the JSON preserving original IDs. After insertion, active future reminders are rescheduled via `ReminderScheduler`.
+
+### Widget
+- **`TaskWidgetProvider`** (`widget/`) — `AppWidgetProvider` that renders a `RemoteViews` list of pending tasks. Updates every 30 minutes (`updatePeriodMillis`). Handles `ACTION_REFRESH` for manual refresh via the header button. Exposes `refreshAll(context)` static method used by `TaskViewModel` to trigger updates on task mutations (add, delete, complete, toggle subtask).
+- **`TaskWidgetService`** / **`TaskWidgetRemoteViewsFactory`** — `RemoteViewsService` that queries `TaskDao.getPendingTasksSync()` (non-suspend, sorted by priority then due date). Each item shows a color-coded priority dot, task title, and due date (red if overdue).
+- Widget layout: header with app name, task count (plurals), and refresh button; `ListView` with empty state. Minimum size 250×180dp, resizable. Tapping header or items opens `MainActivity`.
+- Registered in `AndroidManifest.xml` with `BIND_REMOTEVIEWS` permission on the service.
 
 ### Splash Screen
 - Native Android splash (`Theme.SplashScreen`) uses `splash_icon.xml` — an `InsetDrawable` wrapping `ticksy_icon.png` with 24dp inset so the icon fits inside the system's circular mask.
@@ -106,15 +112,32 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 
 ## Recently Completed
 
-- **Swipe-to-delete** — implemented on both tasks (`TaskListItem`) and subtasks (`SubtaskItem`) using Material3 `SwipeToDismissBox` (end-to-start only). Tasks trigger a confirmation dialog; subtasks delete directly. Replaced the previous manual `detectDragGestures` implementation in tasks, and removed the visible delete `IconButton` from subtasks.
-- **Global search** — search icon in `CategoryListScreen` TopAppBar opens a search field (auto-focused) that queries `TaskDao.searchAllTasks()` across all categories. Results show task title, due date with urgency colors, and category name. Tapping a result navigates to `task_detail/{taskId}`.
-- **UI cleanup** — removed redundant creation date (`fechaCreacion`) from task list items (only due date shown now); removed non-functional info icon from task items and cleaned up `onNavigateToSubtasks` parameter from the entire call chain.
-- **Task priority levels** — added `TaskPrioridad` enum (NINGUNA/BAJA/MEDIA/ALTA) and `prioridad` field to Task entity (DB migration v8→v9). Tasks are sorted by priority (ALTA first) in all DAO queries. Priority selector (FilterChip row) shown in inline task input. Visual indicator: colored dot (red/orange/green) next to task title in list items and search results. BackupManager serializes priority with backward-compatible import (`optString` with NINGUNA default).
-- **Backup error handling** — `BackupManager.importFromJson()` now validates JSON structure before parsing: checks valid JSON, required sections, and parses each entity type in dedicated methods with per-record error catching. `BackupImportException` carries `ImportErrorType` + detail (record index). `BackupViewModel` exposes `BackupState.ImportError` separately from generic errors. `BackupScreen` maps each error type to a localized user-friendly message (ES/EN).
-- **Backup: reschedule reminders on import** — `BackupViewModel.importBackupJson()` now reschedules active future reminders via `ReminderScheduler` after inserting them into the database. Past reminders are skipped.
-- **Deprecation cleanup** — replaced `Icons.Default.ArrowBack/KeyboardArrowLeft/KeyboardArrowRight/List` with `Icons.AutoMirrored.Filled.*` equivalents, `animateItemPlacement()` with `animateItem()`, and `ButtonDefaults.outlinedButtonBorder` with `BorderStroke`.
-- **Widget** — home screen widget (`TaskWidgetProvider`) showing pending tasks sorted by priority. Uses `RemoteViews` with `ListView` via `TaskWidgetService`/`TaskWidgetRemoteViewsFactory`. Shows priority dot (color-coded), task title, and due date (red if overdue). Header shows task count (plurals). Refresh button and auto-refresh on task changes via `TaskWidgetProvider.refreshAll()` called from `TaskViewModel`. Auto-updates every 30 minutes. Tapping opens the app.
+- **Swipe-to-delete** — Material3 `SwipeToDismissBox` on tasks (with confirmation dialog) and subtasks (direct delete).
+- **Global search** — search across all categories from `CategoryListScreen` TopAppBar, results with urgency colors and category name.
+- **UI cleanup** — removed redundant creation date and non-functional info icon from task list items.
+- **Task priority levels** — `TaskPrioridad` enum (NINGUNA/BAJA/MEDIA/ALTA), DB migration v8→v9, priority sorting in all queries, FilterChip selector, colored dot indicators.
+- **Backup error handling** — granular `BackupImportException` with `ImportErrorType` enum, per-record validation, localized error messages (ES/EN).
+- **Backup: reschedule reminders on import** — active future reminders rescheduled via `ReminderScheduler` after import; past reminders skipped.
+- **Deprecation cleanup** — replaced all deprecated Compose APIs: `Icons.AutoMirrored.Filled.*`, `animateItem()`, `BorderStroke`.
+- **Home screen widget** — pending tasks list with priority dots, due dates, task count, refresh button, auto-sync on task changes.
 
 ## Pending / Future Work
 
+### High Priority
 - **Unit tests** — no tests exist yet; add tests for `BackupManager` (round-trip JSON), `TaskViewModel` (auto-complete logic), and repositories
+
+### Medium Priority — Functionality
+- **Task notes/description** — the UI hint exists but the field is not implemented in the Task entity
+- **Drag & drop to reorder tasks** — similar to the existing category reordering
+- **Task archiving** — archive completed tasks instead of only delete
+- **Recurring task dates** — repeat tasks on a schedule (separate from reminder recurrence)
+
+### Medium Priority — Quality
+- **Remove debug logs** — many `android.util.Log.d` calls remain in `ReminderScheduler`, `DailyReminderScreen`, etc.
+- **Widget dark mode** — current widget has hardcoded light colors, should respond to system theme
+- **Widget preview image** — add `android:previewImage` to `widget_task_info.xml` for the widget picker
+
+### Nice to Have
+- **Undo on swipe-to-delete** — Snackbar with "Undo" instead of confirmation dialog for smoother UX
+- **Onboarding flow** — guide new users to create their first category
+- **Statistics/dashboard** — tasks completed per week, most active category, streaks
