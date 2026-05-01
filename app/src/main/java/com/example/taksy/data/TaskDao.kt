@@ -84,6 +84,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks ORDER BY id ASC")
     suspend fun getAllTasksSync(): List<Task>
 
+    @Query("SELECT * FROM tasks WHERE estado = 'PENDIENTE' ORDER BY CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaVencimiento ASC, fechaCreacion DESC")
+    fun getPendingTasksSync(): List<Task>
+
     @Query("DELETE FROM tasks")
     suspend fun deleteAllTasks()
     

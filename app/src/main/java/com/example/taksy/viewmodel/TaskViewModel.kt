@@ -13,6 +13,7 @@ import com.example.taksy.data.TipoRecordatorio
 import com.example.taksy.repository.TaskFilter
 import com.example.taksy.repository.TaskRepository
 import com.example.taksy.service.ReminderScheduler
+import com.example.taksy.widget.TaskWidgetProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -76,6 +77,7 @@ class TaskViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 repository.insertTask(Task(titulo = titulo.trim(), fechaVencimiento = fechaVencimiento, categoriaId = categoriaId, prioridad = prioridad))
+                TaskWidgetProvider.refreshAll(context)
             }.onFailure { setError(it.message) }
         }
     }
@@ -85,7 +87,12 @@ class TaskViewModel @Inject constructor(
     }
 
     fun deleteTask(task: Task) {
-        viewModelScope.launch { runCatching { repository.deleteTask(task) }.onFailure { setError(it.message) } }
+        viewModelScope.launch {
+            runCatching {
+                repository.deleteTask(task)
+                TaskWidgetProvider.refreshAll(context)
+            }.onFailure { setError(it.message) }
+        }
     }
 
     fun toggleTaskStatus(task: Task) {
@@ -97,6 +104,7 @@ class TaskViewModel @Inject constructor(
                     repository.cancelAllRemindersForTask(task.id)
                 }
                 repository.toggleTaskStatus(task)
+                TaskWidgetProvider.refreshAll(context)
             }.onFailure { setError(it.message) }
         }
     }
@@ -107,7 +115,12 @@ class TaskViewModel @Inject constructor(
     }
 
     fun deleteCompletedTasks() {
-        viewModelScope.launch { runCatching { repository.deleteCompletedTasks() }.onFailure { setError(it.message) } }
+        viewModelScope.launch {
+            runCatching {
+                repository.deleteCompletedTasks()
+                TaskWidgetProvider.refreshAll(context)
+            }.onFailure { setError(it.message) }
+        }
     }
 
     suspend fun getTaskById(id: Long): Task? = repository.getTaskById(id)
@@ -142,6 +155,7 @@ class TaskViewModel @Inject constructor(
                     val task = repository.getTaskById(subtask.taskId)
                     if (task != null && task.estado == TaskEstado.PENDIENTE) {
                         repository.updateTask(task.copy(estado = TaskEstado.COMPLETADA))
+                        TaskWidgetProvider.refreshAll(context)
                     }
                 }
             }.onFailure { setError(it.message) }

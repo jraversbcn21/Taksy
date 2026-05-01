@@ -265,4 +265,9 @@
     <string name="backup_error_invalid_reminder">Error en el recordatorio %s: datos incompletos o inválidos</string>
     <string name="backup_error_invalid_date">Formato de fecha inválido: %s</string>
     <string name="confirm">Confirmar</string>
+
+    <!-- Widget -->
+    <string name="widget_name">Ticksy - Tareas pendientes</string>
+    <string name="widget_description">Muestra tus tareas pendientes</string>
+    <string name="widget_refresh">Actualizar</string>
 </resources>
