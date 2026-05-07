@@ -44,17 +44,17 @@ Room Database (AppDatabase, v9)
 Key business rule: when all subtasks of a task are completed, the parent task auto-completes (logic lives in `TaskViewModel`).
 
 ### Dependency Injection (Hilt)
-`DatabaseModule` (`di/`) is the single `@Module` with `@InstallIn(SingletonComponent::class)`. It provides `AppDatabase`, all DAOs, `TaskRepository`, and `CategoryRepository` as singletons. ViewModels use `@HiltViewModel` + `@Inject` constructor — screens obtain them via `hiltViewModel()`, `MainActivity` uses `by viewModels()`.
+`DatabaseModule` (`di/`) is the single `@Module` with `@InstallIn(SingletonComponent::class)`. It provides `AppDatabase`, all DAOs, `TaskRepository`, `CategoryRepository`, and `ReminderSchedulerContract` as singletons. ViewModels use `@HiltViewModel` + `@Inject` constructor — screens obtain them via `hiltViewModel()`, `MainActivity` uses `by viewModels()`.
 
 ### Repository
-`TaskRepository` and `CategoryRepository` handle their respective entity types. Reminder scheduling is delegated to `ReminderScheduler` (AlarmManager-based).
+`TaskRepository` and `CategoryRepository` handle their respective entity types. Reminder scheduling is abstracted via `ReminderSchedulerContract` interface (implemented by `ReminderScheduler`), injected through Hilt.
 
 ### ViewModels
-- **`TaskViewModel`** — central ViewModel (extends `AndroidViewModel`); all task/subtask/reminder mutations go through here. Uses `flatMapLatest` to reactively switch the task list query when the filter changes. Includes quick reminder support (`setQuickReminder`, `deleteReminderForTask`). The `QuickReminderDialog` includes both a `DatePicker` and `TimePicker` so reminders can be set for any future date+time. Exposes `searchAllTasks(query)` for global search across all categories. Calls `TaskWidgetProvider.refreshAll()` after task mutations to keep the widget in sync.
+- **`TaskViewModel`** — central ViewModel (extends `AndroidViewModel`); all task/subtask/reminder mutations go through here. Uses `flatMapLatest` to reactively switch the task list query when the filter changes. Receives `ReminderSchedulerContract` via Hilt injection for testability. Includes quick reminder support (`setQuickReminder`, `deleteReminderForTask`). The `QuickReminderDialog` includes both a `DatePicker` and `TimePicker` so reminders can be set for any future date+time. Exposes `searchAllTasks(query)` for global search across all categories. Calls `TaskWidgetProvider.refreshAll()` after task mutations to keep the widget in sync.
 - **`CategoryViewModel`** — category CRUD operations.
 - **`ThemeViewModel`** — singleton for dark mode and language; persists to SharedPreferences (`"theme_pref"` / `"language_pref"`).
 - **`SplashViewModel`** — controls the splash animation.
-- **`BackupViewModel`** — export/import all app data as JSON via `BackupManager`. Injects `@ApplicationContext` and DAOs directly (not repositories) to access sync queries and bulk delete. After import, reschedules active future reminders via `ReminderScheduler`.
+- **`BackupViewModel`** — export/import all app data as JSON via `BackupManager`. Injects `@ApplicationContext`, DAOs directly (not repositories), and `ReminderSchedulerContract` to access sync queries, bulk delete, and reminder rescheduling after import.
 
 ### Navigation
 NavHost start destination: `"category_list"`. Routes:
@@ -70,9 +70,10 @@ Navigation drawer (hamburger menu) is an Android `DrawerLayout` wrapping a `Comp
 Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true` to prevent stacking multiple destinations. All drawer screen `onBackClick` handlers guard against empty back stack by checking `popBackStack()` return value and falling back to navigating to `category_list`.
 
 ### Background Work
-- `ReminderScheduler` — schedules exact alarms via `AlarmManager.setExactAndAllowWhileIdle()`. Falls back to `setAndAllowWhileIdle()` if exact alarms are not permitted.
-- `ReminderReceiver` — BroadcastReceiver that handles alarm fires, triggers `NotificationService`, and reschedules recurring reminders. Uses `goAsync()` for async DB access. Also reschedules daily reminders on `BOOT_COMPLETED` via `ReminderViewModel.rescheduleFromPrefs()`.
-- `DailyReminderService` — separate BroadcastReceiver (in `services/` package, note plural) for morning/evening daily reminders. Uses `setExactAndAllowWhileIdle()` (not `setRepeating()`) for reliable delivery. Each alarm self-reschedules for the next day after firing. Uses `goAsync()` for async DB access.
+- `ReminderSchedulerContract` — interface defining `scheduleReminder()`, `cancelReminder()`, `cancelAllReminders()`. Implemented by `ReminderScheduler` and provided as singleton via Hilt. Enables unit testing ViewModels with fake schedulers.
+- `ReminderScheduler` — implements `ReminderSchedulerContract`; schedules exact alarms via `AlarmManager.setExactAndAllowWhileIdle()`. Falls back to `setAndAllowWhileIdle()` if exact alarms are not permitted.
+- `ReminderReceiver` — BroadcastReceiver that handles alarm fires, triggers `NotificationService`, and reschedules recurring reminders. Uses `goAsync()` for async DB access. Also reschedules daily reminders on `BOOT_COMPLETED` via `ReminderViewModel.rescheduleFromPrefs()`. Instantiates `ReminderScheduler` directly (not Hilt-managed).
+- `DailyReminderService` — BroadcastReceiver (in `service/` package) for morning/evening daily reminders. Uses `setExactAndAllowWhileIdle()` (not `setRepeating()`) for reliable delivery. Each alarm self-reschedules for the next day after firing. Uses `goAsync()` for async DB access.
 - `ReminderViewModel` — non-Hilt ViewModel for daily reminder scheduling. Persists configuration (enabled, morning/evening hours) to SharedPreferences (`"daily_reminder_prefs"`). Exposes static `scheduleExactAlarm()`, `loadPrefs()`, and `rescheduleFromPrefs()` for use by receivers.
 - Boot receiver (`RECEIVE_BOOT_COMPLETED`) re-schedules both task reminders and daily reminders after device restart.
 - **Notification channels:** `"taksy_reminders"` (task reminders) and `"daily_reminders"` (daily summaries), both IMPORTANCE_HIGH.
@@ -80,7 +81,7 @@ Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true` to 
 ### Backup System
 - **`BackupManager`** (`utils/`) — stateless utility that serializes/deserializes all entities to/from JSON using `org.json` (no external dependencies). Format includes `backupVersion`, `exportDate`, and arrays for categories, tasks, subtasks, reminders. Uses `BackupImportException` with `ImportErrorType` enum (INVALID_JSON, MISSING_SECTION, INVALID_CATEGORY/TASK/SUBTASK/REMINDER, INVALID_DATE) for granular error reporting on malformed files — errors identify the exact record index that failed.
 - **`BackupScreen`** — export creates a timestamped JSON file via SAF (`ActivityResultContracts.CreateDocument`); import reads via SAF (`ActivityResultContracts.OpenDocument`) with a confirmation dialog warning that all data will be replaced. Import errors show localized messages via `BackupState.ImportError`.
-- Import clears all tables (reminders → subtasks → tasks → categories) then inserts from the JSON preserving original IDs. After insertion, active future reminders are rescheduled via `ReminderScheduler`.
+- Import clears all tables (reminders → subtasks → tasks → categories) then inserts from the JSON preserving original IDs. After insertion, active future reminders are rescheduled via `ReminderSchedulerContract`.
 
 ### Widget
 - **`TaskWidgetProvider`** (`widget/`) — `AppWidgetProvider` that renders a `RemoteViews` list of pending tasks. Updates every 30 minutes (`updatePeriodMillis`). Handles `ACTION_REFRESH` for manual refresh via the header button. Exposes `refreshAll(context)` static method used by `TaskViewModel` to trigger updates on task mutations (add, delete, complete, toggle subtask).
@@ -112,32 +113,43 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 
 ## Recently Completed
 
+- **ReminderSchedulerContract interface** — extracted interface from `ReminderScheduler` for testability; injected via Hilt into `TaskViewModel` and `BackupViewModel`. `ReminderReceiver` keeps direct instantiation (no Hilt in BroadcastReceivers).
+- **Unified service package** — moved `DailyReminderService` from `services/` to `service/` (singular). Updated Manifest, imports, and deleted old package.
+- **Fixed FakeDAOs in tests** — added missing `getAllXxxSync()` and `deleteAllXxx()` method stubs to `TaskRepositoryTest` fakes.
 - **Swipe-to-delete** — Material3 `SwipeToDismissBox` on tasks (with confirmation dialog) and subtasks (direct delete).
 - **Global search** — search across all categories from `CategoryListScreen` TopAppBar, results with urgency colors and category name.
 - **UI cleanup** — removed redundant creation date and non-functional info icon from task list items.
 - **Task priority levels** — `TaskPrioridad` enum (NINGUNA/BAJA/MEDIA/ALTA), DB migration v8→v9, priority sorting in all queries, FilterChip selector, colored dot indicators.
 - **Backup error handling** — granular `BackupImportException` with `ImportErrorType` enum, per-record validation, localized error messages (ES/EN).
-- **Backup: reschedule reminders on import** — active future reminders rescheduled via `ReminderScheduler` after import; past reminders skipped.
+- **Backup: reschedule reminders on import** — active future reminders rescheduled via `ReminderSchedulerContract` after import; past reminders skipped.
 - **Deprecation cleanup** — replaced all deprecated Compose APIs: `Icons.AutoMirrored.Filled.*`, `animateItem()`, `BorderStroke`.
 - **Home screen widget** — pending tasks list with priority dots, due dates, task count, refresh button, auto-sync on task changes.
 
-## Pending / Future Work
+## Pending / Future Work — v1.0 Roadmap
 
-### High Priority
-- **Unit tests** — no tests exist yet; add tests for `BackupManager` (round-trip JSON), `TaskViewModel` (auto-complete logic), and repositories
+### Phase 1 — Stability & Quality (next up)
+- **Remove debug logs** — 51 `Log.d`/`Log.w` calls across `ReminderScheduler`, `DailyReminderService`, `DailyReminderScreen`, `TaskDetailScreen`, `LanguageSettingsScreen`, `AddReminderDialog`, `LocaleHelper`, `LanguageAwareContent`, `ReminderViewModel`, `NotificationService`
+- **Move hardcoded strings to resources** — notification channel names/descriptions in `NotificationService` and `DailyReminderService`, frequency text strings
+- **Extract widget hardcoded colors** — move inline colors from `widget_task_list.xml`, `widget_background.xml`, `TaskWidgetService.kt` to `colors.xml` + `values-night/colors.xml`
+- **Unit tests: BackupManager** — round-trip JSON, malformed input, missing sections, all ImportErrorTypes
+- **Unit tests: TaskViewModel** — auto-complete logic, filter switching, search, quick reminders (use fake `ReminderSchedulerContract`)
+- **Unit tests: Repositories** — expand existing `TaskRepositoryTest`, add `CategoryRepository` tests
 
-### Medium Priority — Functionality
-- **Task notes/description** — the UI hint exists but the field is not implemented in the Task entity
-- **Drag & drop to reorder tasks** — similar to the existing category reordering
-- **Task archiving** — archive completed tasks instead of only delete
-- **Recurring task dates** — repeat tasks on a schedule (separate from reminder recurrence)
+### Phase 2 — Core Features (v1.0 release)
+- **Task notes/description** — add `descripcion: String?` to Task entity, migration v9→v10, UI in TaskDetailScreen, backup support
+- **Undo swipe-to-delete** — replace confirmation dialog with Snackbar + "Undo" action
+- **Task archiving** — `archivada: Boolean` field, migration, filtered queries, archive UI
+- **Widget dark mode** — `values-night/` color variants (depends on Phase 1 color extraction)
+- **Widget preview image** — `android:previewImage` in `widget_task_info.xml`
+- **Reduce splash duration** — 5.5s → 2-2.5s
 
-### Medium Priority — Quality
-- **Remove debug logs** — many `android.util.Log.d` calls remain in `ReminderScheduler`, `DailyReminderScreen`, etc.
-- **Widget dark mode** — current widget has hardcoded light colors, should respond to system theme
-- **Widget preview image** — add `android:previewImage` to `widget_task_info.xml` for the widget picker
+### Phase 3 — Advanced Features (v1.1)
+- **Drag & drop to reorder tasks** — reuse `CategoryListScreen` drag pattern, add `orden` field to Task
+- **Recurring task dates** — `TaskRecurrencia` enum, clone task on completion with advanced date
+- **Onboarding flow** — 2-3 screens for first-time users, SharedPreferences flag
+- **Statistics/dashboard** — weekly completions, active categories, productivity streaks
 
-### Nice to Have
-- **Undo on swipe-to-delete** — Snackbar with "Undo" instead of confirmation dialog for smoother UX
-- **Onboarding flow** — guide new users to create their first category
-- **Statistics/dashboard** — tasks completed per week, most active category, streaks
+### Phase 4 — Tech Debt (ongoing)
+- **Consolidate hardcoded Compose colors** — move to `Color.kt` or `MaterialTheme.colorScheme`
+- **Eliminate deprecated LocaleHelper APIs** — replace `config.locale`/`updateConfiguration()` with `createConfigurationContext()` (minSDK 26 supports it)
+- **Evaluate ReminderViewModel Hilt migration** — currently non-Hilt with static companion methods
