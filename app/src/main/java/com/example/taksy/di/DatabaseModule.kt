@@ -8,6 +8,8 @@ import com.example.taksy.data.SubtaskDao
 import com.example.taksy.data.TaskDao
 import com.example.taksy.repository.CategoryRepository
 import com.example.taksy.repository.TaskRepository
+import com.example.taksy.service.ReminderScheduler
+import com.example.taksy.service.ReminderSchedulerContract
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -41,4 +43,9 @@ object DatabaseModule {
     @Singleton
     fun provideCategoryRepository(categoryDao: CategoryDao): CategoryRepository =
         CategoryRepository(categoryDao)
+
+    @Provides
+    @Singleton
+    fun provideReminderScheduler(@ApplicationContext context: Context): ReminderSchedulerContract =
+        ReminderScheduler(context)
 }

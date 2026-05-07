@@ -44,7 +44,7 @@
             
         <!-- BroadcastReceiver para recordatorios diarios -->
         <receiver
-            android:name=".services.DailyReminderService"
+            android:name=".service.DailyReminderService"
             android:exported="false" />
 
         <!-- Widget de tareas pendientes -->

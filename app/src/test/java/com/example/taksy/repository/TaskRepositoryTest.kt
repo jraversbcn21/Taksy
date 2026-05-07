@@ -46,6 +46,11 @@ class TaskRepositoryTest {
         override suspend fun getTasksDueToday(startOfDay: Long, endOfDay: Long): List<Task> = emptyList()
         override suspend fun getTasksDueSoon(now: Long, nextWeek: Long): List<Task> = emptyList()
         override suspend fun getOverdueTasks(now: Long): List<Task> = emptyList()
+        override suspend fun getAllTasksSync(): List<Task> = tasks.toList()
+        override fun getPendingTasksSync(): List<Task> = tasks.filter { it.estado == TaskEstado.PENDIENTE }
+        override suspend fun deleteAllTasks() { tasks.clear() }
+        override fun searchAllTasks(query: String): Flow<List<Task>> =
+            flowOf(tasks.filter { it.titulo.contains(query, ignoreCase = true) })
     }
 
     private class FakeSubtaskDao : SubtaskDao {
@@ -54,6 +59,8 @@ class TaskRepositoryTest {
         override suspend fun updateSubtask(subtask: Subtask) {}
         override suspend fun deleteSubtask(subtask: Subtask) {}
         override suspend fun deleteSubtasksByTaskId(taskId: Long) {}
+        override suspend fun getAllSubtasksSync(): List<Subtask> = emptyList()
+        override suspend fun deleteAllSubtasks() {}
     }
 
     private class FakeReminderDao : ReminderDao {
@@ -68,6 +75,8 @@ class TaskRepositoryTest {
         override suspend fun deleteRemindersByTaskId(taskId: Long) {}
         override suspend fun updateReminderStatus(id: Long, activo: Boolean) {}
         override suspend fun getRemindersByTaskIdSync(taskId: Long): List<Reminder> = emptyList()
+        override suspend fun getAllRemindersSync(): List<Reminder> = emptyList()
+        override suspend fun deleteAllReminders() {}
     }
 
     private fun makeRepository(): Pair<FakeTaskDao, TaskRepository> {

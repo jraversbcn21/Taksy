@@ -6,7 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.lifecycle.ViewModel
-import com.example.taksy.services.DailyReminderService
+import com.example.taksy.service.DailyReminderService
 import java.util.*
 
 /**

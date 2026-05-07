@@ -8,17 +8,11 @@ import android.os.Build
 import com.example.taksy.data.Reminder
 import com.example.taksy.receiver.ReminderReceiver
 
-/**
- * Servicio para programar recordatorios usando AlarmManager
- */
-class ReminderScheduler(private val context: Context) {
+class ReminderScheduler(private val context: Context) : ReminderSchedulerContract {
     
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     
-    /**
-     * Programa un recordatorio
-     */
-    fun scheduleReminder(reminder: Reminder) {
+    override fun scheduleReminder(reminder: Reminder) {
         android.util.Log.d("ReminderScheduler", "=== Programando recordatorio ===")
         android.util.Log.d("ReminderScheduler", "ID: ${reminder.id}")
         android.util.Log.d("ReminderScheduler", "Título: ${reminder.titulo}")
@@ -70,10 +64,7 @@ class ReminderScheduler(private val context: Context) {
         android.util.Log.d("ReminderScheduler", "Alarma programada exitosamente")
     }
     
-    /**
-     * Cancela un recordatorio programado
-     */
-    fun cancelReminder(reminderId: Long) {
+    override fun cancelReminder(reminderId: Long) {
         val intent = Intent(context, ReminderReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
@@ -85,11 +76,6 @@ class ReminderScheduler(private val context: Context) {
         alarmManager.cancel(pendingIntent)
     }
     
-    /**
-     * Cancela todos los recordatorios
-     */
-    fun cancelAllReminders() {
-        // Nota: En una implementación real, necesitarías mantener una lista de IDs
-        // de recordatorios activos para poder cancelarlos todos
+    override fun cancelAllReminders() {
     }
 }

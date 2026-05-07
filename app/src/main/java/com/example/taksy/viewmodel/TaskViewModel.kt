@@ -12,7 +12,7 @@ import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TipoRecordatorio
 import com.example.taksy.repository.TaskFilter
 import com.example.taksy.repository.TaskRepository
-import com.example.taksy.service.ReminderScheduler
+import com.example.taksy.service.ReminderSchedulerContract
 import com.example.taksy.widget.TaskWidgetProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,6 +30,7 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 class TaskViewModel @Inject constructor(
     private val repository: TaskRepository,
+    private val reminderScheduler: ReminderSchedulerContract,
     application: Application
 ) : AndroidViewModel(application) {
 
@@ -99,8 +100,7 @@ class TaskViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 if (task.estado == TaskEstado.PENDIENTE) {
-                    val scheduler = ReminderScheduler(context)
-                    repository.getRemindersByTaskIdSync(task.id).forEach { scheduler.cancelReminder(it.id) }
+                    repository.getRemindersByTaskIdSync(task.id).forEach { reminderScheduler.cancelReminder(it.id) }
                     repository.cancelAllRemindersForTask(task.id)
                 }
                 repository.toggleTaskStatus(task)
@@ -189,7 +189,7 @@ class TaskViewModel @Inject constructor(
                     tipoRecordatorio = tipoRecordatorio
                 )
                 val id = repository.insertReminder(reminder)
-                ReminderScheduler(context).scheduleReminder(reminder.copy(id = id))
+                reminderScheduler.scheduleReminder(reminder.copy(id = id))
             }.onFailure { setError(it.message) }
         }
     }
@@ -212,13 +212,10 @@ class TaskViewModel @Inject constructor(
     fun setQuickReminder(taskId: Long, taskTitle: String, fecha: Date) {
         viewModelScope.launch {
             runCatching {
-                val scheduler = ReminderScheduler(context)
-                // Remove existing reminders for this task
                 repository.getRemindersByTaskIdSync(taskId).forEach {
-                    scheduler.cancelReminder(it.id)
+                    reminderScheduler.cancelReminder(it.id)
                     repository.deleteReminder(it)
                 }
-                // Create new one
                 val reminder = Reminder(
                     taskId = taskId,
                     titulo = taskTitle,
@@ -226,7 +223,7 @@ class TaskViewModel @Inject constructor(
                     tipoRecordatorio = TipoRecordatorio.UNA_VEZ
                 )
                 val id = repository.insertReminder(reminder)
-                scheduler.scheduleReminder(reminder.copy(id = id))
+                reminderScheduler.scheduleReminder(reminder.copy(id = id))
             }.onFailure { setError(it.message) }
         }
     }
@@ -237,9 +234,8 @@ class TaskViewModel @Inject constructor(
     fun deleteReminderForTask(taskId: Long) {
         viewModelScope.launch {
             runCatching {
-                val scheduler = ReminderScheduler(context)
                 repository.getRemindersByTaskIdSync(taskId).forEach {
-                    scheduler.cancelReminder(it.id)
+                    reminderScheduler.cancelReminder(it.id)
                     repository.deleteReminder(it)
                 }
             }.onFailure { setError(it.message) }

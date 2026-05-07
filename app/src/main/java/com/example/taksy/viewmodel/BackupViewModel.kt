@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.taksy.data.*
-import com.example.taksy.service.ReminderScheduler
+import com.example.taksy.service.ReminderSchedulerContract
 import com.example.taksy.utils.BackupManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -21,7 +21,8 @@ class BackupViewModel @Inject constructor(
     private val taskDao: TaskDao,
     private val subtaskDao: SubtaskDao,
     private val categoryDao: CategoryDao,
-    private val reminderDao: ReminderDao
+    private val reminderDao: ReminderDao,
+    private val reminderScheduler: ReminderSchedulerContract
 ) : ViewModel() {
 
     private val _backupState = MutableStateFlow<BackupState>(BackupState.Idle)
@@ -62,10 +63,9 @@ class BackupViewModel @Inject constructor(
                 data.subtasks.forEach { subtaskDao.insertSubtask(it) }
                 data.reminders.forEach { reminderDao.insertReminder(it) }
 
-                val scheduler = ReminderScheduler(context)
                 val now = Date()
                 data.reminders.filter { it.activo && it.fechaRecordatorio.after(now) }
-                    .forEach { scheduler.scheduleReminder(it) }
+                    .forEach { reminderScheduler.scheduleReminder(it) }
 
                 _backupState.value = BackupState.ImportSuccess(
                     categories = data.categories.size,
