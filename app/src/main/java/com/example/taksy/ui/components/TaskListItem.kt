@@ -37,7 +37,6 @@ fun TaskListItem(
     onTaskClick: (Task) -> Unit,
     onTaskToggle: (Task) -> Unit,
     onTaskDelete: (Task) -> Unit,
-    onShowDeleteDialog: (Task) -> Unit = {},
     onShowToast: (String) -> Unit = {},
     onReminderClick: (Task) -> Unit = {},
     modifier: Modifier = Modifier
@@ -53,8 +52,8 @@ fun TaskListItem(
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
             if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
-                onShowDeleteDialog(task)
-                false // No completar el dismiss, dejamos que el diálogo maneje la eliminación
+                onTaskDelete(task)
+                true
             } else {
                 false
             }

@@ -31,7 +31,6 @@ import com.example.taksy.data.Category
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
-import com.example.taksy.ui.components.DeleteTaskDialog
 import com.example.taksy.ui.components.QuickReminderDialog
 import com.example.taksy.ui.components.TaskListItem
 import com.example.taksy.utils.CategoryUtils
@@ -53,7 +52,6 @@ fun TasksByCategoryScreen(
     onTaskDelete: (Task) -> Unit = {},
     onAddTask: (String, Date?, TaskPrioridad) -> Unit = { _, _, _ -> },
     showToast: (String) -> Unit = {},
-    onShowDeleteDialog: (Task) -> Unit = {}, // Nueva función para mostrar diálogo de borrado
     modifier: Modifier = Modifier
 ) {
     var showInlineInput by remember { mutableStateOf(false) }
@@ -70,6 +68,23 @@ fun TasksByCategoryScreen(
         taskViewModel.searchTasksByCategory(category.id, searchQuery).collectAsState(initial = emptyList()).value
     } else {
         tasks
+    }
+
+    val undoDeleteMessage = stringResource(R.string.task_deleted_toast)
+    val undoActionLabel = stringResource(R.string.undo)
+
+    val handleDeleteWithUndo: (Task) -> Unit = { deletedTask ->
+        taskViewModel.deleteTask(deletedTask)
+        coroutineScope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = undoDeleteMessage,
+                actionLabel = undoActionLabel,
+                duration = SnackbarDuration.Short
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                taskViewModel.restoreTask(deletedTask)
+            }
+        }
     }
 
     val showSnackbar: (String) -> Unit = { message ->
@@ -225,8 +240,7 @@ fun TasksByCategoryScreen(
                                 hasActiveReminder = hasActiveReminder,
                                 onTaskClick = onTaskClick,
                                 onTaskToggle = onTaskToggle,
-                                onTaskDelete = onTaskDelete,
-                                onShowDeleteDialog = onShowDeleteDialog,
+                                onTaskDelete = handleDeleteWithUndo,
                                 onShowToast = { message -> showSnackbar(message) },
                                 onReminderClick = { taskForReminder = it }
                             )

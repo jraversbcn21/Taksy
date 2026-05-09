@@ -142,6 +142,7 @@
     
     <!-- Toast messages -->
     <string name="task_deleted_toast">Tarea eliminada</string>
+    <string name="undo">Deshacer</string>
     <string name="subtask_completed_toast">Subtarea completada</string>
     <string name="all_subtasks_completed_toast">¡Todas las subtareas completadas!</string>
     

@@ -96,6 +96,15 @@ class TaskViewModel @Inject constructor(
         }
     }
 
+    fun restoreTask(task: Task) {
+        viewModelScope.launch {
+            runCatching {
+                repository.insertTask(task)
+                TaskWidgetProvider.refreshAll(context)
+            }.onFailure { setError(it.message) }
+        }
+    }
+
     fun toggleTaskStatus(task: Task) {
         viewModelScope.launch {
             runCatching {

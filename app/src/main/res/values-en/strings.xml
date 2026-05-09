@@ -136,6 +136,7 @@
     
     <!-- Toast messages -->
     <string name="task_deleted_toast">Task deleted</string>
+    <string name="undo">Undo</string>
     <string name="subtask_completed_toast">Subtask completed</string>
     <string name="all_subtasks_completed_toast">All subtasks completed!</string>
     

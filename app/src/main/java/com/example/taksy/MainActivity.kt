@@ -123,7 +123,6 @@ fun MainContent(
     context: Context,
     onMenuClick: () -> Unit,
     activity: ComponentActivity,
-    onShowDeleteDialog: (com.example.taksy.data.Task) -> Unit,
     onShowLanguageChangeDialog: (String) -> Unit
 ) {
     NavHost(
@@ -216,8 +215,7 @@ fun MainContent(
                         onTaskToggle = { task -> taskViewModel.toggleTaskStatus(task) },
                         onTaskDelete = { task -> taskViewModel.deleteTask(task) },
                         onAddTask = { title, dueDate, prioridad -> taskViewModel.addTask(title, dueDate, categoryId, prioridad) },
-                        showToast = {},
-                        onShowDeleteDialog = onShowDeleteDialog
+                        showToast = {}
                     )
                 }
             }
@@ -310,7 +308,6 @@ fun DrawerScreen(
     activity: ComponentActivity
 ) {
     var drawerLayout by remember { mutableStateOf<DrawerLayout?>(null) }
-    var taskToDelete by remember { mutableStateOf<com.example.taksy.data.Task?>(null) }
     var showLanguageChangeDialog by remember { mutableStateOf(false) }
     var selectedLanguage by remember { mutableStateOf("") }
 
@@ -346,7 +343,6 @@ fun DrawerScreen(
                                     context = context,
                                     onMenuClick = { drawerLayout?.openDrawer(GravityCompat.START) },
                                     activity = activity,
-                                    onShowDeleteDialog = { taskToDelete = it },
                                     onShowLanguageChangeDialog = { language ->
                                         selectedLanguage = language
                                         showLanguageChangeDialog = true
@@ -420,24 +416,6 @@ fun DrawerScreen(
             },
             modifier = Modifier.fillMaxSize()
         )
-
-        // Diálogo de confirmación para borrar tarea
-        if (taskToDelete != null) {
-            AlertDialog(
-                onDismissRequest = { taskToDelete = null },
-                title = { Text(stringResource(R.string.delete_task_title)) },
-                text = { Text(stringResource(R.string.delete_task_message)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        taskToDelete?.let { taskViewModel.deleteTask(it) }
-                        taskToDelete = null
-                    }) { Text(stringResource(R.string.delete)) }
-                },
-                dismissButton = {
-                    TextButton(onClick = { taskToDelete = null }) { Text(stringResource(R.string.cancel)) }
-                }
-            )
-        }
 
         // Diálogo de confirmación para cambio de idioma
         if (showLanguageChangeDialog) {
