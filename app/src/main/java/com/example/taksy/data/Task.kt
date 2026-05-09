@@ -14,7 +14,8 @@ data class Task(
     val fechaVencimiento: Date? = null,
     val categoriaId: Long? = null,
     val estado: TaskEstado = TaskEstado.PENDIENTE,
-    val prioridad: TaskPrioridad = TaskPrioridad.NINGUNA
+    val prioridad: TaskPrioridad = TaskPrioridad.NINGUNA,
+    val archivada: Boolean = false
 )
 
 enum class TaskEstado {

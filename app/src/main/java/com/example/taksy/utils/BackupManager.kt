@@ -69,6 +69,7 @@ object BackupManager {
                     put("categoriaId", t.categoriaId ?: JSONObject.NULL)
                     put("estado", t.estado.name)
                     put("prioridad", t.prioridad.name)
+                    put("archivada", t.archivada)
                 })
             }
         })
@@ -164,7 +165,8 @@ object BackupManager {
                             else dateFormat.parse(t.getString("fechaVencimiento")),
                         categoriaId = if (t.isNull("categoriaId")) null else t.getLong("categoriaId"),
                         estado = TaskEstado.valueOf(t.getString("estado")),
-                        prioridad = try { TaskPrioridad.valueOf(t.optString("prioridad", "NINGUNA")) } catch (_: Exception) { TaskPrioridad.NINGUNA }
+                        prioridad = try { TaskPrioridad.valueOf(t.optString("prioridad", "NINGUNA")) } catch (_: Exception) { TaskPrioridad.NINGUNA },
+                        archivada = t.optBoolean("archivada", false)
                     )
                 )
             } catch (e: BackupImportException) {

@@ -38,6 +38,11 @@ class TaskRepository @Inject constructor(
     suspend fun deleteTask(task: Task) = taskDao.deleteTask(task)
     suspend fun deleteCompletedTasks() = taskDao.deleteCompletedTasks()
 
+    fun getArchivedTasksByCategory(categoryId: Long): Flow<List<Task>> =
+        taskDao.getArchivedTasksByCategory(categoryId)
+    suspend fun archiveTask(taskId: Long) = taskDao.archiveTask(taskId)
+    suspend fun unarchiveTask(taskId: Long) = taskDao.unarchiveTask(taskId)
+
     suspend fun toggleTaskStatus(task: Task) {
         val newStatus = if (task.estado == TaskEstado.PENDIENTE) TaskEstado.COMPLETADA else TaskEstado.PENDIENTE
         taskDao.updateTask(task.copy(estado = newStatus))

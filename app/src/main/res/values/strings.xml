@@ -292,6 +292,16 @@
     <string name="reminders_saved_success">Recordatorios guardados correctamente</string>
     <string name="reminders_disabled">Recordatorios desactivados</string>
 
+    <!-- Archivo de tareas -->
+    <string name="archive_task">Archivar tarea</string>
+    <string name="unarchive_task">Desarchivar tarea</string>
+    <string name="task_archived">Tarea archivada</string>
+    <string name="task_unarchived">Tarea desarchivada</string>
+    <string name="show_archived">Ver archivadas</string>
+    <string name="hide_archived">Ocultar archivadas</string>
+    <string name="archived_section">Archivadas</string>
+    <string name="no_archived_tasks">No hay tareas archivadas</string>
+
     <!-- Descripción de tarea -->
     <string name="task_description_label">Notas</string>
     <string name="task_description_placeholder">Añadir notas…</string>

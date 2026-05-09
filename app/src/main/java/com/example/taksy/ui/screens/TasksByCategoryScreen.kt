@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -59,10 +60,13 @@ fun TasksByCategoryScreen(
     var selectedPriority by remember { mutableStateOf(TaskPrioridad.NINGUNA) }
     var searchQuery by remember { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
+    var showArchived by remember { mutableStateOf(false) }
     var taskForReminder by remember { mutableStateOf<Task?>(null) }
     val focusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+
+    val archivedTasks by taskViewModel.getArchivedTasksByCategory(category.id).collectAsState(initial = emptyList())
 
     val displayedTasks = if (searchQuery.isNotBlank()) {
         taskViewModel.searchTasksByCategory(category.id, searchQuery).collectAsState(initial = emptyList()).value
@@ -71,6 +75,8 @@ fun TasksByCategoryScreen(
     }
 
     val undoDeleteMessage = stringResource(R.string.task_deleted_toast)
+    val taskArchivedMessage = stringResource(R.string.task_archived)
+    val taskUnarchivedMessage = stringResource(R.string.task_unarchived)
     val undoActionLabel = stringResource(R.string.undo)
 
     val handleDeleteWithUndo: (Task) -> Unit = { deletedTask ->
@@ -83,6 +89,27 @@ fun TasksByCategoryScreen(
             )
             if (result == SnackbarResult.ActionPerformed) {
                 taskViewModel.restoreTask(deletedTask)
+            }
+        }
+    }
+
+    val handleArchiveWithUndo: (Task) -> Unit = { task ->
+        if (task.archivada) {
+            taskViewModel.unarchiveTask(task)
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(taskUnarchivedMessage, duration = SnackbarDuration.Short)
+            }
+        } else {
+            taskViewModel.archiveTask(task)
+            coroutineScope.launch {
+                val result = snackbarHostState.showSnackbar(
+                    message = taskArchivedMessage,
+                    actionLabel = undoActionLabel,
+                    duration = SnackbarDuration.Short
+                )
+                if (result == SnackbarResult.ActionPerformed) {
+                    taskViewModel.unarchiveTask(task)
+                }
             }
         }
     }
@@ -145,6 +172,18 @@ fun TasksByCategoryScreen(
                         }
                     },
                     actions = {
+                        if (archivedTasks.isNotEmpty()) {
+                            IconButton(onClick = { showArchived = !showArchived }) {
+                                Icon(
+                                    Icons.Default.KeyboardArrowDown,
+                                    contentDescription = stringResource(
+                                        if (showArchived) R.string.hide_archived else R.string.show_archived
+                                    ),
+                                    tint = if (showArchived) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                            }
+                        }
                         IconButton(onClick = { showSearch = true }) {
                             Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search_tasks))
                         }
@@ -226,7 +265,7 @@ fun TasksByCategoryScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(displayedTasks) { task ->
+                        items(displayedTasks, key = { it.id }) { task ->
                             val subtasks by taskViewModel.getSubtasksByTaskId(task.id).collectAsState(initial = emptyList())
                             val pendingSubtasksCount = subtasks.count { it.estado == TaskEstado.PENDIENTE }
                             val reminders by taskViewModel.getRemindersByTaskId(task.id).collectAsState(initial = emptyList())
@@ -241,9 +280,32 @@ fun TasksByCategoryScreen(
                                 onTaskClick = onTaskClick,
                                 onTaskToggle = onTaskToggle,
                                 onTaskDelete = handleDeleteWithUndo,
+                                onArchiveTask = handleArchiveWithUndo,
                                 onShowToast = { message -> showSnackbar(message) },
                                 onReminderClick = { taskForReminder = it }
                             )
+                        }
+
+                        if (showArchived && archivedTasks.isNotEmpty()) {
+                            item(key = "archived_header") {
+                                Text(
+                                    text = stringResource(R.string.archived_section),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                                )
+                            }
+                            items(archivedTasks, key = { "archived_${it.id}" }) { task ->
+                                TaskListItem(
+                                    task = task,
+                                    category = category,
+                                    onTaskClick = onTaskClick,
+                                    onTaskToggle = {},
+                                    onTaskDelete = handleDeleteWithUndo,
+                                    onArchiveTask = handleArchiveWithUndo,
+                                    onShowToast = { message -> showSnackbar(message) }
+                                )
+                            }
                         }
                     }
                 }

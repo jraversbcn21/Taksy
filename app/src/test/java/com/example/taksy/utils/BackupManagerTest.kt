@@ -268,6 +268,30 @@ class BackupManagerTest {
     }
 
     @Test
+    fun `round trip preserves archivada flag`() {
+        val data = BackupManager.BackupData(
+            categories = emptyList(),
+            tasks = listOf(
+                Task(id = 1, titulo = "Activa", archivada = false, fechaCreacion = fixedDate),
+                Task(id = 2, titulo = "Archivada", archivada = true, fechaCreacion = fixedDate)
+            ),
+            subtasks = emptyList(), reminders = emptyList()
+        )
+        val json = BackupManager.exportToJson(data)
+        val imported = BackupManager.importFromJson(json)
+
+        assertEquals(false, imported.tasks[0].archivada)
+        assertEquals(true, imported.tasks[1].archivada)
+    }
+
+    @Test
+    fun `import defaults archivada to false when missing`() {
+        val json = """{"categories":[],"tasks":[{"id":1,"titulo":"X","fechaCreacion":"2023-01-01T00:00:00.000","fechaVencimiento":null,"categoriaId":null,"estado":"PENDIENTE"}],"subtasks":[],"reminders":[]}"""
+        val imported = BackupManager.importFromJson(json)
+        assertEquals(false, imported.tasks[0].archivada)
+    }
+
+    @Test
     fun `import handles missing descripcion field gracefully`() {
         val json = """{"categories":[],"tasks":[{"id":1,"titulo":"X","fechaCreacion":"2023-01-01T00:00:00.000","fechaVencimiento":null,"categoriaId":null,"estado":"PENDIENTE"}],"subtasks":[],"reminders":[]}"""
         val imported = BackupManager.importFromJson(json)

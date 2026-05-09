@@ -105,6 +105,27 @@ class TaskViewModel @Inject constructor(
         }
     }
 
+    fun archiveTask(task: Task) {
+        viewModelScope.launch {
+            runCatching {
+                repository.archiveTask(task.id)
+                TaskWidgetProvider.refreshAll(context)
+            }.onFailure { setError(it.message) }
+        }
+    }
+
+    fun unarchiveTask(task: Task) {
+        viewModelScope.launch {
+            runCatching {
+                repository.unarchiveTask(task.id)
+                TaskWidgetProvider.refreshAll(context)
+            }.onFailure { setError(it.message) }
+        }
+    }
+
+    fun getArchivedTasksByCategory(categoryId: Long): Flow<List<Task>> =
+        repository.getArchivedTasksByCategory(categoryId)
+
     fun toggleTaskStatus(task: Task) {
         viewModelScope.launch {
             runCatching {

@@ -283,6 +283,16 @@
     <string name="reminders_saved_success">Reminders saved successfully</string>
     <string name="reminders_disabled">Reminders disabled</string>
 
+    <!-- Task archiving -->
+    <string name="archive_task">Archive task</string>
+    <string name="unarchive_task">Unarchive task</string>
+    <string name="task_archived">Task archived</string>
+    <string name="task_unarchived">Task unarchived</string>
+    <string name="show_archived">Show archived</string>
+    <string name="hide_archived">Hide archived</string>
+    <string name="archived_section">Archived</string>
+    <string name="no_archived_tasks">No archived tasks</string>
+
     <!-- Task description -->
     <string name="task_description_label">Notes</string>
     <string name="task_description_placeholder">Add notes…</string>

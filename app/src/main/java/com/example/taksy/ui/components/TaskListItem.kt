@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
@@ -37,6 +39,7 @@ fun TaskListItem(
     onTaskClick: (Task) -> Unit,
     onTaskToggle: (Task) -> Unit,
     onTaskDelete: (Task) -> Unit,
+    onArchiveTask: (Task) -> Unit = {},
     onShowToast: (String) -> Unit = {},
     onReminderClick: (Task) -> Unit = {},
     modifier: Modifier = Modifier
@@ -51,11 +54,16 @@ fun TaskListItem(
 
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
-            if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
-                onTaskDelete(task)
-                true
-            } else {
-                false
+            when (dismissValue) {
+                SwipeToDismissBoxValue.EndToStart -> {
+                    onTaskDelete(task)
+                    true
+                }
+                SwipeToDismissBoxValue.StartToEnd -> {
+                    onArchiveTask(task)
+                    true
+                }
+                else -> false
             }
         }
     )
@@ -63,19 +71,34 @@ fun TaskListItem(
     SwipeToDismissBox(
         state = dismissState,
         modifier = modifier,
-        enableDismissFromStartToEnd = false,
+        enableDismissFromStartToEnd = true,
         enableDismissFromEndToStart = true,
         backgroundContent = {
+            val direction = dismissState.dismissDirection
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFE53935))
+                    .background(
+                        if (direction == SwipeToDismissBoxValue.StartToEnd)
+                            Color(0xFF607D8B)
+                        else
+                            Color(0xFFE53935)
+                    )
                     .padding(horizontal = 24.dp),
-                contentAlignment = Alignment.CenterEnd
+                contentAlignment = if (direction == SwipeToDismissBoxValue.StartToEnd)
+                    Alignment.CenterStart
+                else
+                    Alignment.CenterEnd
             ) {
                 Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.delete_task),
+                    imageVector = if (direction == SwipeToDismissBoxValue.StartToEnd)
+                        if (task.archivada) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown
+                    else
+                        Icons.Default.Delete,
+                    contentDescription = if (direction == SwipeToDismissBoxValue.StartToEnd)
+                        stringResource(R.string.archive_task)
+                    else
+                        stringResource(R.string.delete_task),
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
                 )
