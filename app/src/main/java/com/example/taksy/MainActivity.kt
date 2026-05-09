@@ -286,7 +286,11 @@ fun MainContent(
                         subtasks = subtasks,
                         onBackClick = { navController.popBackStack() },
                         onAddSubtask = { title -> taskViewModel.addSubtask(taskId, title) },
-                        onToggleSubtask = { subtask -> taskViewModel.toggleSubtaskStatus(subtask) }
+                        onToggleSubtask = { subtask -> taskViewModel.toggleSubtaskStatus(subtask) },
+                        onUpdateTask = { updatedTask ->
+                            task = updatedTask
+                            taskViewModel.updateTask(updatedTask)
+                        }
                     )
                 }
             }

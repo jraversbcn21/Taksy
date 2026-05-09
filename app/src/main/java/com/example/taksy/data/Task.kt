@@ -9,6 +9,7 @@ data class Task(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val titulo: String,
+    val descripcion: String? = null,
     val fechaCreacion: Date = Date(),
     val fechaVencimiento: Date? = null,
     val categoriaId: Long? = null,

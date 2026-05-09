@@ -49,6 +49,7 @@ import com.example.taksy.data.Subtask
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.ui.components.Toast
+import kotlinx.coroutines.delay
 import com.example.taksy.ui.components.SubtaskList
 import com.example.taksy.ui.components.ReminderItem
 import com.example.taksy.ui.components.AddReminderDialog
@@ -62,6 +63,7 @@ fun TaskDetailScreen(
     onBackClick: () -> Unit,
     onAddSubtask: (String) -> Unit,
     onToggleSubtask: (Subtask) -> Unit,
+    onUpdateTask: (Task) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showInlineInput by remember { mutableStateOf(false) }
@@ -69,6 +71,15 @@ fun TaskDetailScreen(
     var toastMessage by remember { mutableStateOf("") }
     var showToast by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
+    var descriptionText by remember(task.id) { mutableStateOf(task.descripcion ?: "") }
+
+    LaunchedEffect(descriptionText) {
+        delay(500)
+        val newDesc = descriptionText.ifBlank { null }
+        if (newDesc != task.descripcion) {
+            onUpdateTask(task.copy(descripcion = newDesc))
+        }
+    }
     
     // Obtener el mensaje de toast multilingüe
     val allSubtasksCompletedMessage = stringResource(R.string.all_subtasks_completed)
@@ -121,6 +132,49 @@ fun TaskDetailScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
             ) {
+                // Sección de Notas/Descripción
+                item(key = "description_section") {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.task_description_label),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                        OutlinedTextField(
+                            value = descriptionText,
+                            onValueChange = { descriptionText = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = {
+                                Text(
+                                    text = stringResource(R.string.task_description_placeholder),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                            },
+                            minLines = 2,
+                            maxLines = 6,
+                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                            textStyle = TextStyle(
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = MaterialTheme.typography.bodyLarge.fontSize
+                            ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                cursorColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                        )
+                    }
+                }
+
                 // Sección de Subtareas
                 item(key = "subtasks_header") {
                     Row(

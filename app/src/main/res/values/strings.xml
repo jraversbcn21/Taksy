@@ -291,6 +291,10 @@
     <string name="reminders_saved_success">Recordatorios guardados correctamente</string>
     <string name="reminders_disabled">Recordatorios desactivados</string>
 
+    <!-- Descripción de tarea -->
+    <string name="task_description_label">Notas</string>
+    <string name="task_description_placeholder">Añadir notas…</string>
+
     <!-- Widget -->
     <string name="widget_name">Ticksy - Tareas pendientes</string>
     <string name="widget_description">Muestra tus tareas pendientes</string>

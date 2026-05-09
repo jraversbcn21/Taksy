@@ -248,6 +248,32 @@ class BackupManagerTest {
         assertImportError(json, ImportErrorType.INVALID_REMINDER, "#1")
     }
 
+    // ── Description (2.1) ──────────────────────────────────────────────
+
+    @Test
+    fun `round trip preserves task description`() {
+        val data = BackupManager.BackupData(
+            categories = emptyList(),
+            tasks = listOf(
+                Task(id = 1, titulo = "Con nota", descripcion = "Mi nota", fechaCreacion = fixedDate),
+                Task(id = 2, titulo = "Sin nota", descripcion = null, fechaCreacion = fixedDate)
+            ),
+            subtasks = emptyList(), reminders = emptyList()
+        )
+        val json = BackupManager.exportToJson(data)
+        val imported = BackupManager.importFromJson(json)
+
+        assertEquals("Mi nota", imported.tasks[0].descripcion)
+        assertNull(imported.tasks[1].descripcion)
+    }
+
+    @Test
+    fun `import handles missing descripcion field gracefully`() {
+        val json = """{"categories":[],"tasks":[{"id":1,"titulo":"X","fechaCreacion":"2023-01-01T00:00:00.000","fechaVencimiento":null,"categoriaId":null,"estado":"PENDIENTE"}],"subtasks":[],"reminders":[]}"""
+        val imported = BackupManager.importFromJson(json)
+        assertNull(imported.tasks[0].descripcion)
+    }
+
     // ── Malformed dates ─────────────────────────────────────────────────
 
     @Test

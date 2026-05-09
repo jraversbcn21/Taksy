@@ -63,6 +63,7 @@ object BackupManager {
                 put(JSONObject().apply {
                     put("id", t.id)
                     put("titulo", t.titulo)
+                    put("descripcion", t.descripcion ?: JSONObject.NULL)
                     put("fechaCreacion", dateFormat.format(t.fechaCreacion))
                     put("fechaVencimiento", t.fechaVencimiento?.let { dateFormat.format(it) })
                     put("categoriaId", t.categoriaId ?: JSONObject.NULL)
@@ -157,6 +158,7 @@ object BackupManager {
                     Task(
                         id = t.getLong("id"),
                         titulo = titulo,
+                        descripcion = if (t.has("descripcion") && !t.isNull("descripcion")) t.getString("descripcion") else null,
                         fechaCreacion = fechaCreacion,
                         fechaVencimiento = if (t.isNull("fechaVencimiento")) null
                             else dateFormat.parse(t.getString("fechaVencimiento")),
