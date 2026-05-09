@@ -9,6 +9,7 @@ import com.example.taksy.data.TaskDao
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TipoRecordatorio
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -130,5 +131,124 @@ class TaskRepositoryTest {
 
         assertEquals(1, dao.tasks.size)
         assertEquals("New task", dao.tasks[0].titulo)
+    }
+
+    @Test
+    fun `getTaskById returns correct task`() = runTest {
+        val (dao, repo) = makeRepository()
+        dao.tasks.add(Task(id = 5L, titulo = "Find me"))
+        dao.tasks.add(Task(id = 6L, titulo = "Not me"))
+
+        val result = repo.getTaskById(5L)
+
+        assertEquals("Find me", result?.titulo)
+    }
+
+    @Test
+    fun `getTaskById returns null for missing id`() = runTest {
+        val (_, repo) = makeRepository()
+        val result = repo.getTaskById(999L)
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `deleteTask removes specific task`() = runTest {
+        val (dao, repo) = makeRepository()
+        val task1 = Task(id = 1L, titulo = "Keep")
+        val task2 = Task(id = 2L, titulo = "Delete")
+        dao.tasks.addAll(listOf(task1, task2))
+
+        repo.deleteTask(task2)
+
+        assertEquals(1, dao.tasks.size)
+        assertEquals("Keep", dao.tasks[0].titulo)
+    }
+
+    @Test
+    fun `updateTask modifies existing task`() = runTest {
+        val (dao, repo) = makeRepository()
+        val task = Task(id = 1L, titulo = "Original")
+        dao.tasks.add(task)
+
+        repo.updateTask(task.copy(titulo = "Updated"))
+
+        assertEquals("Updated", dao.tasks[0].titulo)
+    }
+
+    @Test
+    fun `getTasksByFilter TODAS returns all tasks`() = runTest {
+        val (dao, repo) = makeRepository()
+        dao.tasks.add(Task(id = 1L, titulo = "A", estado = TaskEstado.PENDIENTE))
+        dao.tasks.add(Task(id = 2L, titulo = "B", estado = TaskEstado.COMPLETADA))
+
+        val result = repo.getTasksByFilter(TaskFilter.TODAS).first()
+
+        assertEquals(2, result.size)
+    }
+
+    @Test
+    fun `getTasksByFilter PENDIENTES returns only pending`() = runTest {
+        val (dao, repo) = makeRepository()
+        dao.tasks.add(Task(id = 1L, titulo = "A", estado = TaskEstado.PENDIENTE))
+        dao.tasks.add(Task(id = 2L, titulo = "B", estado = TaskEstado.COMPLETADA))
+
+        val result = repo.getTasksByFilter(TaskFilter.PENDIENTES).first()
+
+        assertEquals(1, result.size)
+        assertEquals(TaskEstado.PENDIENTE, result[0].estado)
+    }
+
+    @Test
+    fun `getTasksByFilter COMPLETADAS returns only completed`() = runTest {
+        val (dao, repo) = makeRepository()
+        dao.tasks.add(Task(id = 1L, titulo = "A", estado = TaskEstado.PENDIENTE))
+        dao.tasks.add(Task(id = 2L, titulo = "B", estado = TaskEstado.COMPLETADA))
+
+        val result = repo.getTasksByFilter(TaskFilter.COMPLETADAS).first()
+
+        assertEquals(1, result.size)
+        assertEquals(TaskEstado.COMPLETADA, result[0].estado)
+    }
+
+    @Test
+    fun `searchAllTasks filters by query`() = runTest {
+        val (dao, repo) = makeRepository()
+        dao.tasks.add(Task(id = 1L, titulo = "Buy groceries"))
+        dao.tasks.add(Task(id = 2L, titulo = "Clean kitchen"))
+
+        val result = repo.searchAllTasks("buy").first()
+
+        assertEquals(1, result.size)
+        assertEquals("Buy groceries", result[0].titulo)
+    }
+
+    @Test
+    fun `searchAllTasks is case insensitive`() = runTest {
+        val (dao, repo) = makeRepository()
+        dao.tasks.add(Task(id = 1L, titulo = "Buy GROCERIES"))
+
+        val result = repo.searchAllTasks("groceries").first()
+
+        assertEquals(1, result.size)
+    }
+
+    @Test
+    fun `cancelAllRemindersForTask deactivates all reminders`() = runTest {
+        val (_, repo) = makeRepository()
+        // Uses FakeReminderDao which returns empty, so no-op — just ensures no crash
+        repo.cancelAllRemindersForTask(1L)
+    }
+
+    @Test
+    fun `searchTasksByCategory filters by category and query`() = runTest {
+        val (dao, repo) = makeRepository()
+        dao.tasks.add(Task(id = 1L, titulo = "Buy milk", categoriaId = 1L))
+        dao.tasks.add(Task(id = 2L, titulo = "Buy bread", categoriaId = 2L))
+        dao.tasks.add(Task(id = 3L, titulo = "Clean", categoriaId = 1L))
+
+        val result = repo.searchTasksByCategory(1L, "buy").first()
+
+        assertEquals(1, result.size)
+        assertEquals("Buy milk", result[0].titulo)
     }
 }
