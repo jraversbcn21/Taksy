@@ -29,10 +29,10 @@ class DailyReminderService : BroadcastReceiver() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channel = NotificationChannel(
                     CHANNEL_ID,
-                    "Recordatorios Diarios",
+                    context.getString(R.string.daily_notification_channel_name),
                     NotificationManager.IMPORTANCE_HIGH
                 ).apply {
-                    description = "Notificaciones diarias para recordar revisar las tareas"
+                    description = context.getString(R.string.daily_notification_channel_description)
                     enableLights(true)
                     enableVibration(true)
                 }

@@ -60,88 +60,44 @@ fun DailyReminderScreen(
         reminderViewModel.initializeAlarmManager(context)
     }
     
-    // Mostrar TimePicker para el primer horario
     LaunchedEffect(timePickerKey1) {
-        android.util.Log.d("DailyReminderScreen", "=== LaunchedEffect timePickerKey1 ===")
-        android.util.Log.d("DailyReminderScreen", "timePickerKey1: $timePickerKey1")
-        
         if (timePickerKey1 > 0) {
-            android.util.Log.d("DailyReminderScreen", "Intentando mostrar TimePicker para hora 1")
-            
-            // Intentar obtener la Activity de diferentes maneras
             val activityToUse = activity ?: (context as? androidx.activity.ComponentActivity)
-            android.util.Log.d("DailyReminderScreen", "Activity pasada como parámetro: $activity")
-            android.util.Log.d("DailyReminderScreen", "Activity del contexto: ${context as? androidx.activity.ComponentActivity}")
-            android.util.Log.d("DailyReminderScreen", "Activity a usar: $activityToUse")
-            
+
             if (activityToUse != null && !activityToUse.isFinishing && !activityToUse.isDestroyed) {
-                android.util.Log.d("DailyReminderScreen", "Activity es válida, creando TimePickerDialog")
-                
                 val hour = reminderTime1.split(":")[0].toInt()
                 val minute = reminderTime1.split(":")[1].toInt()
-                
-                android.util.Log.d("DailyReminderScreen", "Hora actual: $hour:$minute")
-                
-                val timePickerDialog = TimePickerDialog(
+
+                TimePickerDialog(
                     activityToUse,
                     { _, selectedHour, selectedMinute ->
-                        android.util.Log.d("DailyReminderScreen", "Hora seleccionada: $selectedHour:$selectedMinute")
-                        val formattedTime = String.format("%02d:%02d", selectedHour, selectedMinute)
-                        reminderTime1 = formattedTime
-                        android.util.Log.d("DailyReminderScreen", "Nueva hora 1: $formattedTime")
+                        reminderTime1 = String.format("%02d:%02d", selectedHour, selectedMinute)
                     },
                     hour,
                     minute,
                     true
-                )
-                
-                android.util.Log.d("DailyReminderScreen", "Mostrando TimePickerDialog")
-                timePickerDialog.show()
-            } else {
-                android.util.Log.w("DailyReminderScreen", "Activity no es válida o está terminándose")
+                ).show()
             }
         }
     }
-    
-    // Mostrar TimePicker para el segundo horario
+
     LaunchedEffect(timePickerKey2) {
-        android.util.Log.d("DailyReminderScreen", "=== LaunchedEffect timePickerKey2 ===")
-        android.util.Log.d("DailyReminderScreen", "timePickerKey2: $timePickerKey2")
-        
         if (timePickerKey2 > 0) {
-            android.util.Log.d("DailyReminderScreen", "Intentando mostrar TimePicker para hora 2")
-            
-            // Intentar obtener la Activity de diferentes maneras
             val activityToUse = activity ?: (context as? androidx.activity.ComponentActivity)
-            android.util.Log.d("DailyReminderScreen", "Activity pasada como parámetro: $activity")
-            android.util.Log.d("DailyReminderScreen", "Activity del contexto: ${context as? androidx.activity.ComponentActivity}")
-            android.util.Log.d("DailyReminderScreen", "Activity a usar: $activityToUse")
-            
+
             if (activityToUse != null && !activityToUse.isFinishing && !activityToUse.isDestroyed) {
-                android.util.Log.d("DailyReminderScreen", "Activity es válida, creando TimePickerDialog")
-                
                 val hour = reminderTime2.split(":")[0].toInt()
                 val minute = reminderTime2.split(":")[1].toInt()
-                
-                android.util.Log.d("DailyReminderScreen", "Hora actual: $hour:$minute")
-                
-                val timePickerDialog = TimePickerDialog(
+
+                TimePickerDialog(
                     activityToUse,
                     { _, selectedHour, selectedMinute ->
-                        android.util.Log.d("DailyReminderScreen", "Hora seleccionada: $selectedHour:$selectedMinute")
-                        val formattedTime = String.format("%02d:%02d", selectedHour, selectedMinute)
-                        reminderTime2 = formattedTime
-                        android.util.Log.d("DailyReminderScreen", "Nueva hora 2: $formattedTime")
+                        reminderTime2 = String.format("%02d:%02d", selectedHour, selectedMinute)
                     },
                     hour,
                     minute,
                     true
-                )
-                
-                android.util.Log.d("DailyReminderScreen", "Mostrando TimePickerDialog")
-                timePickerDialog.show()
-            } else {
-                android.util.Log.w("DailyReminderScreen", "Activity no es válida o está terminándose")
+                ).show()
             }
         }
     }
@@ -382,12 +338,7 @@ fun DailyReminderScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             
                             OutlinedButton(
-                                onClick = { 
-                                    android.util.Log.d("DailyReminderScreen", "=== CLICK EN BOTÓN HORA 1 ===")
-                                    android.util.Log.d("DailyReminderScreen", "Antes: timePickerKey1 = $timePickerKey1")
-                                    timePickerKey1++
-                                    android.util.Log.d("DailyReminderScreen", "Después: timePickerKey1 = $timePickerKey1")
-                                },
+                                onClick = { timePickerKey1++ },
                                 colors = ButtonDefaults.outlinedButtonColors(
                                     contentColor = IconTeal40
                                 ),
@@ -432,12 +383,7 @@ fun DailyReminderScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             
                             OutlinedButton(
-                                onClick = { 
-                                    android.util.Log.d("DailyReminderScreen", "=== CLICK EN BOTÓN HORA 2 ===")
-                                    android.util.Log.d("DailyReminderScreen", "Antes: timePickerKey2 = $timePickerKey2")
-                                    timePickerKey2++
-                                    android.util.Log.d("DailyReminderScreen", "Después: timePickerKey2 = $timePickerKey2")
-                                },
+                                onClick = { timePickerKey2++ },
                                 colors = ButtonDefaults.outlinedButtonColors(
                                     contentColor = IconTeal40
                                 ),
@@ -539,9 +485,9 @@ fun DailyReminderScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = if (isDailyReminderEnabled) {
-                            "Recordatorios guardados correctamente"
+                            stringResource(R.string.reminders_saved_success)
                         } else {
-                            "Recordatorios desactivados"
+                            stringResource(R.string.reminders_disabled)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = IconTeal40,

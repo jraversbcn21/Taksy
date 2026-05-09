@@ -93,9 +93,7 @@ class ReminderViewModel : ViewModel() {
                         pendingIntent
                     )
                 }
-                android.util.Log.d("ReminderViewModel", "Alarma $reminderType programada para: ${Date(calendar.timeInMillis)}")
-            } catch (e: Exception) {
-                android.util.Log.e("ReminderViewModel", "Error programando alarma $reminderType: ${e.message}")
+            } catch (_: Exception) {
             }
         }
 
@@ -110,7 +108,6 @@ class ReminderViewModel : ViewModel() {
             DailyReminderService.createNotificationChannel(context)
             scheduleExactAlarm(context, prefs.morningHour, prefs.morningMinute, REQUEST_CODE_MORNING, "morning")
             scheduleExactAlarm(context, prefs.eveningHour, prefs.eveningMinute, REQUEST_CODE_EVENING, "evening")
-            android.util.Log.d("ReminderViewModel", "Recordatorios diarios reprogramados desde preferencias")
         }
     }
 
@@ -161,7 +158,6 @@ class ReminderViewModel : ViewModel() {
         scheduleExactAlarm(context, morningHour, morningMinute, REQUEST_CODE_MORNING, "morning")
         scheduleExactAlarm(context, eveningHour, eveningMinute, REQUEST_CODE_EVENING, "evening")
 
-        android.util.Log.d("ReminderViewModel", "Recordatorios diarios programados: matutino $morningHour:$morningMinute, vespertino $eveningHour:$eveningMinute")
     }
 
     /**

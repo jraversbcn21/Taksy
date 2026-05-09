@@ -75,11 +75,11 @@ fun AddReminderDialog(
                             color = MaterialTheme.colorScheme.onSurface
                         ) 
                     },
-                    placeholder = { 
+                    placeholder = {
                         Text(
-                            "Ej: Revisar tarea",
+                            stringResource(R.string.reminder_title_placeholder),
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        ) 
+                        )
                     },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
@@ -106,11 +106,11 @@ fun AddReminderDialog(
                             color = MaterialTheme.colorScheme.onSurface
                         ) 
                     },
-                    placeholder = { 
+                    placeholder = {
                         Text(
-                            "Descripción opcional del recordatorio",
+                            stringResource(R.string.reminder_description_placeholder),
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        ) 
+                        )
                     },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 3,
@@ -142,9 +142,9 @@ fun AddReminderDialog(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Fecha")
+                        Text(stringResource(R.string.date_label))
                     }
-                    
+
                     OutlinedButton(
                         onClick = { showTimePicker = true },
                         modifier = Modifier.weight(1f)
@@ -155,7 +155,7 @@ fun AddReminderDialog(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Hora")
+                        Text(stringResource(R.string.time_label))
                     }
                 }
                 
@@ -196,20 +196,13 @@ fun AddReminderDialog(
             TextButton(
                 onClick = {
                     if (titulo.isNotBlank()) {
-                        android.util.Log.d("AddReminderDialog", "=== CREANDO RECORDATORIO ===")
-                        android.util.Log.d("AddReminderDialog", "Título: $titulo")
-                        android.util.Log.d("AddReminderDialog", "Descripción: $descripcion")
-                        android.util.Log.d("AddReminderDialog", "Fecha: $fechaRecordatorio")
-                        android.util.Log.d("AddReminderDialog", "Tipo: $tipoRecordatorio")
-                        android.util.Log.d("AddReminderDialog", "Llamando a onAddReminder...")
-                        
                         onAddReminder(titulo, descripcion.ifBlank { null }, fechaRecordatorio, tipoRecordatorio)
                         onDismiss()
                     }
                 },
                 enabled = titulo.isNotBlank()
             ) {
-                Text("Añadir")
+                Text(stringResource(R.string.add_action))
             }
         },
         dismissButton = {
@@ -218,7 +211,7 @@ fun AddReminderDialog(
             }
         }
     )
-    
+
     // Date Picker usando DatePicker de Compose con configuración completa
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
@@ -293,7 +286,7 @@ fun AddReminderDialog(
                         showDatePicker = false
                     }
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.ok))
                 }
             },
             dismissButton = {
@@ -397,7 +390,7 @@ fun AddReminderDialog(
                         showTimePicker = false
                     }
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.ok))
                 }
             },
             dismissButton = {

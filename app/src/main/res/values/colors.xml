@@ -31,4 +31,14 @@
     
     <!-- Color para el drawer - Verde agua suave del splash -->
     <color name="drawer_header_teal">#FFE0F7FA</color>
+
+    <!-- Widget colors -->
+    <color name="widget_background">#FFF5F5F5</color>
+    <color name="widget_text_primary">#FF1A1C1E</color>
+    <color name="widget_text_secondary">#FF70757A</color>
+    <color name="widget_divider">#FFE0E0E0</color>
+    <color name="widget_priority_default">#FFBDBDBD</color>
+    <color name="widget_priority_high">#FFE53935</color>
+    <color name="widget_priority_medium">#FFFB8C00</color>
+    <color name="widget_priority_low">#FF43A047</color>
 </resources>

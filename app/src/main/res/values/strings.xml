@@ -266,6 +266,31 @@
     <string name="backup_error_invalid_date">Formato de fecha inválido: %s</string>
     <string name="confirm">Confirmar</string>
 
+    <!-- Canales de notificación -->
+    <string name="notification_channel_name">Recordatorios de Taksy</string>
+    <string name="notification_channel_description">Notificaciones para recordatorios de tareas</string>
+    <string name="daily_notification_channel_name">Recordatorios Diarios</string>
+    <string name="daily_notification_channel_description">Notificaciones diarias para recordar revisar las tareas</string>
+
+    <!-- Contenido de notificaciones -->
+    <string name="notification_frequency_once">Recordatorio único</string>
+    <string name="notification_frequency_daily">Recordatorio diario</string>
+    <string name="notification_frequency_weekly">Recordatorio semanal</string>
+    <string name="notification_frequency_monthly">Recordatorio mensual</string>
+    <string name="notification_default_content">No olvides completar: %s</string>
+    <string name="notification_task_label">Tarea: %s</string>
+
+    <!-- Diálogo de recordatorio -->
+    <string name="reminder_title_placeholder">Ej: Revisar tarea</string>
+    <string name="reminder_description_placeholder">Descripción opcional del recordatorio</string>
+    <string name="date_label">Fecha</string>
+    <string name="time_label">Hora</string>
+    <string name="add_action">Añadir</string>
+
+    <!-- Mensajes de guardado -->
+    <string name="reminders_saved_success">Recordatorios guardados correctamente</string>
+    <string name="reminders_disabled">Recordatorios desactivados</string>
+
     <!-- Widget -->
     <string name="widget_name">Ticksy - Tareas pendientes</string>
     <string name="widget_description">Muestra tus tareas pendientes</string>

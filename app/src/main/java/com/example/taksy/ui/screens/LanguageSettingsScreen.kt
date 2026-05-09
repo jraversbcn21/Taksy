@@ -19,7 +19,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import android.util.Log
 import com.example.taksy.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,12 +31,8 @@ fun LanguageSettingsScreen(
     modifier: Modifier = Modifier
 ) {
     var tempSelectedLanguage by remember { mutableStateOf(currentLanguage) }
-    
-    Log.d("LanguageSettingsScreen", "Pantalla creada con currentLanguage: $currentLanguage")
-    
-    // Actualizar tempSelectedLanguage cuando cambie currentLanguage
+
     LaunchedEffect(currentLanguage) {
-        Log.d("LanguageSettingsScreen", "currentLanguage cambió a: $currentLanguage")
         tempSelectedLanguage = currentLanguage
     }
     Scaffold(
@@ -154,8 +149,7 @@ fun LanguageSettingsScreen(
                 language = "es",
                 languageName = stringResource(R.string.language_spanish),
                 isSelected = currentLanguage == "es",
-                onClick = { 
-                    Log.d("LanguageSettingsScreen", "Botón español clickeado")
+                onClick = {
                     tempSelectedLanguage = "es"
                     onShowLanguageChangeDialog("es")
                 },
@@ -167,8 +161,7 @@ fun LanguageSettingsScreen(
                 language = "en",
                 languageName = stringResource(R.string.language_english),
                 isSelected = currentLanguage == "en",
-                onClick = { 
-                    Log.d("LanguageSettingsScreen", "Botón inglés clickeado")
+                onClick = {
                     tempSelectedLanguage = "en"
                     onShowLanguageChangeDialog("en")
                 },

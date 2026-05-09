@@ -257,6 +257,31 @@
     <string name="backup_error_invalid_date">Invalid date format: %s</string>
     <string name="confirm">Confirm</string>
 
+    <!-- Notification channels -->
+    <string name="notification_channel_name">Taksy Reminders</string>
+    <string name="notification_channel_description">Notifications for task reminders</string>
+    <string name="daily_notification_channel_name">Daily Reminders</string>
+    <string name="daily_notification_channel_description">Daily notifications to remind you to review your tasks</string>
+
+    <!-- Notification content -->
+    <string name="notification_frequency_once">One-time reminder</string>
+    <string name="notification_frequency_daily">Daily reminder</string>
+    <string name="notification_frequency_weekly">Weekly reminder</string>
+    <string name="notification_frequency_monthly">Monthly reminder</string>
+    <string name="notification_default_content">Don\'t forget to complete: %s</string>
+    <string name="notification_task_label">Task: %s</string>
+
+    <!-- Reminder dialog -->
+    <string name="reminder_title_placeholder">E.g.: Review task</string>
+    <string name="reminder_description_placeholder">Optional reminder description</string>
+    <string name="date_label">Date</string>
+    <string name="time_label">Time</string>
+    <string name="add_action">Add</string>
+
+    <!-- Save messages -->
+    <string name="reminders_saved_success">Reminders saved successfully</string>
+    <string name="reminders_disabled">Reminders disabled</string>
+
     <!-- Widget -->
     <string name="widget_name">Ticksy - Pending tasks</string>
     <string name="widget_description">Shows your pending tasks</string>

@@ -47,10 +47,10 @@ class TaskWidgetRemoteViewsFactory(
         views.setTextViewText(R.id.widget_task_title, task.titulo)
 
         val dotColor = when (task.prioridad) {
-            TaskPrioridad.ALTA -> 0xFFE53935.toInt()
-            TaskPrioridad.MEDIA -> 0xFFFB8C00.toInt()
-            TaskPrioridad.BAJA -> 0xFF43A047.toInt()
-            TaskPrioridad.NINGUNA -> 0xFFBDBDBD.toInt()
+            TaskPrioridad.ALTA -> context.getColor(R.color.widget_priority_high)
+            TaskPrioridad.MEDIA -> context.getColor(R.color.widget_priority_medium)
+            TaskPrioridad.BAJA -> context.getColor(R.color.widget_priority_low)
+            TaskPrioridad.NINGUNA -> context.getColor(R.color.widget_priority_default)
         }
         views.setInt(R.id.widget_priority_dot, "setColorFilter", dotColor)
 
@@ -60,9 +60,9 @@ class TaskWidgetRemoteViewsFactory(
             views.setViewVisibility(R.id.widget_task_date, View.VISIBLE)
 
             if (task.fechaVencimiento.before(Date())) {
-                views.setTextColor(R.id.widget_task_date, 0xFFE53935.toInt())
+                views.setTextColor(R.id.widget_task_date, context.getColor(R.color.widget_priority_high))
             } else {
-                views.setTextColor(R.id.widget_task_date, 0xFF70757A.toInt())
+                views.setTextColor(R.id.widget_task_date, context.getColor(R.color.widget_text_secondary))
             }
         } else {
             views.setViewVisibility(R.id.widget_task_date, View.GONE)

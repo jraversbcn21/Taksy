@@ -53,7 +53,6 @@ import com.example.taksy.ui.components.SubtaskList
 import com.example.taksy.ui.components.ReminderItem
 import com.example.taksy.ui.components.AddReminderDialog
 import com.example.taksy.utils.DeviceUtils
-import android.util.Log
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,12 +74,8 @@ fun TaskDetailScreen(
     val allSubtasksCompletedMessage = stringResource(R.string.all_subtasks_completed)
     
     val showToastMessage = { message: String ->
-        Log.d("TaskDetailScreen", "=== showToastMessage llamado con: $message ===")
-        Log.d("TaskDetailScreen", "Estado antes: showToast=$showToast, toastMessage='$toastMessage'")
         toastMessage = message
         showToast = true
-        Log.d("TaskDetailScreen", "Estado después: showToast=$showToast, toastMessage='$toastMessage'")
-        Log.d("TaskDetailScreen", "=== Fin showToastMessage ===")
     }
     
     // Enfocar automáticamente el campo cuando se muestra
@@ -226,13 +221,10 @@ fun TaskDetailScreen(
                                     
                                     // Contar subtareas pendientes ANTES de hacer el cambio
                                     val pendingSubtasksBefore = sortedSubtasks.count { it.estado == TaskEstado.PENDIENTE }
-                                    Log.d("TaskDetailScreen", "Subtarea ${subtask.titulo} - Estado: ${subtask.estado}, wasPending: $wasPending, pendingBefore: $pendingSubtasksBefore")
-                                    
+
                                     onToggleSubtask(subtask)
-                                    
-                                    // Mostrar toast solo si era la última subtarea pendiente
+
                                     if (wasPending && pendingSubtasksBefore == 1) {
-                                        Log.d("TaskDetailScreen", "¡Era la última subtarea pendiente! Mostrando toast")
                                         showToastMessage(allSubtasksCompletedMessage)
                                     }
                                 }
@@ -288,14 +280,10 @@ fun TaskDetailScreen(
                 .zIndex(1000f),
             contentAlignment = Alignment.BottomCenter
         ) {
-            Log.d("TaskDetailScreen", "Renderizando Toast: message='$toastMessage', showToast=$showToast")
             Toast(
                 message = toastMessage,
                 isVisible = showToast,
-                onDismiss = { 
-                    Log.d("TaskDetailScreen", "Toast onDismiss llamado")
-                    showToast = false 
-                }
+                onDismiss = { showToast = false }
             )
         }
     }
@@ -423,7 +411,7 @@ private fun InlineSubtaskInput(
         if (subtaskTitle.isNotBlank()) {
             Spacer(modifier = Modifier.width(8.dp))
             TextButton(onClick = onCancel) {
-                Text("Cancelar")
+                Text(stringResource(R.string.cancel))
             }
         }
     }
@@ -435,12 +423,6 @@ private fun AddSubtaskDialog(
     onConfirm: (String) -> Unit
 ) {
     var title by remember { mutableStateOf("") }
-    
-    // Log cuando se abre el diálogo
-    LaunchedEffect(Unit) {
-        Log.d("TEXT_COLOR_DEBUG", "🔥 AddSubtaskDialog OPENED - OutlinedTextField should show WHITE text")
-        Log.d("TEXT_COLOR_DEBUG", "🔥 Using explicit white colors for all text elements")
-    }
     
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -459,13 +441,7 @@ private fun AddSubtaskDialog(
                 // Usar OutlinedTextField con colores explícitos
                 OutlinedTextField(
                     value = title,
-                        onValueChange = { 
-                            title = it
-                            Log.d("TEXT_COLOR_DEBUG", "=== AddSubtaskDialog (OutlinedTextField) ===")
-                            Log.d("TEXT_COLOR_DEBUG", "Text changed to: '$it'")
-                            Log.d("TEXT_COLOR_DEBUG", "Using explicit colors for dark mode")
-                            Log.d("TEXT_COLOR_DEBUG", "=======================================")
-                        },
+                        onValueChange = { title = it },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(
