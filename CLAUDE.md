@@ -37,9 +37,9 @@ Room Database (AppDatabase, v9)
 ```
 
 ### Data Layer
-- **Entities:** `Task` (with `TaskPrioridad` enum: NINGUNA/BAJA/MEDIA/ALTA), `Subtask`, `Category`, `Reminder`
+- **Entities:** `Task` (with `TaskPrioridad` enum: NINGUNA/BAJA/MEDIA/ALTA, `descripcion: String?`, `archivada: Boolean`), `Subtask`, `Category`, `Reminder`
 - **DAOs:** `TaskDao`, `SubtaskDao`, `CategoryDao`, `ReminderDao` — each has `getAllXxxSync()` and `deleteAllXxx()` methods for backup operations
-- **AppDatabase** uses TypeConverters for `Date` serialization and has 9 tracked migrations
+- **AppDatabase** uses TypeConverters for `Date` serialization and has 11 tracked migrations
 
 Key business rule: when all subtasks of a task are completed, the parent task auto-completes (logic lives in `TaskViewModel`).
 
@@ -109,39 +109,20 @@ Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true` to 
 
 ## Adding Database Migrations
 
-When modifying Room entities, always add a migration in `AppDatabase.kt` and increment the version. The current version is **9**. Never use `fallbackToDestructiveMigration` in production builds.
+When modifying Room entities, always add a migration in `AppDatabase.kt` and increment the version. The current version is **11**. Never use `fallbackToDestructiveMigration` in production builds.
 
 ## Recently Completed
 
-- **ReminderSchedulerContract interface** — extracted interface from `ReminderScheduler` for testability; injected via Hilt into `TaskViewModel` and `BackupViewModel`. `ReminderReceiver` keeps direct instantiation (no Hilt in BroadcastReceivers).
-- **Unified service package** — moved `DailyReminderService` from `services/` to `service/` (singular). Updated Manifest, imports, and deleted old package.
-- **Fixed FakeDAOs in tests** — added missing `getAllXxxSync()` and `deleteAllXxx()` method stubs to `TaskRepositoryTest` fakes.
-- **Swipe-to-delete** — Material3 `SwipeToDismissBox` on tasks (with confirmation dialog) and subtasks (direct delete).
-- **Global search** — search across all categories from `CategoryListScreen` TopAppBar, results with urgency colors and category name.
-- **UI cleanup** — removed redundant creation date and non-functional info icon from task list items.
-- **Task priority levels** — `TaskPrioridad` enum (NINGUNA/BAJA/MEDIA/ALTA), DB migration v8→v9, priority sorting in all queries, FilterChip selector, colored dot indicators.
-- **Backup error handling** — granular `BackupImportException` with `ImportErrorType` enum, per-record validation, localized error messages (ES/EN).
-- **Backup: reschedule reminders on import** — active future reminders rescheduled via `ReminderSchedulerContract` after import; past reminders skipped.
-- **Deprecation cleanup** — replaced all deprecated Compose APIs: `Icons.AutoMirrored.Filled.*`, `animateItem()`, `BorderStroke`.
+- **Phase 1 — Stability & Quality**: Removed 80 debug logs, moved 17 hardcoded strings to resources (ES/EN), extracted 12 widget colors to `colors.xml` + `values-night/`, 74 unit tests (BackupManager 31, TaskViewModel 14, TaskRepository 15, CategoryRepository 11, misc 3).
+- **Task notes/description** — `descripcion: String?` field, migration v9→v10, editable notes section in TaskDetailScreen with debounced save, BackupManager support.
+- **Undo swipe-to-delete** — swipe deletes immediately + Snackbar with "Undo" action. `restoreTask()` re-inserts via `@Insert(REPLACE)`. Removed confirmation dialog.
+- **Task archiving** — `archivada: Boolean` field, migration v10→v11. Swipe left-to-right to archive. Archive toggle in TopAppBar shows archived section. All main queries filter `archivada = 0`.
+- **Widget dark mode** — colors in `values-night/colors.xml`. Widget preview layout via `previewLayout`.
+- **Splash duration** — reduced from 5.5s to 2.5s with tightened animations.
+- **ReminderSchedulerContract interface** — extracted for testability; injected via Hilt.
 - **Home screen widget** — pending tasks list with priority dots, due dates, task count, refresh button, auto-sync on task changes.
 
-## Pending / Future Work — v1.0 Roadmap
-
-### Phase 1 — Stability & Quality (next up)
-- **Remove debug logs** — 51 `Log.d`/`Log.w` calls across `ReminderScheduler`, `DailyReminderService`, `DailyReminderScreen`, `TaskDetailScreen`, `LanguageSettingsScreen`, `AddReminderDialog`, `LocaleHelper`, `LanguageAwareContent`, `ReminderViewModel`, `NotificationService`
-- **Move hardcoded strings to resources** — notification channel names/descriptions in `NotificationService` and `DailyReminderService`, frequency text strings
-- **Extract widget hardcoded colors** — move inline colors from `widget_task_list.xml`, `widget_background.xml`, `TaskWidgetService.kt` to `colors.xml` + `values-night/colors.xml`
-- **Unit tests: BackupManager** — round-trip JSON, malformed input, missing sections, all ImportErrorTypes
-- **Unit tests: TaskViewModel** — auto-complete logic, filter switching, search, quick reminders (use fake `ReminderSchedulerContract`)
-- **Unit tests: Repositories** — expand existing `TaskRepositoryTest`, add `CategoryRepository` tests
-
-### Phase 2 — Core Features (v1.0 release)
-- **Task notes/description** — add `descripcion: String?` to Task entity, migration v9→v10, UI in TaskDetailScreen, backup support
-- **Undo swipe-to-delete** — replace confirmation dialog with Snackbar + "Undo" action
-- **Task archiving** — `archivada: Boolean` field, migration, filtered queries, archive UI
-- **Widget dark mode** — `values-night/` color variants (depends on Phase 1 color extraction)
-- **Widget preview image** — `android:previewImage` in `widget_task_info.xml`
-- **Reduce splash duration** — 5.5s → 2-2.5s
+## Pending / Future Work
 
 ### Phase 3 — Advanced Features (v1.1)
 - **Drag & drop to reorder tasks** — reuse `CategoryListScreen` drag pattern, add `orden` field to Task
