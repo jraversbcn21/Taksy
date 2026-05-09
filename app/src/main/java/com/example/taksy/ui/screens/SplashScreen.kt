@@ -51,38 +51,33 @@ fun SplashScreen(
     
     // Iniciar animaciones
     LaunchedEffect(Unit) {
-        // Primero hacer visible el icono
         alphaAnimation.animateTo(
-            targetValue = 1f,
-            animationSpec = tween(
-                durationMillis = 500,
-                easing = FastOutSlowInEasing
-            )
-        )
-        
-        // Luego animar la escala
-        scaleAnimation.animateTo(
-            targetValue = 1f,
-            animationSpec = tween(
-                durationMillis = 600,
-                easing = FastOutSlowInEasing
-            )
-        )
-        
-        // Pequeña pausa
-        delay(200)
-        
-        // Animación del texto
-        textAlphaAnimation.animateTo(
             targetValue = 1f,
             animationSpec = tween(
                 durationMillis = 400,
                 easing = FastOutSlowInEasing
             )
         )
-        
-        // Pequeña pausa antes del pulso
-        delay(300)
+
+        scaleAnimation.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(
+                durationMillis = 500,
+                easing = FastOutSlowInEasing
+            )
+        )
+
+        delay(100)
+
+        textAlphaAnimation.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(
+                durationMillis = 300,
+                easing = FastOutSlowInEasing
+            )
+        )
+
+        delay(200)
         
         // Animación de pulso sutil del icono
         pulseAnimation.animateTo(
