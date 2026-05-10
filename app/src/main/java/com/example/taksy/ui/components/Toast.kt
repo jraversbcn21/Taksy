@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.example.taksy.ui.theme.SuccessGreen
 import kotlinx.coroutines.delay
 
 @Composable
@@ -18,7 +19,7 @@ fun Toast(
     message: String,
     isVisible: Boolean,
     onDismiss: () -> Unit,
-    backgroundColor: Color = Color(0xFF4CAF50).copy(alpha = 0.9f),
+    backgroundColor: Color = SuccessGreen.copy(alpha = 0.9f),
     modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(

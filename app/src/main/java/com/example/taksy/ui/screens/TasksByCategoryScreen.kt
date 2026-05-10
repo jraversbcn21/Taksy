@@ -39,6 +39,10 @@ import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.ui.components.QuickReminderDialog
 import com.example.taksy.ui.components.TaskListItem
+import com.example.taksy.ui.theme.PriorityHighRed
+import com.example.taksy.ui.theme.PriorityLowGreen
+import com.example.taksy.ui.theme.PriorityMediumOrange
+import com.example.taksy.ui.theme.RecurrencePurple
 import com.example.taksy.utils.CategoryUtils
 import com.example.taksy.utils.DeviceUtils
 import kotlinx.coroutines.launch
@@ -526,9 +530,9 @@ private fun PrioritySelector(
 ) {
     val priorities = listOf(
         TaskPrioridad.NINGUNA to Triple(R.string.priority_none, Color.Gray, MaterialTheme.colorScheme.outline),
-        TaskPrioridad.BAJA to Triple(R.string.priority_low, Color(0xFF4CAF50), Color(0xFF4CAF50)),
-        TaskPrioridad.MEDIA to Triple(R.string.priority_medium, Color(0xFFFF9800), Color(0xFFFF9800)),
-        TaskPrioridad.ALTA to Triple(R.string.priority_high, Color(0xFFE53935), Color(0xFFE53935))
+        TaskPrioridad.BAJA to Triple(R.string.priority_low, PriorityLowGreen, PriorityLowGreen),
+        TaskPrioridad.MEDIA to Triple(R.string.priority_medium, PriorityMediumOrange, PriorityMediumOrange),
+        TaskPrioridad.ALTA to Triple(R.string.priority_high, PriorityHighRed, PriorityHighRed)
     )
 
     Row(
@@ -571,7 +575,7 @@ private fun RecurrenceSelector(
     onRecurrenceChange: (TaskRecurrencia) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val recurrenceColor = Color(0xFF7E57C2)
+    val recurrenceColor = RecurrencePurple
     val recurrences = listOf(
         TaskRecurrencia.NINGUNA to R.string.recurrence_none,
         TaskRecurrencia.DIARIA to R.string.recurrence_daily,

@@ -35,6 +35,13 @@ import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.ui.components.CategoryItem
 import com.example.taksy.ui.components.HamburgerMenu
 import com.example.taksy.ui.components.Toast
+import com.example.taksy.ui.theme.DueOverdueRed
+import com.example.taksy.ui.theme.DueTodayOrange
+import com.example.taksy.ui.theme.DueTomorrowOrange
+import com.example.taksy.ui.theme.PriorityHighRed
+import com.example.taksy.ui.theme.PriorityLowGreen
+import com.example.taksy.ui.theme.PriorityMediumOrange
+import com.example.taksy.ui.theme.SwipeDeleteBgLight
 import com.example.taksy.utils.DateUtils
 import com.example.taksy.utils.DueDateStatus
 import com.example.taksy.utils.DeviceUtils
@@ -292,7 +299,7 @@ fun CategoryListScreen(
                 message = toastMessage,
                 isVisible = showToastState,
                 onDismiss = { showToastState = false },
-                backgroundColor = Color(0xFFE57373).copy(alpha = 0.9f)
+                backgroundColor = SwipeDeleteBgLight.copy(alpha = 0.9f)
             )
         }
     }
@@ -324,9 +331,9 @@ private fun SearchResultItem(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (task.prioridad != TaskPrioridad.NINGUNA && !isCompleted) {
                         val priorityColor = when (task.prioridad) {
-                            TaskPrioridad.ALTA -> Color(0xFFE53935)
-                            TaskPrioridad.MEDIA -> Color(0xFFFF9800)
-                            TaskPrioridad.BAJA -> Color(0xFF4CAF50)
+                            TaskPrioridad.ALTA -> PriorityHighRed
+                            TaskPrioridad.MEDIA -> PriorityMediumOrange
+                            TaskPrioridad.BAJA -> PriorityLowGreen
                             else -> Color.Transparent
                         }
                         Box(
@@ -351,9 +358,9 @@ private fun SearchResultItem(
                 if (!isCompleted && task.fechaVencimiento != null) {
                     val status = DateUtils.getDueDateStatus(task.fechaVencimiento)
                     val dueColor = when (status) {
-                        DueDateStatus.OVERDUE -> Color(0xFFE53935)
-                        DueDateStatus.DUE_TODAY -> Color(0xFFFF6F00)
-                        DueDateStatus.DUE_TOMORROW -> Color(0xFFF57C00)
+                        DueDateStatus.OVERDUE -> DueOverdueRed
+                        DueDateStatus.DUE_TODAY -> DueTodayOrange
+                        DueDateStatus.DUE_TOMORROW -> DueTomorrowOrange
                         DueDateStatus.DUE_SOON -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                         DueDateStatus.NORMAL -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     }

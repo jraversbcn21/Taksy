@@ -32,3 +32,22 @@ val SplashLightYellow = Color(0xFFE8F5E8)  // Amarillo-verde muy suave
 val SplashLightGreen = Color(0xFFE0F2E0)   // Verde muy suave
 val SplashLightTeal = Color(0xFFE0F7FA)    // Azul-verde muy suave
 val SplashLightBlue = Color(0xFFE3F2FD)    // Azul muy suave
+
+// Colores semánticos compartidos por las pantallas
+val PriorityHighRed = Color(0xFFE53935)
+val PriorityMediumOrange = Color(0xFFFF9800)
+val PriorityLowGreen = Color(0xFF4CAF50)
+
+val DueOverdueRed = Color(0xFFE53935)
+val DueTodayOrange = Color(0xFFFF6F00)
+val DueTomorrowOrange = Color(0xFFF57C00)
+
+val RecurrencePurple = Color(0xFF7E57C2)
+
+val SwipeArchiveBg = Color(0xFF607D8B)
+val SwipeDeleteBg = Color(0xFFE53935)
+val SwipeDeleteBgLight = Color(0xFFE57373)
+
+val SuccessGreen = Color(0xFF4CAF50)
+val GoldAccent = Color(0xFFFFD700)
+val DarkCardBg = Color(0xFF2D2D2D)

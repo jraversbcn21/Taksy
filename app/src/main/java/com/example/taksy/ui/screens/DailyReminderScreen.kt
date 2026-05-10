@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.sp
 import com.example.taksy.R
 import com.example.taksy.ui.theme.SplashLightTeal
 import com.example.taksy.ui.theme.SplashLightGreen
+import com.example.taksy.ui.theme.DarkCardBg
+import com.example.taksy.ui.theme.GoldAccent
 import com.example.taksy.ui.theme.IconTeal40
 import com.example.taksy.ui.theme.IconTeal80
 import com.example.taksy.viewmodel.ReminderViewModel
@@ -185,7 +187,7 @@ fun DailyReminderScreen(
                             modifier = Modifier.size(60.dp),
                             shape = RoundedCornerShape(30.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFFFD700) // Dorado
+                                containerColor = GoldAccent
                             )
                         ) {
                             Box(
@@ -241,7 +243,7 @@ fun DailyReminderScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (isDarkMode) Color(0xFF2D2D2D) else Color.White
+                    containerColor = if (isDarkMode) DarkCardBg else Color.White
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {

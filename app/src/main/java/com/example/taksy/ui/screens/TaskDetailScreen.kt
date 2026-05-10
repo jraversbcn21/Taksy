@@ -55,6 +55,7 @@ import kotlinx.coroutines.delay
 import com.example.taksy.ui.components.SubtaskList
 import com.example.taksy.ui.components.ReminderItem
 import com.example.taksy.ui.components.AddReminderDialog
+import com.example.taksy.ui.theme.RecurrencePurple
 import com.example.taksy.utils.DeviceUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -191,7 +192,7 @@ fun TaskDetailScreen(
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = null,
-                                tint = Color(0xFF7E57C2),
+                                tint = RecurrencePurple,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -208,7 +209,7 @@ fun TaskDetailScreen(
                             TaskRecurrencia.MENSUAL to R.string.recurrence_monthly,
                             TaskRecurrencia.ANUAL to R.string.recurrence_yearly
                         )
-                        val recurrenceColor = Color(0xFF7E57C2)
+                        val recurrenceColor = RecurrencePurple
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             modifier = Modifier.padding(bottom = 8.dp)

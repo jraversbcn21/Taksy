@@ -16,6 +16,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.example.taksy.data.Subtask
 import com.example.taksy.data.TaskEstado
+import com.example.taksy.ui.theme.SwipeDeleteBg
 
 /**
  * Componente que representa una subtarea individual con swipe-to-delete
@@ -50,7 +51,7 @@ fun SubtaskItem(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFE53935))
+                    .background(SwipeDeleteBg)
                     .padding(horizontal = 16.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {

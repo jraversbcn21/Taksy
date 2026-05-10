@@ -30,6 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.taksy.R
+import com.example.taksy.ui.theme.IconAccentDark
+import com.example.taksy.ui.theme.IconGreen40
 import com.example.taksy.ui.theme.SplashLightBlue
 import com.example.taksy.ui.theme.SplashLightGreen
 import com.example.taksy.ui.theme.SplashLightTeal
@@ -132,7 +134,7 @@ fun SplashScreen(
                     fontWeight = FontWeight.Bold,
                     fontSize = 36.sp
                 ),
-                color = Color(0xFF2E7D32), // Verde oscuro para mejor contraste
+                color = IconAccentDark,
                 modifier = Modifier.alpha(textAlphaAnimation.value)
             )
             
@@ -140,7 +142,7 @@ fun SplashScreen(
             Text(
                 text = stringResource(R.string.splash_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color(0xFF388E3C), // Verde medio para mejor contraste
+                color = IconGreen40,
                 modifier = Modifier.alpha(textAlphaAnimation.value)
             )
         }

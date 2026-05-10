@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.taksy.R
+import com.example.taksy.ui.theme.DueTodayOrange
+import com.example.taksy.ui.theme.SuccessGreen
 import com.example.taksy.viewmodel.CategoryStats
 import com.example.taksy.viewmodel.DayCompletion
 import com.example.taksy.viewmodel.StatsUiState
@@ -108,7 +110,7 @@ private fun SummaryGrid(state: StatsUiState) {
                 icon = Icons.Default.CheckCircle,
                 label = stringResource(R.string.stats_completed),
                 value = state.completedTasks.toString(),
-                tint = Color(0xFF4CAF50)
+                tint = SuccessGreen
             )
             StatCard(
                 modifier = Modifier.weight(1f),
@@ -124,7 +126,7 @@ private fun SummaryGrid(state: StatsUiState) {
                 icon = Icons.Default.Star,
                 label = stringResource(R.string.stats_streak),
                 value = state.streakDays.toString(),
-                tint = Color(0xFFFF6F00)
+                tint = DueTodayOrange
             )
             StatCard(
                 modifier = Modifier.weight(1f),
