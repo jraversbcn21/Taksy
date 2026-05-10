@@ -2,76 +2,28 @@ package com.example.taksy.utils
 
 import android.content.Context
 import android.content.res.Configuration
-import android.os.Build
-import java.util.*
+import java.util.Locale
 
 object LocaleHelper {
     private const val PREF_NAME = "language_pref"
     private const val SELECTED_LANGUAGE = "selected_language"
+    private const val DEFAULT_LANGUAGE = "es"
 
-    fun setLocale(context: Context, language: String): Context {
-        saveLanguage(context, language)
-
-        val locale = Locale(language)
+    fun wrap(context: Context, language: String = getCurrentLanguage(context)): Context {
+        val locale = Locale.forLanguageTag(language)
         Locale.setDefault(locale)
-
         val config = Configuration(context.resources.configuration)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            config.setLocale(locale)
-        } else {
-            @Suppress("DEPRECATION")
-            config.locale = locale
-        }
-
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
-            context.createConfigurationContext(config)
-        } else {
-            @Suppress("DEPRECATION")
-            context.resources.updateConfiguration(config, context.resources.displayMetrics)
-            context
-        }
+        config.setLocale(locale)
+        return context.createConfigurationContext(config)
     }
 
-    fun applyLocale(context: Context, language: String) {
-        saveLanguage(context, language)
-
-        val locale = Locale(language)
-        Locale.setDefault(locale)
-
-        val config = Configuration(context.resources.configuration)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            config.setLocale(locale)
-        } else {
-            @Suppress("DEPRECATION")
-            config.locale = locale
-        }
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) {
-            @Suppress("DEPRECATION")
-            context.resources.updateConfiguration(config, context.resources.displayMetrics)
-        }
-
-        @Suppress("DEPRECATION")
-        context.resources.updateConfiguration(config, context.resources.displayMetrics)
-    }
-
-    fun getCurrentLanguage(context: Context): String {
-        return getSavedLanguage(context)
-    }
+    fun getCurrentLanguage(context: Context): String =
+        prefs(context).getString(SELECTED_LANGUAGE, DEFAULT_LANGUAGE) ?: DEFAULT_LANGUAGE
 
     fun saveLanguage(context: Context, language: String) {
-        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(SELECTED_LANGUAGE, language).apply()
+        prefs(context).edit().putString(SELECTED_LANGUAGE, language).apply()
     }
 
-    private fun getSavedLanguage(context: Context): String {
-        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(SELECTED_LANGUAGE, "es") ?: "es"
-    }
-
-    fun recreateActivity(context: Context) {
-        if (context is android.app.Activity) {
-            context.recreate()
-        }
-    }
+    private fun prefs(context: Context) =
+        context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 }

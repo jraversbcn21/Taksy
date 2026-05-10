@@ -59,6 +59,10 @@ class MainActivity : AppCompatActivity() {
         ActivityResultContracts.RequestPermission()
     ) { /* permission result handled silently */ }
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -75,9 +79,6 @@ class MainActivity : AppCompatActivity() {
                 requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-
-        // Aplicar el idioma guardado antes de renderizar la UI
-        LocaleHelper.applyLocale(this, LocaleHelper.getCurrentLanguage(this))
 
         setContent {
             MainScreen(activity = this)
