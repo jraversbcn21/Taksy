@@ -8,6 +8,7 @@ import com.example.taksy.data.Task
 import com.example.taksy.data.TaskDao
 import com.example.taksy.data.TaskEstado
 import kotlinx.coroutines.flow.Flow
+import java.util.Date
 import javax.inject.Inject
 
 class TaskRepository @Inject constructor(
@@ -45,8 +46,12 @@ class TaskRepository @Inject constructor(
     suspend fun reorderTasks(tasks: List<Task>) = taskDao.updateTasks(tasks)
 
     suspend fun toggleTaskStatus(task: Task) {
-        val newStatus = if (task.estado == TaskEstado.PENDIENTE) TaskEstado.COMPLETADA else TaskEstado.PENDIENTE
-        taskDao.updateTask(task.copy(estado = newStatus))
+        val completing = task.estado == TaskEstado.PENDIENTE
+        val newStatus = if (completing) TaskEstado.COMPLETADA else TaskEstado.PENDIENTE
+        taskDao.updateTask(task.copy(
+            estado = newStatus,
+            fechaCompletada = if (completing) Date() else null
+        ))
     }
 
     // ── Subtasks ───────────────────────────────────────────────────────────

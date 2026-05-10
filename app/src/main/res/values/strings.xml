@@ -326,6 +326,18 @@
     <string name="recurrence_yearly">Anual</string>
     <string name="recurring_task_created">Nueva tarea recurrente creada</string>
 
+    <!-- Estadísticas -->
+    <string name="stats_title">Estadísticas</string>
+    <string name="stats_total">Total</string>
+    <string name="stats_pending">Pendientes</string>
+    <string name="stats_completed">Completadas</string>
+    <string name="stats_completion_rate">Tasa de finalización</string>
+    <string name="stats_streak">Racha (días)</string>
+    <string name="stats_active_categories">Categorías activas</string>
+    <string name="stats_last_7_days">Completadas (últimos 7 días)</string>
+    <string name="stats_top_categories">Categorías principales</string>
+    <string name="stats_empty">Aún no hay datos. Crea y completa tareas para ver tus estadísticas.</string>
+
     <!-- Widget -->
     <string name="widget_name">Ticksy - Tareas pendientes</string>
     <string name="widget_description">Muestra tus tareas pendientes</string>

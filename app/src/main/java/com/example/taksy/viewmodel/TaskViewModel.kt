@@ -228,7 +228,7 @@ class TaskViewModel @Inject constructor(
                                 )
                             )
                         }
-                        repository.updateTask(task.copy(estado = TaskEstado.COMPLETADA))
+                        repository.updateTask(task.copy(estado = TaskEstado.COMPLETADA, fechaCompletada = Date()))
                         TaskWidgetProvider.refreshAll(context)
                     }
                 }

@@ -37,9 +37,9 @@ Room Database (AppDatabase, v9)
 ```
 
 ### Data Layer
-- **Entities:** `Task` (with `TaskPrioridad` enum: NINGUNA/BAJA/MEDIA/ALTA, `TaskRecurrencia` enum: NINGUNA/DIARIA/SEMANAL/MENSUAL/ANUAL, `descripcion: String?`, `archivada: Boolean`, `orden: Int`, `recurrencia: TaskRecurrencia`), `Subtask`, `Category`, `Reminder`
+- **Entities:** `Task` (with `TaskPrioridad` enum: NINGUNA/BAJA/MEDIA/ALTA, `TaskRecurrencia` enum: NINGUNA/DIARIA/SEMANAL/MENSUAL/ANUAL, `descripcion: String?`, `archivada: Boolean`, `orden: Int`, `recurrencia: TaskRecurrencia`, `fechaCompletada: Date?`), `Subtask`, `Category`, `Reminder`
 - **DAOs:** `TaskDao`, `SubtaskDao`, `CategoryDao`, `ReminderDao` — each has `getAllXxxSync()` and `deleteAllXxx()` methods for backup operations
-- **AppDatabase** uses TypeConverters for `Date` serialization and has 13 tracked migrations
+- **AppDatabase** uses TypeConverters for `Date` serialization and has 14 tracked migrations
 
 Key business rule: when all subtasks of a task are completed, the parent task auto-completes (logic lives in `TaskViewModel`).
 
@@ -65,8 +65,9 @@ NavHost start destination: `"onboarding"` (first launch) or `"category_list"` (s
 - `reminders`, `daily_reminders`, `theme_settings`, `language_settings`
 - `about` → `AboutScreen`
 - `backup` → `BackupScreen`
+- `stats` → `StatsScreen`
 
-Navigation drawer (hamburger menu) is an Android `DrawerLayout` wrapping a `ComposeView`, not a pure Compose drawer. Drawer items: Theme, Language, Daily Reminders, Backup, About.
+Navigation drawer (hamburger menu) is an Android `DrawerLayout` wrapping a `ComposeView`, not a pure Compose drawer. Drawer items: Theme, Language, Daily Reminders, Stats, Backup, About.
 
 Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true` to prevent stacking multiple destinations. All drawer screen `onBackClick` handlers guard against empty back stack by checking `popBackStack()` return value and falling back to navigating to `category_list`.
 
@@ -110,7 +111,7 @@ Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true` to 
 
 ## Adding Database Migrations
 
-When modifying Room entities, always add a migration in `AppDatabase.kt` and increment the version. The current version is **13**. Never use `fallbackToDestructiveMigration` in production builds.
+When modifying Room entities, always add a migration in `AppDatabase.kt` and increment the version. The current version is **14**. Never use `fallbackToDestructiveMigration` in production builds.
 
 ## Recently Completed
 
@@ -122,6 +123,7 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 - **Splash duration** — reduced from 5.5s to 2.5s with tightened animations.
 - **Drag & drop to reorder tasks** — `orden: Int` field, migration v11→v12, drag & drop in `TasksByCategoryScreen` reusing `CategoryListScreen` pattern. Queries sort by `orden ASC` after state. BackupManager support with backward-compatible import.
 - **Recurring task dates** — `TaskRecurrencia` enum (NINGUNA/DIARIA/SEMANAL/MENSUAL/ANUAL), migration v12→v13. Completing a recurring task clones it with advanced `fechaVencimiento`. Recurrence selector in InlineTaskInput and TaskDetailScreen. Purple refresh icon indicator in TaskListItem.
+- **Statistics dashboard** — `fechaCompletada: Date?` on Task (set by `TaskRepository.toggleTaskStatus` and the subtask auto-complete path in `TaskViewModel`), migration v13→v14. `StatsViewModel` (Hilt) combines tasks+categories flows. `StatsScreen` shows 6 stat cards, last-7-days bar chart (today on the right), and top categories (max 5) with completion progress bars. BackupManager serializes/parses `fechaCompletada` (backward-compatible: missing field treated as null).
 - **Onboarding flow** — 3-page `HorizontalPager` onboarding (organize tasks, subtasks/recurrence, smart reminders). SharedPreferences flag `onboarding_completed` in `"onboarding_prefs"`. Conditional nav startDestination. Skip/Next/Get Started buttons with animated page indicators.
 - **ReminderSchedulerContract interface** — extracted for testability; injected via Hilt.
 - **Home screen widget** — pending tasks list with priority dots, due dates, task count, refresh button, auto-sync on task changes.
@@ -132,7 +134,7 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 - ~~**Drag & drop to reorder tasks**~~ — DONE: `orden` field on Task, migration v11→v12, drag & drop in `TasksByCategoryScreen`
 - ~~**Recurring task dates**~~ — DONE: `TaskRecurrencia` enum, migration v12→v13, clone on completion with advanced date, recurrence selector in InlineTaskInput + TaskDetailScreen
 - ~~**Onboarding flow**~~ — DONE: 3-page HorizontalPager (organize, subtasks/recurrence, reminders), SharedPreferences flag `onboarding_completed`, conditional startDestination
-- **Statistics/dashboard** — weekly completions, active categories, productivity streaks
+- ~~**Statistics/dashboard**~~ — DONE: `fechaCompletada: Date?` field on Task, migration v13→v14, `StatsViewModel` derives stats from `combine(getAllTasks, getAllCategories)`. `StatsScreen` shows summary cards (total/pending/completed/rate/streak/active categories), last-7-days bar chart, top categories with progress bars. Drawer entry routes to `stats`.
 
 ### Phase 4 — Tech Debt (ongoing)
 - **Consolidate hardcoded Compose colors** — move to `Color.kt` or `MaterialTheme.colorScheme`

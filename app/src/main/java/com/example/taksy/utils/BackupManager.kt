@@ -73,6 +73,7 @@ object BackupManager {
                     put("archivada", t.archivada)
                     put("orden", t.orden)
                     put("recurrencia", t.recurrencia.name)
+                    put("fechaCompletada", t.fechaCompletada?.let { dateFormat.format(it) })
                 })
             }
         })
@@ -171,7 +172,9 @@ object BackupManager {
                         prioridad = try { TaskPrioridad.valueOf(t.optString("prioridad", "NINGUNA")) } catch (_: Exception) { TaskPrioridad.NINGUNA },
                         archivada = t.optBoolean("archivada", false),
                         orden = t.optInt("orden", 0),
-                        recurrencia = try { TaskRecurrencia.valueOf(t.optString("recurrencia", "NINGUNA")) } catch (_: Exception) { TaskRecurrencia.NINGUNA }
+                        recurrencia = try { TaskRecurrencia.valueOf(t.optString("recurrencia", "NINGUNA")) } catch (_: Exception) { TaskRecurrencia.NINGUNA },
+                        fechaCompletada = if (t.has("fechaCompletada") && !t.isNull("fechaCompletada"))
+                            dateFormat.parse(t.getString("fechaCompletada")) else null
                     )
                 )
             } catch (e: BackupImportException) {

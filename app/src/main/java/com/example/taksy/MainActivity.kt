@@ -41,6 +41,7 @@ import com.example.taksy.ui.screens.TaskDetailScreen
 import com.example.taksy.ui.screens.TasksByCategoryScreen
 import com.example.taksy.ui.screens.AboutScreen
 import com.example.taksy.ui.screens.BackupScreen
+import com.example.taksy.ui.screens.StatsScreen
 import com.example.taksy.viewmodel.BackupViewModel
 import com.example.taksy.ui.screens.ThemeSettingsScreen
 import com.example.taksy.ui.theme.TicksyTheme
@@ -265,6 +266,16 @@ fun MainContent(
             )
         }
 
+        composable("stats") {
+            StatsScreen(
+                onBackClick = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate("category_list") { launchSingleTop = true }
+                    }
+                }
+            )
+        }
+
         composable("about") {
             AboutScreen(
                 onBackClick = {
@@ -400,6 +411,7 @@ fun DrawerScreen(
                                 R.id.nav_theme -> "theme_settings"
                                 R.id.nav_language -> "language_settings"
                                 R.id.nav_reminders -> "daily_reminders"
+                                R.id.nav_stats -> "stats"
                                 R.id.nav_backup -> "backup"
                                 R.id.nav_about -> "about"
                                 else -> null

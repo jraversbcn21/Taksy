@@ -317,6 +317,18 @@
     <string name="recurrence_yearly">Yearly</string>
     <string name="recurring_task_created">New recurring task created</string>
 
+    <!-- Statistics -->
+    <string name="stats_title">Statistics</string>
+    <string name="stats_total">Total</string>
+    <string name="stats_pending">Pending</string>
+    <string name="stats_completed">Completed</string>
+    <string name="stats_completion_rate">Completion rate</string>
+    <string name="stats_streak">Streak (days)</string>
+    <string name="stats_active_categories">Active categories</string>
+    <string name="stats_last_7_days">Completed (last 7 days)</string>
+    <string name="stats_top_categories">Top categories</string>
+    <string name="stats_empty">No data yet. Create and complete tasks to see your statistics.</string>
+
     <!-- Widget -->
     <string name="widget_name">Ticksy - Pending tasks</string>
     <string name="widget_description">Shows your pending tasks</string>

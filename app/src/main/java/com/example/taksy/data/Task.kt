@@ -17,7 +17,8 @@ data class Task(
     val prioridad: TaskPrioridad = TaskPrioridad.NINGUNA,
     val archivada: Boolean = false,
     val orden: Int = 0,
-    val recurrencia: TaskRecurrencia = TaskRecurrencia.NINGUNA
+    val recurrencia: TaskRecurrencia = TaskRecurrencia.NINGUNA,
+    val fechaCompletada: Date? = null
 )
 
 enum class TaskEstado {
