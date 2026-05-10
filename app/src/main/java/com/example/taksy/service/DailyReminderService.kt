@@ -46,12 +46,12 @@ class DailyReminderService : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val reminderType = intent.getStringExtra("reminder_type") ?: "morning"
 
-        val prefs = com.example.taksy.viewmodel.ReminderViewModel.loadPrefs(context)
+        val prefs = DailyReminderManager.loadPrefs(context)
         if (prefs.enabled) {
             val requestCode = if (reminderType == "morning") 1001 else 1002
             val hour = if (reminderType == "morning") prefs.morningHour else prefs.eveningHour
             val minute = if (reminderType == "morning") prefs.morningMinute else prefs.eveningMinute
-            com.example.taksy.viewmodel.ReminderViewModel.scheduleExactAlarm(
+            DailyReminderManager.scheduleExactAlarm(
                 context, hour, minute, requestCode, reminderType
             )
         }

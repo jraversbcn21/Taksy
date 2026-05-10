@@ -28,7 +28,7 @@ import com.example.taksy.ui.theme.DarkCardBg
 import com.example.taksy.ui.theme.GoldAccent
 import com.example.taksy.ui.theme.IconTeal40
 import com.example.taksy.ui.theme.IconTeal80
-import com.example.taksy.viewmodel.ReminderViewModel
+import com.example.taksy.service.DailyReminderManager
 import java.util.Calendar
 
 /**
@@ -42,10 +42,9 @@ fun DailyReminderScreen(
     activity: androidx.activity.ComponentActivity? = null
 ) {
     val context = LocalContext.current
-    val reminderViewModel = remember { ReminderViewModel() }
 
     // Cargar preferencias guardadas
-    val savedPrefs = remember { ReminderViewModel.loadPrefs(context) }
+    val savedPrefs = remember { DailyReminderManager.loadPrefs(context) }
     var isDailyReminderEnabled by remember { mutableStateOf(savedPrefs.enabled) }
     var reminderTime1 by remember {
         mutableStateOf(String.format("%02d:%02d", savedPrefs.morningHour, savedPrefs.morningMinute))
@@ -57,11 +56,6 @@ fun DailyReminderScreen(
     var timePickerKey1 by remember { mutableStateOf(0) }
     var timePickerKey2 by remember { mutableStateOf(0) }
 
-    // Inicializar el AlarmManager
-    LaunchedEffect(Unit) {
-        reminderViewModel.initializeAlarmManager(context)
-    }
-    
     LaunchedEffect(timePickerKey1) {
         if (timePickerKey1 > 0) {
             val activityToUse = activity ?: (context as? androidx.activity.ComponentActivity)
@@ -110,7 +104,7 @@ fun DailyReminderScreen(
             val time1 = reminderTime1.split(":")
             val time2 = reminderTime2.split(":")
             
-            reminderViewModel.scheduleDailyReminders(
+            DailyReminderManager.scheduleDailyReminders(
                 context = context,
                 morningHour = time1[0].toInt(),
                 morningMinute = time1[1].toInt(),
@@ -119,7 +113,7 @@ fun DailyReminderScreen(
                 enabled = isDailyReminderEnabled
             )
         } else {
-            reminderViewModel.cancelDailyReminders(context)
+            DailyReminderManager.cancelDailyReminders(context)
         }
         showSaveSuccess = true
     }

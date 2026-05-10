@@ -26,7 +26,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 when (intent.action) {
                     Intent.ACTION_BOOT_COMPLETED -> {
                         rescheduleAllRemindersAfterBoot(context)
-                        com.example.taksy.viewmodel.ReminderViewModel.rescheduleFromPrefs(context)
+                        com.example.taksy.service.DailyReminderManager.rescheduleFromPrefs(context)
                     }
                     else -> handleReminderAlarm(context, intent)
                 }

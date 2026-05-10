@@ -30,7 +30,7 @@ On Windows, use `gradlew.bat` if `./gradlew` doesn't work.
 UI (Compose screens)
   ↓ observes StateFlow
 ViewModels (TaskViewModel, CategoryViewModel, ThemeViewModel, SplashViewModel,
-            BackupViewModel, StatsViewModel, ReminderViewModel)
+            BackupViewModel, StatsViewModel)
   ↓ calls suspend funs / collects Flow
 Repository (TaskRepository, CategoryRepository)
   ↓ delegates to DAOs
@@ -78,8 +78,8 @@ Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true` to 
 - `ReminderScheduler` — implements `ReminderSchedulerContract`; schedules exact alarms via `AlarmManager.setExactAndAllowWhileIdle()`. Falls back to `setAndAllowWhileIdle()` if exact alarms are not permitted.
 - `ReminderReceiver` — BroadcastReceiver that handles alarm fires, triggers `NotificationService`, and reschedules recurring reminders. Uses `goAsync()` for async DB access. Also reschedules daily reminders on `BOOT_COMPLETED` via `ReminderViewModel.rescheduleFromPrefs()`. Instantiates `ReminderScheduler` directly (not Hilt-managed).
 - `DailyReminderService` — BroadcastReceiver (in `service/` package) for morning/evening daily reminders. Uses `setExactAndAllowWhileIdle()` (not `setRepeating()`) for reliable delivery. Each alarm self-reschedules for the next day after firing. Uses `goAsync()` for async DB access.
-- `ReminderViewModel` — non-Hilt ViewModel for daily reminder scheduling. Persists configuration (enabled, morning/evening hours) to SharedPreferences (`"daily_reminder_prefs"`). Exposes static `scheduleExactAlarm()`, `loadPrefs()`, and `rescheduleFromPrefs()` for use by receivers.
-- Boot receiver (`RECEIVE_BOOT_COMPLETED`) re-schedules both task reminders and daily reminders after device restart.
+- `DailyReminderManager` — stateless `object` in `service/` for daily reminder scheduling. Persists configuration (enabled, morning/evening hours) to SharedPreferences (`"daily_reminder_prefs"`). Exposes `loadPrefs()`, `scheduleDailyReminders()`, `cancelDailyReminders()`, `scheduleExactAlarm()`, `rescheduleFromPrefs()`. Called from `DailyReminderScreen`, `DailyReminderService` (self-reschedule), and `ReminderReceiver` (boot reschedule).
+- Boot receiver (`RECEIVE_BOOT_COMPLETED`) re-schedules both task reminders and daily reminders after device restart (via `DailyReminderManager.rescheduleFromPrefs()`).
 - **Notification channels:** `"taksy_reminders"` (task reminders) and `"daily_reminders"` (daily summaries), both IMPORTANCE_HIGH.
 
 ### Backup System
@@ -134,7 +134,7 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 
 **Phase 3 is fully complete.** All v1.1 features (drag & drop, recurring tasks, onboarding, statistics dashboard) are merged and described in the "Recently Completed" section above.
 
-### Phase 4 — Tech Debt (ongoing)
-- **Consolidate hardcoded Compose colors** — move to `Color.kt` or `MaterialTheme.colorScheme`
-- **Eliminate deprecated LocaleHelper APIs** — replace `config.locale`/`updateConfiguration()` with `createConfigurationContext()` (minSDK 26 supports it)
-- **Evaluate ReminderViewModel Hilt migration** — currently non-Hilt with static companion methods
+### Phase 4 — Tech Debt
+- ~~Consolidate hardcoded Compose colors~~ — DONE: 13 semantic constants in `ui/theme/Color.kt` (priority, due-date, recurrence, swipe, success/gold/dark-card).
+- ~~Eliminate deprecated `LocaleHelper` APIs~~ — DONE: rewritten to use only `createConfigurationContext()` and `Configuration#setLocale()`. `MainActivity.attachBaseContext()` applies the saved locale.
+- ~~Evaluate `ReminderViewModel` Hilt migration~~ — DONE (demoted, not migrated): converted to `object DailyReminderManager` in `service/`. It was not really a ViewModel (no `StateFlow`/`viewModelScope`), and `BroadcastReceiver`s don't benefit from Hilt for stateless helpers. Removed the dead `alarmManager` field and `initializeAlarmManager()` method.
