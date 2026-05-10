@@ -9,6 +9,7 @@ import com.example.taksy.data.Subtask
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
+import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.data.TipoRecordatorio
 import com.example.taksy.repository.TaskFilter
 import com.example.taksy.repository.TaskRepository
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import java.util.Date
 import javax.inject.Inject
 
@@ -73,11 +75,11 @@ class TaskViewModel @Inject constructor(
 
     fun addTask(titulo: String, fechaVencimiento: Date?, categoriaId: Long?) = addTask(titulo, fechaVencimiento, categoriaId, TaskPrioridad.NINGUNA)
 
-    fun addTask(titulo: String, fechaVencimiento: Date?, categoriaId: Long?, prioridad: TaskPrioridad) {
+    fun addTask(titulo: String, fechaVencimiento: Date?, categoriaId: Long?, prioridad: TaskPrioridad, recurrencia: TaskRecurrencia = TaskRecurrencia.NINGUNA) {
         if (titulo.isBlank()) return
         viewModelScope.launch {
             runCatching {
-                repository.insertTask(Task(titulo = titulo.trim(), fechaVencimiento = fechaVencimiento, categoriaId = categoriaId, prioridad = prioridad))
+                repository.insertTask(Task(titulo = titulo.trim(), fechaVencimiento = fechaVencimiento, categoriaId = categoriaId, prioridad = prioridad, recurrencia = recurrencia))
                 TaskWidgetProvider.refreshAll(context)
             }.onFailure { setError(it.message) }
         }
@@ -126,17 +128,46 @@ class TaskViewModel @Inject constructor(
     fun getArchivedTasksByCategory(categoryId: Long): Flow<List<Task>> =
         repository.getArchivedTasksByCategory(categoryId)
 
+    fun reorderTasks(tasks: List<Task>) {
+        viewModelScope.launch { repository.reorderTasks(tasks) }
+    }
+
     fun toggleTaskStatus(task: Task) {
         viewModelScope.launch {
             runCatching {
                 if (task.estado == TaskEstado.PENDIENTE) {
                     repository.getRemindersByTaskIdSync(task.id).forEach { reminderScheduler.cancelReminder(it.id) }
                     repository.cancelAllRemindersForTask(task.id)
+                    if (task.recurrencia != TaskRecurrencia.NINGUNA) {
+                        val nextDate = advanceDate(task.fechaVencimiento ?: Date(), task.recurrencia)
+                        repository.insertTask(
+                            Task(
+                                titulo = task.titulo,
+                                descripcion = task.descripcion,
+                                fechaVencimiento = nextDate,
+                                categoriaId = task.categoriaId,
+                                prioridad = task.prioridad,
+                                recurrencia = task.recurrencia
+                            )
+                        )
+                    }
                 }
                 repository.toggleTaskStatus(task)
                 TaskWidgetProvider.refreshAll(context)
             }.onFailure { setError(it.message) }
         }
+    }
+
+    private fun advanceDate(from: Date, recurrencia: TaskRecurrencia): Date {
+        val cal = Calendar.getInstance().apply { time = from }
+        when (recurrencia) {
+            TaskRecurrencia.DIARIA -> cal.add(Calendar.DAY_OF_MONTH, 1)
+            TaskRecurrencia.SEMANAL -> cal.add(Calendar.WEEK_OF_YEAR, 1)
+            TaskRecurrencia.MENSUAL -> cal.add(Calendar.MONTH, 1)
+            TaskRecurrencia.ANUAL -> cal.add(Calendar.YEAR, 1)
+            TaskRecurrencia.NINGUNA -> {}
+        }
+        return cal.time
     }
 
     fun setFilter(filter: TaskFilter) {
@@ -184,6 +215,19 @@ class TaskViewModel @Inject constructor(
                 if (subtasks.isNotEmpty() && subtasks.all { it.estado == TaskEstado.COMPLETADA }) {
                     val task = repository.getTaskById(subtask.taskId)
                     if (task != null && task.estado == TaskEstado.PENDIENTE) {
+                        if (task.recurrencia != TaskRecurrencia.NINGUNA) {
+                            val nextDate = advanceDate(task.fechaVencimiento ?: Date(), task.recurrencia)
+                            repository.insertTask(
+                                Task(
+                                    titulo = task.titulo,
+                                    descripcion = task.descripcion,
+                                    fechaVencimiento = nextDate,
+                                    categoriaId = task.categoriaId,
+                                    prioridad = task.prioridad,
+                                    recurrencia = task.recurrencia
+                                )
+                            )
+                        }
                         repository.updateTask(task.copy(estado = TaskEstado.COMPLETADA))
                         TaskWidgetProvider.refreshAll(context)
                     }

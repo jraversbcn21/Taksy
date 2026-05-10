@@ -1,9 +1,13 @@
 package com.example.taksy.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
@@ -32,6 +36,7 @@ import com.example.taksy.data.Category
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
+import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.ui.components.QuickReminderDialog
 import com.example.taksy.ui.components.TaskListItem
 import com.example.taksy.utils.CategoryUtils
@@ -41,7 +46,7 @@ import kotlinx.coroutines.launch
 /**
  * Pantalla que muestra las tareas de una categoría específica
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun TasksByCategoryScreen(
     category: Category,
@@ -51,13 +56,14 @@ fun TasksByCategoryScreen(
     onTaskClick: (Task) -> Unit = {},
     onTaskToggle: (Task) -> Unit = {},
     onTaskDelete: (Task) -> Unit = {},
-    onAddTask: (String, Date?, TaskPrioridad) -> Unit = { _, _, _ -> },
+    onAddTask: (String, Date?, TaskPrioridad, com.example.taksy.data.TaskRecurrencia) -> Unit = { _, _, _, _ -> },
     showToast: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showInlineInput by remember { mutableStateOf(false) }
     var newTaskTitle by remember { mutableStateOf("") }
     var selectedPriority by remember { mutableStateOf(TaskPrioridad.NINGUNA) }
+    var selectedRecurrence by remember { mutableStateOf(TaskRecurrencia.NINGUNA) }
     var searchQuery by remember { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
     var showArchived by remember { mutableStateOf(false) }
@@ -65,6 +71,28 @@ fun TasksByCategoryScreen(
     val focusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+
+    // Drag & drop state
+    var tasksState by remember { mutableStateOf(tasks) }
+    val listState = rememberLazyListState()
+    var draggingIndex by remember { mutableStateOf(-1) }
+    var accumulatedDelta by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(tasks) {
+        tasksState = tasks
+    }
+
+    fun moveTask(fromIndex: Int, toIndex: Int) {
+        if (fromIndex == toIndex) return
+        val newTasks = tasksState.toMutableList()
+        val item = newTasks.removeAt(fromIndex)
+        newTasks.add(toIndex, item)
+        val reordered = newTasks.mapIndexed { index, task ->
+            task.copy(orden = index + 1)
+        }
+        tasksState = reordered
+        taskViewModel.reorderTasks(reordered)
+    }
 
     val archivedTasks by taskViewModel.getArchivedTasksByCategory(category.id).collectAsState(initial = emptyList())
 
@@ -206,17 +234,21 @@ fun TasksByCategoryScreen(
                     onTaskTitleChange = { newTaskTitle = it },
                     selectedPriority = selectedPriority,
                     onPriorityChange = { selectedPriority = it },
+                    selectedRecurrence = selectedRecurrence,
+                    onRecurrenceChange = { selectedRecurrence = it },
                     onAddTask = { title ->
                         if (title.isNotBlank()) {
                             val currentDate = java.util.Date()
-                            onAddTask(title.trim(), currentDate, selectedPriority)
+                            onAddTask(title.trim(), currentDate, selectedPriority, selectedRecurrence)
                             newTaskTitle = ""
                             selectedPriority = TaskPrioridad.NINGUNA
+                            selectedRecurrence = TaskRecurrencia.NINGUNA
                         }
                     },
                     onCancel = {
                         newTaskTitle = ""
                         selectedPriority = TaskPrioridad.NINGUNA
+                        selectedRecurrence = TaskRecurrencia.NINGUNA
                         showInlineInput = false
                     },
                     focusRequester = focusRequester
@@ -260,16 +292,54 @@ fun TasksByCategoryScreen(
                     }
                 } else {
                     // Lista de tareas
+                    val isDraggable = searchQuery.isBlank()
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(displayedTasks, key = { it.id }) { task ->
+                        items(
+                            items = if (isDraggable) tasksState else displayedTasks,
+                            key = { it.id }
+                        ) { task ->
+                            val index = tasksState.indexOf(task)
                             val subtasks by taskViewModel.getSubtasksByTaskId(task.id).collectAsState(initial = emptyList())
                             val pendingSubtasksCount = subtasks.count { it.estado == TaskEstado.PENDIENTE }
                             val reminders by taskViewModel.getRemindersByTaskId(task.id).collectAsState(initial = emptyList())
                             val hasActiveReminder = reminders.any { it.activo }
+
+                            val dragModifier = if (isDraggable) {
+                                Modifier
+                                    .animateItem()
+                                    .draggable(
+                                        state = rememberDraggableState { delta ->
+                                            accumulatedDelta += delta
+                                            val minThreshold = 50f
+                                            if (kotlin.math.abs(accumulatedDelta) < minThreshold) return@rememberDraggableState
+                                            val thresholdUp = 300f
+                                            val thresholdDown = 350f
+                                            val threshold = if (accumulatedDelta < 0) thresholdUp else thresholdDown
+                                            val positionChange = (accumulatedDelta / threshold).toInt().coerceIn(-1, 1)
+                                            if (positionChange != 0) {
+                                                val newIndex = (index + positionChange).coerceIn(0, tasksState.size - 1)
+                                                if (newIndex != index) {
+                                                    coroutineScope.launch { moveTask(index, newIndex) }
+                                                    accumulatedDelta = 0f
+                                                }
+                                            }
+                                        },
+                                        orientation = androidx.compose.foundation.gestures.Orientation.Vertical,
+                                        onDragStarted = {
+                                            draggingIndex = index
+                                            accumulatedDelta = 0f
+                                        },
+                                        onDragStopped = {
+                                            draggingIndex = -1
+                                            accumulatedDelta = 0f
+                                        }
+                                    )
+                            } else Modifier
 
                             TaskListItem(
                                 task = task,
@@ -282,7 +352,8 @@ fun TasksByCategoryScreen(
                                 onTaskDelete = handleDeleteWithUndo,
                                 onArchiveTask = handleArchiveWithUndo,
                                 onShowToast = { message -> showSnackbar(message) },
-                                onReminderClick = { taskForReminder = it }
+                                onReminderClick = { taskForReminder = it },
+                                modifier = dragModifier
                             )
                         }
 
@@ -314,9 +385,10 @@ fun TasksByCategoryScreen(
                 FloatingActionButton(
                     onClick = {
                         if (showInlineInput && newTaskTitle.isNotBlank()) {
-                            onAddTask(newTaskTitle.trim(), null, selectedPriority)
+                            onAddTask(newTaskTitle.trim(), null, selectedPriority, selectedRecurrence)
                             newTaskTitle = ""
                             selectedPriority = TaskPrioridad.NINGUNA
+                            selectedRecurrence = TaskRecurrencia.NINGUNA
                         } else {
                             showInlineInput = true
                         }
@@ -367,6 +439,8 @@ private fun InlineTaskInput(
     onTaskTitleChange: (String) -> Unit,
     selectedPriority: TaskPrioridad,
     onPriorityChange: (TaskPrioridad) -> Unit,
+    selectedRecurrence: TaskRecurrencia,
+    onRecurrenceChange: (TaskRecurrencia) -> Unit,
     onAddTask: (String) -> Unit,
     onCancel: () -> Unit,
     focusRequester: FocusRequester
@@ -434,6 +508,13 @@ private fun InlineTaskInput(
             onPriorityChange = onPriorityChange,
             modifier = Modifier.padding(start = 48.dp, top = 4.dp)
         )
+
+        // Recurrence selector row
+        RecurrenceSelector(
+            selectedRecurrence = selectedRecurrence,
+            onRecurrenceChange = onRecurrenceChange,
+            modifier = Modifier.padding(start = 48.dp, top = 4.dp)
+        )
     }
 }
 
@@ -477,6 +558,55 @@ private fun PrioritySelector(
                     selected = isSelected,
                     borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
                     selectedBorderColor = accentColor
+                ),
+                modifier = Modifier.height(28.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun RecurrenceSelector(
+    selectedRecurrence: TaskRecurrencia,
+    onRecurrenceChange: (TaskRecurrencia) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val recurrenceColor = Color(0xFF7E57C2)
+    val recurrences = listOf(
+        TaskRecurrencia.NINGUNA to R.string.recurrence_none,
+        TaskRecurrencia.DIARIA to R.string.recurrence_daily,
+        TaskRecurrencia.SEMANAL to R.string.recurrence_weekly,
+        TaskRecurrencia.MENSUAL to R.string.recurrence_monthly,
+        TaskRecurrencia.ANUAL to R.string.recurrence_yearly
+    )
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        recurrences.forEach { (recurrence, labelRes) ->
+            val isSelected = selectedRecurrence == recurrence
+            val chipColor = if (recurrence == TaskRecurrencia.NINGUNA) MaterialTheme.colorScheme.outline else recurrenceColor
+
+            FilterChip(
+                selected = isSelected,
+                onClick = { onRecurrenceChange(recurrence) },
+                label = {
+                    Text(
+                        text = stringResource(labelRes),
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = chipColor.copy(alpha = 0.15f),
+                    selectedLabelColor = chipColor
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = isSelected,
+                    borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    selectedBorderColor = chipColor
                 ),
                 modifier = Modifier.height(28.dp)
             )

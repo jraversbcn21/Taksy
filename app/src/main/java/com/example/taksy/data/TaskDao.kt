@@ -12,13 +12,13 @@ interface TaskDao {
     /**
      * Obtiene todas las tareas ordenadas: pendientes primero, completadas al final
      */
-    @Query("SELECT * FROM tasks WHERE archivada = 0 ORDER BY CASE WHEN estado = 'PENDIENTE' THEN 0 ELSE 1 END, CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
+    @Query("SELECT * FROM tasks WHERE archivada = 0 ORDER BY CASE WHEN estado = 'PENDIENTE' THEN 0 ELSE 1 END, orden ASC, CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
     fun getAllTasks(): Flow<List<Task>>
     
     /**
      * Obtiene todas las tareas pendientes
      */
-    @Query("SELECT * FROM tasks WHERE estado = 'PENDIENTE' AND archivada = 0 ORDER BY CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
+    @Query("SELECT * FROM tasks WHERE estado = 'PENDIENTE' AND archivada = 0 ORDER BY orden ASC, CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
     fun getPendingTasks(): Flow<List<Task>>
     
     /**
@@ -72,7 +72,7 @@ interface TaskDao {
     /**
      * Obtiene tareas por categoría
      */
-    @Query("SELECT * FROM tasks WHERE categoriaId = :categoryId AND archivada = 0 ORDER BY CASE WHEN estado = 'PENDIENTE' THEN 0 ELSE 1 END, CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
+    @Query("SELECT * FROM tasks WHERE categoriaId = :categoryId AND archivada = 0 ORDER BY CASE WHEN estado = 'PENDIENTE' THEN 0 ELSE 1 END, orden ASC, CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
     fun getTasksByCategory(categoryId: Long): Flow<List<Task>>
     
     /**
@@ -84,7 +84,7 @@ interface TaskDao {
     @Query("SELECT * FROM tasks ORDER BY id ASC")
     suspend fun getAllTasksSync(): List<Task>
 
-    @Query("SELECT * FROM tasks WHERE estado = 'PENDIENTE' AND archivada = 0 ORDER BY CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaVencimiento ASC, fechaCreacion DESC")
+    @Query("SELECT * FROM tasks WHERE estado = 'PENDIENTE' AND archivada = 0 ORDER BY orden ASC, CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaVencimiento ASC, fechaCreacion DESC")
     fun getPendingTasksSync(): List<Task>
 
     @Query("DELETE FROM tasks")
@@ -185,4 +185,7 @@ interface TaskDao {
 
     @Query("UPDATE tasks SET archivada = 0 WHERE id = :taskId")
     suspend fun unarchiveTask(taskId: Long)
+
+    @Update
+    suspend fun updateTasks(tasks: List<Task>)
 }

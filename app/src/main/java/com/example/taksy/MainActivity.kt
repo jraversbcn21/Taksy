@@ -214,7 +214,7 @@ fun MainContent(
                         onTaskClick = { task -> navController.navigate("task_detail/${task.id}") },
                         onTaskToggle = { task -> taskViewModel.toggleTaskStatus(task) },
                         onTaskDelete = { task -> taskViewModel.deleteTask(task) },
-                        onAddTask = { title, dueDate, prioridad -> taskViewModel.addTask(title, dueDate, categoryId, prioridad) },
+                        onAddTask = { title, dueDate, prioridad, recurrencia -> taskViewModel.addTask(title, dueDate, categoryId, prioridad, recurrencia) },
                         showToast = {}
                     )
                 }

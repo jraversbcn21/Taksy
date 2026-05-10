@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.window.DialogProperties
@@ -48,6 +49,7 @@ import com.example.taksy.R
 import com.example.taksy.data.Subtask
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
+import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.ui.components.Toast
 import kotlinx.coroutines.delay
 import com.example.taksy.ui.components.SubtaskList
@@ -169,6 +171,78 @@ fun TaskDetailScreen(
                             )
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                        )
+                    }
+                }
+
+                // Sección de Recurrencia
+                item(key = "recurrence_section") {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                tint = Color(0xFF7E57C2),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.recurrence),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        val recurrences = listOf(
+                            TaskRecurrencia.NINGUNA to R.string.recurrence_none,
+                            TaskRecurrencia.DIARIA to R.string.recurrence_daily,
+                            TaskRecurrencia.SEMANAL to R.string.recurrence_weekly,
+                            TaskRecurrencia.MENSUAL to R.string.recurrence_monthly,
+                            TaskRecurrencia.ANUAL to R.string.recurrence_yearly
+                        )
+                        val recurrenceColor = Color(0xFF7E57C2)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        ) {
+                            recurrences.forEach { (recurrence, labelRes) ->
+                                val isSelected = task.recurrencia == recurrence
+                                val chipColor = if (recurrence == TaskRecurrencia.NINGUNA) MaterialTheme.colorScheme.outline else recurrenceColor
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = {
+                                        if (task.recurrencia != recurrence) {
+                                            onUpdateTask(task.copy(recurrencia = recurrence))
+                                        }
+                                    },
+                                    label = {
+                                        Text(
+                                            text = stringResource(labelRes),
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = chipColor.copy(alpha = 0.15f),
+                                        selectedLabelColor = chipColor
+                                    ),
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        enabled = true,
+                                        selected = isSelected,
+                                        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                        selectedBorderColor = chipColor
+                                    ),
+                                    modifier = Modifier.height(28.dp)
+                                )
+                            }
+                        }
                         HorizontalDivider(
                             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                         )

@@ -37,9 +37,9 @@ Room Database (AppDatabase, v9)
 ```
 
 ### Data Layer
-- **Entities:** `Task` (with `TaskPrioridad` enum: NINGUNA/BAJA/MEDIA/ALTA, `descripcion: String?`, `archivada: Boolean`), `Subtask`, `Category`, `Reminder`
+- **Entities:** `Task` (with `TaskPrioridad` enum: NINGUNA/BAJA/MEDIA/ALTA, `TaskRecurrencia` enum: NINGUNA/DIARIA/SEMANAL/MENSUAL/ANUAL, `descripcion: String?`, `archivada: Boolean`, `orden: Int`, `recurrencia: TaskRecurrencia`), `Subtask`, `Category`, `Reminder`
 - **DAOs:** `TaskDao`, `SubtaskDao`, `CategoryDao`, `ReminderDao` — each has `getAllXxxSync()` and `deleteAllXxx()` methods for backup operations
-- **AppDatabase** uses TypeConverters for `Date` serialization and has 11 tracked migrations
+- **AppDatabase** uses TypeConverters for `Date` serialization and has 13 tracked migrations
 
 Key business rule: when all subtasks of a task are completed, the parent task auto-completes (logic lives in `TaskViewModel`).
 
@@ -109,7 +109,7 @@ Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true` to 
 
 ## Adding Database Migrations
 
-When modifying Room entities, always add a migration in `AppDatabase.kt` and increment the version. The current version is **11**. Never use `fallbackToDestructiveMigration` in production builds.
+When modifying Room entities, always add a migration in `AppDatabase.kt` and increment the version. The current version is **13**. Never use `fallbackToDestructiveMigration` in production builds.
 
 ## Recently Completed
 
@@ -119,14 +119,16 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 - **Task archiving** — `archivada: Boolean` field, migration v10→v11. Swipe left-to-right to archive. Archive toggle in TopAppBar shows archived section. All main queries filter `archivada = 0`.
 - **Widget dark mode** — colors in `values-night/colors.xml`. Widget preview layout via `previewLayout`.
 - **Splash duration** — reduced from 5.5s to 2.5s with tightened animations.
+- **Drag & drop to reorder tasks** — `orden: Int` field, migration v11→v12, drag & drop in `TasksByCategoryScreen` reusing `CategoryListScreen` pattern. Queries sort by `orden ASC` after state. BackupManager support with backward-compatible import.
+- **Recurring task dates** — `TaskRecurrencia` enum (NINGUNA/DIARIA/SEMANAL/MENSUAL/ANUAL), migration v12→v13. Completing a recurring task clones it with advanced `fechaVencimiento`. Recurrence selector in InlineTaskInput and TaskDetailScreen. Purple refresh icon indicator in TaskListItem.
 - **ReminderSchedulerContract interface** — extracted for testability; injected via Hilt.
 - **Home screen widget** — pending tasks list with priority dots, due dates, task count, refresh button, auto-sync on task changes.
 
 ## Pending / Future Work
 
 ### Phase 3 — Advanced Features (v1.1)
-- **Drag & drop to reorder tasks** — reuse `CategoryListScreen` drag pattern, add `orden` field to Task
-- **Recurring task dates** — `TaskRecurrencia` enum, clone task on completion with advanced date
+- ~~**Drag & drop to reorder tasks**~~ — DONE: `orden` field on Task, migration v11→v12, drag & drop in `TasksByCategoryScreen`
+- ~~**Recurring task dates**~~ — DONE: `TaskRecurrencia` enum, migration v12→v13, clone on completion with advanced date, recurrence selector in InlineTaskInput + TaskDetailScreen
 - **Onboarding flow** — 2-3 screens for first-time users, SharedPreferences flag
 - **Statistics/dashboard** — weekly completions, active categories, productivity streaks
 

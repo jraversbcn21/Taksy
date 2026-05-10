@@ -62,6 +62,9 @@ class TaskRepositoryTest {
             val idx = tasks.indexOfFirst { it.id == taskId }
             if (idx >= 0) tasks[idx] = tasks[idx].copy(archivada = false)
         }
+        override suspend fun updateTasks(tasks: List<Task>) {
+            tasks.forEach { updateTask(it) }
+        }
     }
 
     private class FakeSubtaskDao : SubtaskDao {

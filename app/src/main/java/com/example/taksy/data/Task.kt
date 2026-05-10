@@ -15,7 +15,9 @@ data class Task(
     val categoriaId: Long? = null,
     val estado: TaskEstado = TaskEstado.PENDIENTE,
     val prioridad: TaskPrioridad = TaskPrioridad.NINGUNA,
-    val archivada: Boolean = false
+    val archivada: Boolean = false,
+    val orden: Int = 0,
+    val recurrencia: TaskRecurrencia = TaskRecurrencia.NINGUNA
 )
 
 enum class TaskEstado {
@@ -28,4 +30,12 @@ enum class TaskPrioridad {
     BAJA,
     MEDIA,
     ALTA
+}
+
+enum class TaskRecurrencia {
+    NINGUNA,
+    DIARIA,
+    SEMANAL,
+    MENSUAL,
+    ANUAL
 }

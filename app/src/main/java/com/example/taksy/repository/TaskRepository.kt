@@ -42,6 +42,7 @@ class TaskRepository @Inject constructor(
         taskDao.getArchivedTasksByCategory(categoryId)
     suspend fun archiveTask(taskId: Long) = taskDao.archiveTask(taskId)
     suspend fun unarchiveTask(taskId: Long) = taskDao.unarchiveTask(taskId)
+    suspend fun reorderTasks(tasks: List<Task>) = taskDao.updateTasks(tasks)
 
     suspend fun toggleTaskStatus(task: Task) {
         val newStatus = if (task.estado == TaskEstado.PENDIENTE) TaskEstado.COMPLETADA else TaskEstado.PENDIENTE

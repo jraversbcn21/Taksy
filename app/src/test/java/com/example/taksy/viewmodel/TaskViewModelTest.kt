@@ -280,6 +280,9 @@ class TaskViewModelTest {
             if (idx >= 0) tasks[idx] = tasks[idx].copy(archivada = false)
             emit()
         }
+        override suspend fun updateTasks(tasks: List<Task>) {
+            tasks.forEach { updateTask(it) }
+        }
     }
 
     class FakeSubtaskDao : SubtaskDao {

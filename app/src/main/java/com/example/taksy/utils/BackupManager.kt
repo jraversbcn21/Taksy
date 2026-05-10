@@ -6,6 +6,7 @@ import com.example.taksy.data.Subtask
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
+import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.data.TipoRecordatorio
 import org.json.JSONArray
 import org.json.JSONObject
@@ -70,6 +71,8 @@ object BackupManager {
                     put("estado", t.estado.name)
                     put("prioridad", t.prioridad.name)
                     put("archivada", t.archivada)
+                    put("orden", t.orden)
+                    put("recurrencia", t.recurrencia.name)
                 })
             }
         })
@@ -166,7 +169,9 @@ object BackupManager {
                         categoriaId = if (t.isNull("categoriaId")) null else t.getLong("categoriaId"),
                         estado = TaskEstado.valueOf(t.getString("estado")),
                         prioridad = try { TaskPrioridad.valueOf(t.optString("prioridad", "NINGUNA")) } catch (_: Exception) { TaskPrioridad.NINGUNA },
-                        archivada = t.optBoolean("archivada", false)
+                        archivada = t.optBoolean("archivada", false),
+                        orden = t.optInt("orden", 0),
+                        recurrencia = try { TaskRecurrencia.valueOf(t.optString("recurrencia", "NINGUNA")) } catch (_: Exception) { TaskRecurrencia.NINGUNA }
                     )
                 )
             } catch (e: BackupImportException) {

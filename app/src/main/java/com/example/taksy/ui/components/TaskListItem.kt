@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,6 +26,7 @@ import com.example.taksy.data.Category
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
+import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.utils.DateUtils
 import com.example.taksy.utils.DueDateStatus
 
@@ -188,10 +190,30 @@ fun TaskListItem(
                                 DueDateStatus.DUE_SOON -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                                 DueDateStatus.NORMAL -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                             }
-                            Text(
-                                text = DateUtils.formatDate(task.fechaVencimiento),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = dueColor
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = DateUtils.formatDate(task.fechaVencimiento),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = dueColor
+                                )
+                                if (task.recurrencia != TaskRecurrencia.NINGUNA) {
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = null,
+                                        tint = Color(0xFF7E57C2),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        if (!isCompleted && task.fechaVencimiento == null && task.recurrencia != TaskRecurrencia.NINGUNA) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                tint = Color(0xFF7E57C2),
+                                modifier = Modifier.size(14.dp)
                             )
                         }
 

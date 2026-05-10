@@ -6,6 +6,7 @@ import com.example.taksy.data.Subtask
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
+import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.data.TipoRecordatorio
 import com.example.taksy.utils.BackupManager.ImportErrorType
 import org.junit.Assert.assertEquals
@@ -314,6 +315,58 @@ class BackupManagerTest {
         val modified = json.replace("\"ALTA\"", "\"UNKNOWN_PRIORITY\"")
         val imported = BackupManager.importFromJson(modified)
         assertEquals(TaskPrioridad.NINGUNA, imported.tasks[0].prioridad)
+    }
+
+    @Test
+    fun `round trip preserves task orden`() {
+        val data = BackupManager.BackupData(
+            categories = emptyList(),
+            tasks = listOf(
+                Task(id = 1, titulo = "Primera", orden = 3, fechaCreacion = fixedDate),
+                Task(id = 2, titulo = "Segunda", orden = 1, fechaCreacion = fixedDate),
+                Task(id = 3, titulo = "Tercera", orden = 0, fechaCreacion = fixedDate)
+            ),
+            subtasks = emptyList(), reminders = emptyList()
+        )
+        val json = BackupManager.exportToJson(data)
+        val imported = BackupManager.importFromJson(json)
+
+        assertEquals(3, imported.tasks[0].orden)
+        assertEquals(1, imported.tasks[1].orden)
+        assertEquals(0, imported.tasks[2].orden)
+    }
+
+    @Test
+    fun `round trip preserves task recurrencia`() {
+        val data = BackupManager.BackupData(
+            categories = emptyList(),
+            tasks = listOf(
+                Task(id = 1, titulo = "Diaria", recurrencia = TaskRecurrencia.DIARIA, fechaCreacion = fixedDate),
+                Task(id = 2, titulo = "Semanal", recurrencia = TaskRecurrencia.SEMANAL, fechaCreacion = fixedDate),
+                Task(id = 3, titulo = "Sin recurrencia", recurrencia = TaskRecurrencia.NINGUNA, fechaCreacion = fixedDate)
+            ),
+            subtasks = emptyList(), reminders = emptyList()
+        )
+        val json = BackupManager.exportToJson(data)
+        val imported = BackupManager.importFromJson(json)
+
+        assertEquals(TaskRecurrencia.DIARIA, imported.tasks[0].recurrencia)
+        assertEquals(TaskRecurrencia.SEMANAL, imported.tasks[1].recurrencia)
+        assertEquals(TaskRecurrencia.NINGUNA, imported.tasks[2].recurrencia)
+    }
+
+    @Test
+    fun `import defaults recurrencia to NINGUNA when missing`() {
+        val json = """{"categories":[],"tasks":[{"id":1,"titulo":"X","fechaCreacion":"2023-01-01T00:00:00.000","fechaVencimiento":null,"categoriaId":null,"estado":"PENDIENTE"}],"subtasks":[],"reminders":[]}"""
+        val imported = BackupManager.importFromJson(json)
+        assertEquals(TaskRecurrencia.NINGUNA, imported.tasks[0].recurrencia)
+    }
+
+    @Test
+    fun `import defaults orden to 0 when missing`() {
+        val json = """{"categories":[],"tasks":[{"id":1,"titulo":"X","fechaCreacion":"2023-01-01T00:00:00.000","fechaVencimiento":null,"categoriaId":null,"estado":"PENDIENTE"}],"subtasks":[],"reminders":[]}"""
+        val imported = BackupManager.importFromJson(json)
+        assertEquals(0, imported.tasks[0].orden)
     }
 
     @Test

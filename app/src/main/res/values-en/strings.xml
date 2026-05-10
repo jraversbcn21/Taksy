@@ -297,6 +297,15 @@
     <string name="task_description_label">Notes</string>
     <string name="task_description_placeholder">Add notes…</string>
 
+    <!-- Recurrence -->
+    <string name="recurrence">Repeat</string>
+    <string name="recurrence_none">No repeat</string>
+    <string name="recurrence_daily">Daily</string>
+    <string name="recurrence_weekly">Weekly</string>
+    <string name="recurrence_monthly">Monthly</string>
+    <string name="recurrence_yearly">Yearly</string>
+    <string name="recurring_task_created">New recurring task created</string>
+
     <!-- Widget -->
     <string name="widget_name">Ticksy - Pending tasks</string>
     <string name="widget_description">Shows your pending tasks</string>
