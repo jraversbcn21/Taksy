@@ -306,6 +306,17 @@
     <string name="task_description_label">Notas</string>
     <string name="task_description_placeholder">Añadir notas…</string>
 
+    <!-- Onboarding -->
+    <string name="onboarding_title_1">Organiza tus tareas</string>
+    <string name="onboarding_desc_1">Crea categorías y organiza tus tareas de forma sencilla. Arrastra para reordenar según tu prioridad.</string>
+    <string name="onboarding_title_2">Subtareas y recurrencia</string>
+    <string name="onboarding_desc_2">Divide tareas grandes en subtareas. Configura tareas recurrentes que se repiten automáticamente al completarlas.</string>
+    <string name="onboarding_title_3">Recordatorios inteligentes</string>
+    <string name="onboarding_desc_3">Establece recordatorios para no olvidar nada. Recibe notificaciones diarias con el resumen de tus tareas pendientes.</string>
+    <string name="onboarding_skip">Saltar</string>
+    <string name="onboarding_next">Siguiente</string>
+    <string name="onboarding_start">Comenzar</string>
+
     <!-- Recurrencia -->
     <string name="recurrence">Repetir</string>
     <string name="recurrence_none">Sin repetir</string>

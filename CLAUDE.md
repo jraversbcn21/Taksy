@@ -57,7 +57,8 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 - **`BackupViewModel`** — export/import all app data as JSON via `BackupManager`. Injects `@ApplicationContext`, DAOs directly (not repositories), and `ReminderSchedulerContract` to access sync queries, bulk delete, and reminder rescheduling after import.
 
 ### Navigation
-NavHost start destination: `"category_list"`. Routes:
+NavHost start destination: `"onboarding"` (first launch) or `"category_list"` (subsequent). Routes:
+- `onboarding` → `OnboardingScreen`
 - `category_list` → `CategoryListScreen`
 - `tasks_by_category/{categoryId}` → `TasksByCategoryScreen`
 - `task_detail/{taskId}` → `TaskDetailScreen`
@@ -121,6 +122,7 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 - **Splash duration** — reduced from 5.5s to 2.5s with tightened animations.
 - **Drag & drop to reorder tasks** — `orden: Int` field, migration v11→v12, drag & drop in `TasksByCategoryScreen` reusing `CategoryListScreen` pattern. Queries sort by `orden ASC` after state. BackupManager support with backward-compatible import.
 - **Recurring task dates** — `TaskRecurrencia` enum (NINGUNA/DIARIA/SEMANAL/MENSUAL/ANUAL), migration v12→v13. Completing a recurring task clones it with advanced `fechaVencimiento`. Recurrence selector in InlineTaskInput and TaskDetailScreen. Purple refresh icon indicator in TaskListItem.
+- **Onboarding flow** — 3-page `HorizontalPager` onboarding (organize tasks, subtasks/recurrence, smart reminders). SharedPreferences flag `onboarding_completed` in `"onboarding_prefs"`. Conditional nav startDestination. Skip/Next/Get Started buttons with animated page indicators.
 - **ReminderSchedulerContract interface** — extracted for testability; injected via Hilt.
 - **Home screen widget** — pending tasks list with priority dots, due dates, task count, refresh button, auto-sync on task changes.
 
@@ -129,7 +131,7 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 ### Phase 3 — Advanced Features (v1.1)
 - ~~**Drag & drop to reorder tasks**~~ — DONE: `orden` field on Task, migration v11→v12, drag & drop in `TasksByCategoryScreen`
 - ~~**Recurring task dates**~~ — DONE: `TaskRecurrencia` enum, migration v12→v13, clone on completion with advanced date, recurrence selector in InlineTaskInput + TaskDetailScreen
-- **Onboarding flow** — 2-3 screens for first-time users, SharedPreferences flag
+- ~~**Onboarding flow**~~ — DONE: 3-page HorizontalPager (organize, subtasks/recurrence, reminders), SharedPreferences flag `onboarding_completed`, conditional startDestination
 - **Statistics/dashboard** — weekly completions, active categories, productivity streaks
 
 ### Phase 4 — Tech Debt (ongoing)

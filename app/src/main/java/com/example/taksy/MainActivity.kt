@@ -35,6 +35,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.taksy.ui.screens.CategoryListScreen
 import com.example.taksy.ui.screens.DailyReminderScreen
 import com.example.taksy.ui.screens.LanguageSettingsScreen
+import com.example.taksy.ui.screens.OnboardingScreen
 import com.example.taksy.ui.screens.RemindersScreen
 import com.example.taksy.ui.screens.TaskDetailScreen
 import com.example.taksy.ui.screens.TasksByCategoryScreen
@@ -112,6 +113,9 @@ fun MainScreen(activity: ComponentActivity) {
     }
 }
 
+private const val ONBOARDING_PREFS = "onboarding_prefs"
+private const val ONBOARDING_COMPLETED_KEY = "onboarding_completed"
+
 @Composable
 fun MainContent(
     navController: androidx.navigation.NavHostController,
@@ -125,10 +129,25 @@ fun MainContent(
     activity: ComponentActivity,
     onShowLanguageChangeDialog: (String) -> Unit
 ) {
+    val prefs = remember { context.getSharedPreferences(ONBOARDING_PREFS, Context.MODE_PRIVATE) }
+    val onboardingCompleted = remember { prefs.getBoolean(ONBOARDING_COMPLETED_KEY, false) }
+    val startDestination = if (onboardingCompleted) "category_list" else "onboarding"
+
     NavHost(
         navController = navController,
-        startDestination = "category_list"
+        startDestination = startDestination
     ) {
+        composable("onboarding") {
+            OnboardingScreen(
+                onFinish = {
+                    prefs.edit().putBoolean(ONBOARDING_COMPLETED_KEY, true).apply()
+                    navController.navigate("category_list") {
+                        popUpTo("onboarding") { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable("category_list") {
             val categories by categoryViewModel.getAllCategories().collectAsState(initial = emptyList())
             val allTasks by taskViewModel.getAllTasks().collectAsState(initial = emptyList())

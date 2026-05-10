@@ -297,6 +297,17 @@
     <string name="task_description_label">Notes</string>
     <string name="task_description_placeholder">Add notes…</string>
 
+    <!-- Onboarding -->
+    <string name="onboarding_title_1">Organize your tasks</string>
+    <string name="onboarding_desc_1">Create categories and organize your tasks easily. Drag to reorder according to your priority.</string>
+    <string name="onboarding_title_2">Subtasks and recurrence</string>
+    <string name="onboarding_desc_2">Break big tasks into subtasks. Set up recurring tasks that repeat automatically when completed.</string>
+    <string name="onboarding_title_3">Smart reminders</string>
+    <string name="onboarding_desc_3">Set reminders so you never forget anything. Get daily notifications with a summary of your pending tasks.</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_start">Get Started</string>
+
     <!-- Recurrence -->
     <string name="recurrence">Repeat</string>
     <string name="recurrence_none">No repeat</string>
