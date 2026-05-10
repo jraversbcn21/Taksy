@@ -2,159 +2,122 @@
 
 Una aplicación Android moderna para la gestión de tareas desarrollada con **Kotlin**, **Jetpack Compose** y **MVVM**.
 
-## 🚀 Características
+## Características
 
-### ✅ Funcionalidades Principales
-- **Icono personalizado**: Icono de aplicación basado en launcher_icono.png
-- **Pantalla de bienvenida**: Splash screen animado con duración extendida (5.5 segundos)
-- **Gestión completa de tareas**: Crear, editar, eliminar y marcar como completadas
-- **Persistencia local**: Base de datos Room para almacenar tareas
-- **Filtros dinámicos**: Ver todas las tareas, solo pendientes o solo completadas
-- **Interfaz moderna**: Diseño Material Design 3 con animaciones fluidas
-- **Soporte multilingüe**: Español e Inglés
-- **Dark Mode**: Soporte completo para tema oscuro/claro
+### Funcionalidades principales
+- Gestión completa de tareas: crear, editar, eliminar, completar y archivar
+- Organización por categorías con colores e iconos personalizables
+- Subtareas con auto-completado del padre cuando todas se completan
+- Tareas recurrentes (diaria, semanal, mensual, anual): se regeneran al completarse
+- Drag & drop para reordenar tareas y categorías
+- Búsqueda global y por categoría
+- Recordatorios puntuales por tarea y recordatorios diarios (mañana/tarde)
+- Widget de pantalla de inicio con las tareas pendientes
+- Dashboard de estadísticas: totales, tasa de finalización, racha, completadas de los últimos 7 días y categorías principales
+- Backup y restauración de todos los datos a JSON
+- Onboarding de 3 pantallas en el primer arranque
+- Soporte multilingüe: español e inglés
+- Tema claro y oscuro
 
-### 🎨 Diseño y UX
-- **Splash Screen Animado**: Pantalla de bienvenida con animaciones de escala, fade y pulso (5.5 segundos)
-- **Icono de Aplicación**: Icono personalizado launcher_icono.png visible en el launcher del dispositivo
-- **Material Design 3**: Interfaz moderna y consistente
-- **Animaciones**: Transiciones suaves al añadir, editar o eliminar tareas
-- **Tareas completadas**: Se muestran tachadas con estilo visual diferenciado
-- **Floating Action Button**: Acceso rápido para añadir nuevas tareas
-- **Filtros con chips**: Navegación intuitiva entre diferentes vistas
+### Diseño y UX
+- Material Design 3
+- Splash screen animado (2.5 s)
+- Filtros con chips y navegación por drawer lateral
+- Swipe-to-archive y swipe-to-delete con deshacer
 
-### 🏗️ Arquitectura
-- **MVVM**: Patrón Model-View-ViewModel
-- **Jetpack Compose**: UI declarativa moderna
-- **Room Database**: Persistencia local robusta
-- **Hilt**: Inyección de dependencias
-- **StateFlow**: Manejo reactivo del estado
-- **Repository Pattern**: Separación clara de responsabilidades
+### Arquitectura
+- MVVM con Repository Pattern
+- Jetpack Compose para la UI
+- Room Database con migraciones explícitas (v14)
+- Hilt para inyección de dependencias
+- StateFlow y Flow para estado reactivo
+- AlarmManager con `setExactAndAllowWhileIdle` para recordatorios
 
-## 📱 Capturas de Pantalla
+## Tecnologías
 
-La aplicación incluye:
-- Lista principal de tareas con filtros
-- Diálogo para añadir/editar tareas
-- Pantalla de configuración para tema e idioma
-- Soporte completo para Dark Mode
+- **Kotlin** 2.0.21
+- **Jetpack Compose** (BOM 2024.09.00)
+- **Room** 2.6.1 (con KSP)
+- **Hilt** 2.48
+- **Material Design 3**
+- **AppCompat / DrawerLayout** para el menú lateral
 
-## 🛠️ Tecnologías Utilizadas
-
-- **Kotlin** - Lenguaje de programación
-- **Jetpack Compose** - Framework de UI
-- **Room Database** - Base de datos local
-- **Hilt** - Inyección de dependencias
-- **Material Design 3** - Sistema de diseño
-- **MVVM** - Patrón de arquitectura
-- **StateFlow** - Manejo de estado reactivo
-
-## 📦 Estructura del Proyecto
+## Estructura del proyecto
 
 ```
 app/src/main/java/com/example/taksy/
-├── data/                    # Capa de datos
-│   ├── Task.kt             # Entidad de tarea
-│   ├── TaskDao.kt          # DAO para operaciones de BD
-│   ├── AppDatabase.kt      # Configuración de Room
-│   └── Converters.kt       # Convertidores de tipos
-├── repository/             # Capa de repositorio
-│   └── TaskRepository.kt   # Lógica de acceso a datos
-├── viewmodel/              # Capa de ViewModel
-│   ├── TaskViewModel.kt    # ViewModel principal
-│   └── SplashViewModel.kt  # ViewModel para splash
-├── ui/                     # Capa de UI
-│   ├── screens/            # Pantallas
-│   │   ├── SplashScreen.kt # Pantalla de bienvenida
-│   │   └── TaskScreen.kt   # Pantalla principal
-│   ├── components/         # Componentes reutilizables
-│   │   ├── TaskItem.kt     # Item de tarea
-│   │   ├── AddEditTaskDialog.kt # Diálogo de tarea
-│   │   └── TaskFilterChips.kt # Filtros
-│   └── theme/              # Temas y estilos
-└── TaksyApplication.kt     # Clase Application
+├── data/            # Entidades Room, DAOs, AppDatabase, Converters
+├── repository/      # TaskRepository, CategoryRepository
+├── viewmodel/       # TaskViewModel, CategoryViewModel, ThemeViewModel,
+│                    # SplashViewModel, BackupViewModel, StatsViewModel,
+│                    # ReminderViewModel
+├── ui/
+│   ├── screens/     # CategoryList, TasksByCategory, TaskDetail,
+│   │                # Reminders, DailyReminder, ThemeSettings,
+│   │                # LanguageSettings, About, Backup, Stats,
+│   │                # Onboarding, Splash
+│   ├── components/  # Diálogos, items de lista, chips, etc.
+│   └── theme/       # Color, Theme, Type
+├── service/         # ReminderScheduler(+Contract), DailyReminderService,
+│                    # NotificationService
+├── receiver/        # ReminderReceiver
+├── widget/          # TaskWidgetProvider, TaskWidgetService
+├── di/              # DatabaseModule (Hilt)
+├── utils/           # BackupManager, LocaleHelper, DateUtils,
+│                    # CategoryUtils, DeviceUtils
+└── TaksyApplication.kt
 ```
 
-## 🚀 Instalación y Uso
+## Instalación
 
 ### Requisitos
 - Android Studio Hedgehog o superior
-- SDK mínimo: API 26 (Android 8.0)
-- SDK objetivo: API 35 (Android 15)
+- Min SDK: 26 (Android 8.0)
+- Target SDK: 35 (Android 15)
+- JDK 11
 
-### Pasos de instalación
+### Pasos
 1. Clona el repositorio
 2. Abre el proyecto en Android Studio
 3. Sincroniza las dependencias de Gradle
-4. Ejecuta la aplicación en un dispositivo o emulador
+4. Ejecuta en un dispositivo o emulador
 
-### Uso de la aplicación
-1. **Añadir tarea**: Toca el botón flotante "+" y completa el formulario
-2. **Editar tarea**: Toca el icono de editar en cualquier tarea
-3. **Marcar como completada**: Usa el checkbox o toca la tarea
-4. **Eliminar tarea**: Toca el icono de eliminar
-5. **Filtrar tareas**: Usa los chips de filtro en la parte superior
-6. **Configuración**: Accede a la pantalla de configuración para cambiar tema e idioma
+### Comandos Gradle
 
-## 🌟 Características Destacadas
+```bash
+./gradlew assembleDebug        # APK de debug
+./gradlew assembleRelease      # APK de release
+./gradlew testDebugUnitTest    # Tests unitarios
+./gradlew connectedAndroidTest # Tests instrumentados
+./gradlew lint                 # Análisis de lint
+```
 
-### Persistencia Robusta
-- Base de datos Room con entidades bien definidas
-- Operaciones asíncronas con corrutinas
-- Manejo de errores y estados de carga
+En Windows usar `gradlew.bat` si `./gradlew` no funciona.
 
-### UI/UX Moderna
-- Diseño Material Design 3
-- Animaciones fluidas y transiciones suaves
-- Soporte completo para Dark Mode
-- Interfaz responsive y accesible
+## Uso
 
-### Arquitectura Limpia
-- Separación clara de responsabilidades
-- Código modular y mantenible
-- Patrones de diseño bien implementados
-- Inyección de dependencias con Hilt
+1. **Añadir tarea**: pulsa el campo de entrada inline en una categoría
+2. **Editar / añadir subtareas**: toca la tarea para abrir el detalle
+3. **Completar**: marca el checkbox; las recurrentes se regeneran automáticamente
+4. **Archivar**: swipe de izquierda a derecha
+5. **Eliminar**: swipe de derecha a izquierda (con opción de deshacer)
+6. **Reordenar**: mantén pulsado y arrastra
+7. **Recordatorios**: configúralos en el detalle de la tarea o desde el drawer
+8. **Estadísticas, copia de seguridad, tema e idioma**: desde el menú lateral
 
-### Multilingüe
-- Soporte para Español e Inglés
-- Cambio de idioma dinámico
-- Strings externalizados y organizados
+## Configuración de compilación
 
-## 🔧 Configuración de Desarrollo
+- Kotlin 2.0.21, Java 11
+- Compose BOM 2024.09.00
+- Room 2.6.1 + KSP
+- Hilt 2.48
+- ProGuard/R8 habilitado en release
+- Esquemas de Room exportados a `app/schemas/`
 
-### Dependencias principales
-- `androidx.compose.bom:2024.09.00`
-- `androidx.room:2.6.1`
-- `com.google.dagger.hilt.android:2.48`
-- `androidx.lifecycle:2.9.2`
+## Tests
 
-### Configuración de compilación
-- Kotlin 2.0.21
-- Compose Compiler 1.5.8
-- Target SDK 35
-- Min SDK 26
+74 tests unitarios cubriendo `BackupManager`, `TaskViewModel`, `TaskRepository` y `CategoryRepository`.
 
-## 📝 Notas de Desarrollo
-
-- La aplicación sigue las mejores prácticas de Android
-- Código comentado y documentado
-- Estructura modular para fácil mantenimiento
-- Preparada para futuras extensiones
-
-## 🤝 Contribuciones
-
-Las contribuciones son bienvenidas. Por favor:
-1. Fork el proyecto
-2. Crea una rama para tu feature
-3. Commit tus cambios
-4. Push a la rama
-5. Abre un Pull Request
-
-## 📄 Licencia
+## Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
-
----
-
-**Ticksy** - Una aplicación de gestión de tareas moderna, elegante y funcional. 🎯
-

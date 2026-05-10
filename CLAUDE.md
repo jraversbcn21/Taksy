@@ -29,11 +29,12 @@ On Windows, use `gradlew.bat` if `./gradlew` doesn't work.
 ```
 UI (Compose screens)
   ↓ observes StateFlow
-ViewModels (TaskViewModel, ThemeViewModel, SplashViewModel, BackupViewModel)
+ViewModels (TaskViewModel, CategoryViewModel, ThemeViewModel, SplashViewModel,
+            BackupViewModel, StatsViewModel, ReminderViewModel)
   ↓ calls suspend funs / collects Flow
 Repository (TaskRepository, CategoryRepository)
   ↓ delegates to DAOs
-Room Database (AppDatabase, v9)
+Room Database (AppDatabase, v14)
 ```
 
 ### Data Layer
@@ -55,6 +56,7 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 - **`ThemeViewModel`** — singleton for dark mode and language; persists to SharedPreferences (`"theme_pref"` / `"language_pref"`).
 - **`SplashViewModel`** — controls the splash animation.
 - **`BackupViewModel`** — export/import all app data as JSON via `BackupManager`. Injects `@ApplicationContext`, DAOs directly (not repositories), and `ReminderSchedulerContract` to access sync queries, bulk delete, and reminder rescheduling after import.
+- **`StatsViewModel`** — Hilt-injected `ViewModel`; combines `TaskRepository.getAllTasks()` and `CategoryRepository.getAllCategories()` into a single `StatsUiState` exposed as a `stateIn` `StateFlow`. Derives totals, completion rate, streak (consecutive days ending today/yesterday with at least one completion), last-7-days bucket counts using `fechaCompletada`, and top 5 categories by task count.
 
 ### Navigation
 NavHost start destination: `"onboarding"` (first launch) or `"category_list"` (subsequent). Routes:
@@ -130,11 +132,7 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 
 ## Pending / Future Work
 
-### Phase 3 — Advanced Features (v1.1)
-- ~~**Drag & drop to reorder tasks**~~ — DONE: `orden` field on Task, migration v11→v12, drag & drop in `TasksByCategoryScreen`
-- ~~**Recurring task dates**~~ — DONE: `TaskRecurrencia` enum, migration v12→v13, clone on completion with advanced date, recurrence selector in InlineTaskInput + TaskDetailScreen
-- ~~**Onboarding flow**~~ — DONE: 3-page HorizontalPager (organize, subtasks/recurrence, reminders), SharedPreferences flag `onboarding_completed`, conditional startDestination
-- ~~**Statistics/dashboard**~~ — DONE: `fechaCompletada: Date?` field on Task, migration v13→v14, `StatsViewModel` derives stats from `combine(getAllTasks, getAllCategories)`. `StatsScreen` shows summary cards (total/pending/completed/rate/streak/active categories), last-7-days bar chart, top categories with progress bars. Drawer entry routes to `stats`.
+**Phase 3 is fully complete.** All v1.1 features (drag & drop, recurring tasks, onboarding, statistics dashboard) are merged and described in the "Recently Completed" section above.
 
 ### Phase 4 — Tech Debt (ongoing)
 - **Consolidate hardcoded Compose colors** — move to `Color.kt` or `MaterialTheme.colorScheme`
