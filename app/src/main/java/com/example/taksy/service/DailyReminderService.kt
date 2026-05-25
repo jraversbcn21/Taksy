@@ -61,6 +61,7 @@ class DailyReminderService : BroadcastReceiver() {
             try {
                 val database = AppDatabase.getDatabase(context)
                 val taskRepository = TaskRepository(
+                    database,
                     database.taskDao(),
                     database.subtaskDao(),
                     database.reminderDao()

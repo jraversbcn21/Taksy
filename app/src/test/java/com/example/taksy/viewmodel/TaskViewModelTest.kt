@@ -59,7 +59,7 @@ class TaskViewModelTest {
         fakeTaskDao = FakeTaskDao()
         fakeSubtaskDao = FakeSubtaskDao()
         fakeReminderDao = FakeReminderDao()
-        repo = TaskRepository(fakeTaskDao, fakeSubtaskDao, fakeReminderDao)
+        repo = TaskRepository(mockk(relaxed = true), fakeTaskDao, fakeSubtaskDao, fakeReminderDao)
         fakeScheduler = FakeReminderScheduler()
 
         val mockApp = mockk<Application>(relaxed = true)

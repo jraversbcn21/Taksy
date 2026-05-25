@@ -1,5 +1,7 @@
 package com.example.taksy.repository
 
+import androidx.room.withTransaction
+import com.example.taksy.data.AppDatabase
 import com.example.taksy.data.Reminder
 import com.example.taksy.data.ReminderDao
 import com.example.taksy.data.Subtask
@@ -12,6 +14,7 @@ import java.util.Date
 import javax.inject.Inject
 
 class TaskRepository @Inject constructor(
+    private val appDatabase: AppDatabase,
     private val taskDao: TaskDao,
     private val subtaskDao: SubtaskDao,
     private val reminderDao: ReminderDao
@@ -52,6 +55,15 @@ class TaskRepository @Inject constructor(
             estado = newStatus,
             fechaCompletada = if (completing) Date() else null
         ))
+    }
+
+    suspend fun completeRecurringTask(task: Task, clone: Task) {
+        android.util.Log.d("TaksyDebug", "completeRecurringTask: origId=${task.id} cloneTitle='${clone.titulo}'")
+        appDatabase.withTransaction {
+            taskDao.insertTask(clone)
+            taskDao.updateTask(task.copy(estado = TaskEstado.COMPLETADA, fechaCompletada = Date()))
+        }
+        android.util.Log.d("TaksyDebug", "completeRecurringTask DONE: origId=${task.id}")
     }
 
     // ── Subtasks ───────────────────────────────────────────────────────────

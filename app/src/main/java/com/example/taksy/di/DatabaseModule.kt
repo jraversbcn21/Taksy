@@ -34,10 +34,11 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideTaskRepository(
+        appDatabase: AppDatabase,
         taskDao: TaskDao,
         subtaskDao: SubtaskDao,
         reminderDao: ReminderDao
-    ): TaskRepository = TaskRepository(taskDao, subtaskDao, reminderDao)
+    ): TaskRepository = TaskRepository(appDatabase, taskDao, subtaskDao, reminderDao)
 
     @Provides
     @Singleton

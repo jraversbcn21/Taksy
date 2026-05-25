@@ -357,6 +357,7 @@ fun TasksByCategoryScreen(
                                 onArchiveTask = handleArchiveWithUndo,
                                 onShowToast = { message -> showSnackbar(message) },
                                 onReminderClick = { taskForReminder = it },
+                                onEditTask = { taskViewModel.updateTask(it) },
                                 modifier = dragModifier
                             )
                         }
@@ -449,6 +450,9 @@ private fun InlineTaskInput(
     onCancel: () -> Unit,
     focusRequester: FocusRequester
 ) {
+    var hasSubmitted by remember { mutableStateOf(false) }
+    LaunchedEffect(taskTitle) { if (taskTitle.isEmpty()) hasSubmitted = false }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -482,7 +486,8 @@ private fun InlineTaskInput(
                 ),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        if (taskTitle.isNotBlank()) {
+                        if (taskTitle.isNotBlank() && !hasSubmitted) {
+                            hasSubmitted = true
                             onAddTask(taskTitle.trim())
                         }
                     }

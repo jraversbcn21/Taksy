@@ -53,8 +53,16 @@ fun TaskListItem(
     onArchiveTask: (Task) -> Unit = {},
     onShowToast: (String) -> Unit = {},
     onReminderClick: (Task) -> Unit = {},
+    onEditTask: (Task) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editTitle by remember { mutableStateOf("") }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var isToggling by remember { mutableStateOf(false) }
+
+    LaunchedEffect(task.estado) { isToggling = false }
+
     val isCompleted = task.estado == TaskEstado.COMPLETADA
     val isFullyCompleted = isTaskCompleted
     val hasSubtasks = pendingSubtasksCount > 0
@@ -67,8 +75,8 @@ fun TaskListItem(
         confirmValueChange = { dismissValue ->
             when (dismissValue) {
                 SwipeToDismissBoxValue.EndToStart -> {
-                    onTaskDelete(task)
-                    true
+                    showDeleteDialog = true
+                    false
                 }
                 SwipeToDismissBoxValue.StartToEnd -> {
                     onArchiveTask(task)
@@ -125,7 +133,10 @@ fun TaskListItem(
                         .fillMaxWidth()
                         .combinedClickable(
                             onClick = { onTaskClick(task) },
-                            onLongClick = { onReminderClick(task) }
+                            onLongClick = {
+                                editTitle = task.titulo
+                                showEditDialog = true
+                            }
                         )
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -135,16 +146,17 @@ fun TaskListItem(
                         selected = isCompleted,
                         onClick = {
                             when {
-                                isLocked -> { }
+                                isLocked || isToggling -> { }
                                 pendingSubtasksCount > 0 -> {
                                     onShowToast(pendingSubtasksMessage)
                                 }
                                 else -> {
+                                    isToggling = true
                                     onTaskToggle(task)
                                 }
                             }
                         },
-                        enabled = !isLocked,
+                        enabled = !isLocked && !isToggling,
                         colors = RadioButtonDefaults.colors(
                             selectedColor = MaterialTheme.colorScheme.primary,
                             unselectedColor = MaterialTheme.colorScheme.outline,
@@ -291,5 +303,74 @@ fun TaskListItem(
                 )
             }
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.delete_task_title)) },
+            text = { Text(stringResource(R.string.delete_task_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onTaskDelete(task)
+                    showDeleteDialog = false
+                }) {
+                    Text(
+                        text = stringResource(R.string.delete),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text(stringResource(R.string.edit_task)) },
+            text = {
+                OutlinedTextField(
+                    value = editTitle,
+                    onValueChange = { editTitle = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text(
+                            text = stringResource(R.string.task_title_hint),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
+                    },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                        cursorColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val trimmed = editTitle.trim()
+                        if (trimmed.isNotBlank()) {
+                            onEditTask(task.copy(titulo = trimmed))
+                            showEditDialog = false
+                        }
+                    },
+                    enabled = editTitle.isNotBlank()
+                ) {
+                    Text(stringResource(R.string.save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 }

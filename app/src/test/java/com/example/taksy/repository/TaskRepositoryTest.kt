@@ -1,5 +1,6 @@
 package com.example.taksy.repository
 
+import com.example.taksy.data.AppDatabase
 import com.example.taksy.data.Reminder
 import com.example.taksy.data.ReminderDao
 import com.example.taksy.data.Subtask
@@ -8,6 +9,7 @@ import com.example.taksy.data.Task
 import com.example.taksy.data.TaskDao
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TipoRecordatorio
+import io.mockk.mockk
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -95,7 +97,7 @@ class TaskRepositoryTest {
 
     private fun makeRepository(): Pair<FakeTaskDao, TaskRepository> {
         val dao = FakeTaskDao()
-        val repo = TaskRepository(dao, FakeSubtaskDao(), FakeReminderDao())
+        val repo = TaskRepository(mockk(relaxed = true), dao, FakeSubtaskDao(), FakeReminderDao())
         return dao to repo
     }
 

@@ -138,3 +138,28 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 - ~~Consolidate hardcoded Compose colors~~ — DONE: 13 semantic constants in `ui/theme/Color.kt` (priority, due-date, recurrence, swipe, success/gold/dark-card).
 - ~~Eliminate deprecated `LocaleHelper` APIs~~ — DONE: rewritten to use only `createConfigurationContext()` and `Configuration#setLocale()`. `MainActivity.attachBaseContext()` applies the saved locale.
 - ~~Evaluate `ReminderViewModel` Hilt migration~~ — DONE (demoted, not migrated): converted to `object DailyReminderManager` in `service/`. It was not really a ViewModel (no `StateFlow`/`viewModelScope`), and `BroadcastReceiver`s don't benefit from Hilt for stateless helpers. Removed the dead `alarmManager` field and `initializeAlarmManager()` method.
+
+### Active Bug — Recurring Task Duplication (IN PROGRESS)
+
+**Symptom:** Completing a recurring task (clicking the radio button) sometimes shows two identical pending tasks instead of one.
+
+**Root cause investigation:** Three fixes applied, bug persists. Current hypothesis was an intermediate Room Flow emission between two sequential DB writes (`insertTask(clone)` then `toggleTaskStatus(original)`). Fix applied: wrapped both writes in `appDatabase.withTransaction { }` via `TaskRepository.completeRecurringTask(task, clone)`. Same fix applied to the subtask auto-complete path in `toggleSubtaskStatus`. Bug still not confirmed fixed.
+
+**Debug instrumentation in place:** `Log.d("TaksyDebug", ...)` calls added to:
+- `TaskViewModel.addTask` — logs every call with title + recurrence
+- `TaskViewModel.toggleTaskStatus` — logs every call + whether the `togglingTaskIds` guard blocked it
+- `TaskRepository.completeRecurringTask` — logs start and end of the transaction
+
+**Next session:** Run `adb logcat -s TaksyDebug` (adb is at `C:\Users\orjan\AppData\Local\Android\Sdk\platform-tools\adb.exe`, add to PATH with `$env:PATH += ";C:\Users\orjan\AppData\Local\Android\Sdk\platform-tools"`), reproduce the bug, and read the logs to determine:
+1. Is `addTask` called once or twice when adding the task?
+2. Is `toggleTaskStatus` called once or twice when clicking the radio button?
+3. Does the `togglingTaskIds` guard actually block the second call?
+4. Does `completeRecurringTask` get reached at all?
+
+**Key files:**
+- `viewmodel/TaskViewModel.kt` — `toggleTaskStatus()`, `toggleSubtaskStatus()`
+- `repository/TaskRepository.kt` — `completeRecurringTask()` (new method)
+- `ui/screens/TasksByCategoryScreen.kt` — `InlineTaskInput` has `hasSubmitted` guard against IME double-fire
+- `ui/components/TaskListItem.kt` — `isToggling` UI guard + `LaunchedEffect(task.estado)` reset
+
+**IMPORTANT:** Remove `Log.d("TaksyDebug", ...)` calls from `TaskViewModel.kt` and `TaskRepository.kt` before shipping.
