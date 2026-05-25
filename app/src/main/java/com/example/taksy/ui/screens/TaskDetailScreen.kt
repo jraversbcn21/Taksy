@@ -51,7 +51,6 @@ import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.ui.components.Toast
-import kotlinx.coroutines.delay
 import com.example.taksy.ui.components.SubtaskList
 import com.example.taksy.ui.components.ReminderItem
 import com.example.taksy.ui.components.AddReminderDialog
@@ -74,16 +73,6 @@ fun TaskDetailScreen(
     var toastMessage by remember { mutableStateOf("") }
     var showToast by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
-    var descriptionText by remember(task.id) { mutableStateOf(task.descripcion ?: "") }
-
-    LaunchedEffect(descriptionText) {
-        delay(500)
-        val newDesc = descriptionText.ifBlank { null }
-        if (newDesc != task.descripcion) {
-            onUpdateTask(task.copy(descripcion = newDesc))
-        }
-    }
-    
     // Obtener el mensaje de toast multilingüe
     val allSubtasksCompletedMessage = stringResource(R.string.all_subtasks_completed)
     
@@ -135,49 +124,6 @@ fun TaskDetailScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Sección de Notas/Descripción
-                item(key = "description_section") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.task_description_label),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                        OutlinedTextField(
-                            value = descriptionText,
-                            onValueChange = { descriptionText = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = {
-                                Text(
-                                    text = stringResource(R.string.task_description_placeholder),
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                )
-                            },
-                            minLines = 2,
-                            maxLines = 6,
-                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                            textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = MaterialTheme.typography.bodyLarge.fontSize
-                            ),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                                cursorColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                        )
-                    }
-                }
-
                 // Sección de Recurrencia
                 item(key = "recurrence_section") {
                     Column(
@@ -206,8 +152,7 @@ fun TaskDetailScreen(
                             TaskRecurrencia.NINGUNA to R.string.recurrence_none,
                             TaskRecurrencia.DIARIA to R.string.recurrence_daily,
                             TaskRecurrencia.SEMANAL to R.string.recurrence_weekly,
-                            TaskRecurrencia.MENSUAL to R.string.recurrence_monthly,
-                            TaskRecurrencia.ANUAL to R.string.recurrence_yearly
+                            TaskRecurrencia.MENSUAL to R.string.recurrence_monthly
                         )
                         val recurrenceColor = RecurrencePurple
                         Row(

@@ -580,8 +580,7 @@ private fun RecurrenceSelector(
         TaskRecurrencia.NINGUNA to R.string.recurrence_none,
         TaskRecurrencia.DIARIA to R.string.recurrence_daily,
         TaskRecurrencia.SEMANAL to R.string.recurrence_weekly,
-        TaskRecurrencia.MENSUAL to R.string.recurrence_monthly,
-        TaskRecurrencia.ANUAL to R.string.recurrence_yearly
+        TaskRecurrencia.MENSUAL to R.string.recurrence_monthly
     )
 
     Row(
