@@ -4,7 +4,6 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import com.example.taksy.data.preferences.PreferencesRepository
 import java.util.Calendar
 
@@ -85,24 +84,7 @@ object DailyReminderManager {
             }
         }
 
-        try {
-            val canScheduleExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
-                alarmManager.canScheduleExactAlarms()
-            if (canScheduleExact) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    calendar.timeInMillis,
-                    pendingIntent
-                )
-            } else {
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    calendar.timeInMillis,
-                    pendingIntent
-                )
-            }
-        } catch (_: Exception) {
-        }
+        AlarmPolicy.scheduleExactOrFallback(alarmManager, calendar.timeInMillis, pendingIntent)
     }
 
     fun rescheduleFromPrefs(context: Context) {
