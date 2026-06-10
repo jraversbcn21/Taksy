@@ -138,20 +138,15 @@ fun CategoryManagementScreen(
     }
 
     // Dialog para editar categoría
-    if (showEditDialog && selectedCategory != null) {
+    selectedCategory?.takeIf { showEditDialog }?.let { editing ->
         AddCategoryDialog(
-            category = selectedCategory,
-            onDismiss = { 
+            category = editing,
+            onDismiss = {
                 showEditDialog = false
                 selectedCategory = null
             },
             onConfirm = { name, color, icon ->
-                val updatedCategory = selectedCategory!!.copy(
-                    nombre = name,
-                    color = color,
-                    icono = icon
-                )
-                onUpdateCategory(updatedCategory)
+                onUpdateCategory(editing.copy(nombre = name, color = color, icono = icon))
                 showEditDialog = false
                 selectedCategory = null
                 showToast(categoryUpdatedText)
@@ -160,15 +155,15 @@ fun CategoryManagementScreen(
     }
 
     // Dialog para eliminar categoría
-    if (showDeleteDialog && selectedCategory != null) {
+    selectedCategory?.takeIf { showDeleteDialog }?.let { deleting ->
         DeleteCategoryDialog(
-            category = selectedCategory!!,
-            onDismiss = { 
+            category = deleting,
+            onDismiss = {
                 showDeleteDialog = false
                 selectedCategory = null
             },
             onConfirm = {
-                onDeleteCategory(selectedCategory!!)
+                onDeleteCategory(deleting)
                 showDeleteDialog = false
                 selectedCategory = null
                 showToast(categoryDeletedText)

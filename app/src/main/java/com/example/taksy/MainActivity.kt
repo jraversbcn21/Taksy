@@ -154,9 +154,10 @@ fun MainContent(
 
             val taskCountByCategory = remember(allTasks) {
                 allTasks
-                    .filter { it.estado != com.example.taksy.data.TaskEstado.COMPLETADA && it.categoriaId != null }
-                    .groupBy { it.categoriaId!! }
-                    .mapValues { it.value.size }
+                    .filter { it.estado != com.example.taksy.data.TaskEstado.COMPLETADA }
+                    .mapNotNull { it.categoriaId }
+                    .groupingBy { it }
+                    .eachCount()
             }
 
             var globalSearchQuery by remember { mutableStateOf("") }
@@ -224,9 +225,9 @@ fun MainContent(
                     category = categoryViewModel.getCategoryById(categoryId)
                 }
 
-                if (category != null) {
+                category?.let { resolvedCategory ->
                     TasksByCategoryScreen(
-                        category = category!!,
+                        category = resolvedCategory,
                         tasks = tasks,
                         taskViewModel = taskViewModel,
                         onBackClick = { navController.popBackStack() },
@@ -307,9 +308,9 @@ fun MainContent(
                     task = taskViewModel.getTaskById(taskId)
                 }
 
-                if (task != null) {
+                task?.let { resolvedTask ->
                     TaskDetailScreen(
-                        task = task!!,
+                        task = resolvedTask,
                         subtasks = subtasks,
                         onBackClick = { navController.popBackStack() },
                         onAddSubtask = { title -> taskViewModel.addSubtask(taskId, title) },

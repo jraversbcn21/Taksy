@@ -416,8 +416,7 @@ fun TasksByCategoryScreen(
         }
 
         // Quick reminder dialog
-        if (taskForReminder != null) {
-            val reminderTask = taskForReminder!!
+        taskForReminder?.let { reminderTask ->
             val taskReminders by taskViewModel.getRemindersByTaskId(reminderTask.id).collectAsState(initial = emptyList())
             val existingReminder = taskReminders.firstOrNull { it.activo }
 
