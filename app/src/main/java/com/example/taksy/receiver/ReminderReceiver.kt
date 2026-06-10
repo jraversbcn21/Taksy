@@ -78,17 +78,12 @@ class ReminderReceiver : BroadcastReceiver() {
         val task = database.taskDao().getTaskById(reminder.taskId)
 
         if (task?.estado != com.example.taksy.data.TaskEstado.COMPLETADA) {
-            val calendar = java.util.Calendar.getInstance()
-            calendar.time = reminder.fechaRecordatorio
+            val nextDate = com.example.taksy.domain.RecurrenceCalculator.advance(
+                reminder.fechaRecordatorio,
+                reminder.tipoRecordatorio
+            ) ?: return
 
-            when (reminder.tipoRecordatorio) {
-                com.example.taksy.data.TipoRecordatorio.DIARIO -> calendar.add(java.util.Calendar.DAY_OF_MONTH, 1)
-                com.example.taksy.data.TipoRecordatorio.SEMANAL -> calendar.add(java.util.Calendar.WEEK_OF_YEAR, 1)
-                com.example.taksy.data.TipoRecordatorio.MENSUAL -> calendar.add(java.util.Calendar.MONTH, 1)
-                else -> return
-            }
-
-            val updatedReminder = reminder.copy(fechaRecordatorio = calendar.time)
+            val updatedReminder = reminder.copy(fechaRecordatorio = nextDate)
             database.reminderDao().updateReminder(updatedReminder)
             com.example.taksy.service.ReminderScheduler(context).scheduleReminder(updatedReminder)
         }

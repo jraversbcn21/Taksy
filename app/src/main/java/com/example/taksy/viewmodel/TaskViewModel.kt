@@ -11,6 +11,7 @@ import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.data.TipoRecordatorio
+import com.example.taksy.domain.RecurrenceCalculator
 import com.example.taksy.repository.TaskFilter
 import com.example.taksy.repository.TaskRepository
 import com.example.taksy.service.ReminderSchedulerContract
@@ -24,7 +25,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
-import java.util.Calendar
 import java.util.Date
 import javax.inject.Inject
 
@@ -142,7 +142,7 @@ class TaskViewModel @Inject constructor(
                     repository.getRemindersByTaskIdSync(task.id).forEach { reminderScheduler.cancelReminder(it.id) }
                     repository.cancelAllRemindersForTask(task.id)
                     if (task.recurrencia != TaskRecurrencia.NINGUNA) {
-                        val nextDate = advanceDate(task.fechaVencimiento ?: Date(), task.recurrencia)
+                        val nextDate = RecurrenceCalculator.advance(task.fechaVencimiento ?: Date(), task.recurrencia)
                         repository.completeRecurringTask(
                             task,
                             Task(
@@ -164,18 +164,6 @@ class TaskViewModel @Inject constructor(
             }.onFailure { setError(it.message) }
             togglingTaskIds.remove(task.id)
         }
-    }
-
-    private fun advanceDate(from: Date, recurrencia: TaskRecurrencia): Date {
-        val cal = Calendar.getInstance().apply { time = from }
-        when (recurrencia) {
-            TaskRecurrencia.DIARIA -> cal.add(Calendar.DAY_OF_MONTH, 1)
-            TaskRecurrencia.SEMANAL -> cal.add(Calendar.WEEK_OF_YEAR, 1)
-            TaskRecurrencia.MENSUAL -> cal.add(Calendar.MONTH, 1)
-            TaskRecurrencia.ANUAL -> cal.add(Calendar.YEAR, 1)
-            TaskRecurrencia.NINGUNA -> {}
-        }
-        return cal.time
     }
 
     fun setFilter(filter: TaskFilter) {
@@ -224,7 +212,7 @@ class TaskViewModel @Inject constructor(
                     val task = repository.getTaskById(subtask.taskId)
                     if (task != null && task.estado == TaskEstado.PENDIENTE) {
                         if (task.recurrencia != TaskRecurrencia.NINGUNA) {
-                            val nextDate = advanceDate(task.fechaVencimiento ?: Date(), task.recurrencia)
+                            val nextDate = RecurrenceCalculator.advance(task.fechaVencimiento ?: Date(), task.recurrencia)
                             repository.completeRecurringTask(
                                 task,
                                 Task(
