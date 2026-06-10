@@ -58,12 +58,10 @@ class TaskRepository @Inject constructor(
     }
 
     suspend fun completeRecurringTask(task: Task, clone: Task) {
-        android.util.Log.d("TaksyDebug", "completeRecurringTask: origId=${task.id} cloneTitle='${clone.titulo}'")
         appDatabase.withTransaction {
             taskDao.insertTask(clone)
             taskDao.updateTask(task.copy(estado = TaskEstado.COMPLETADA, fechaCompletada = Date()))
         }
-        android.util.Log.d("TaksyDebug", "completeRecurringTask DONE: origId=${task.id}")
     }
 
     // ── Subtasks ───────────────────────────────────────────────────────────

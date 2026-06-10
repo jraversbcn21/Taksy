@@ -52,7 +52,4 @@ class ReminderScheduler(private val context: Context) : ReminderSchedulerContrac
         
         alarmManager.cancel(pendingIntent)
     }
-    
-    override fun cancelAllReminders() {
-    }
 }

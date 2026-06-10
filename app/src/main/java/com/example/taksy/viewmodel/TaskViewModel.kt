@@ -79,7 +79,6 @@ class TaskViewModel @Inject constructor(
 
     fun addTask(titulo: String, fechaVencimiento: Date?, categoriaId: Long?, prioridad: TaskPrioridad, recurrencia: TaskRecurrencia = TaskRecurrencia.NINGUNA) {
         if (titulo.isBlank()) return
-        android.util.Log.d("TaksyDebug", "addTask: titulo='$titulo' recurrencia=$recurrencia thread=${Thread.currentThread().name}")
         viewModelScope.launch {
             runCatching {
                 repository.insertTask(Task(titulo = titulo.trim(), fechaVencimiento = fechaVencimiento, categoriaId = categoriaId, prioridad = prioridad, recurrencia = recurrencia))
@@ -136,11 +135,7 @@ class TaskViewModel @Inject constructor(
     }
 
     fun toggleTaskStatus(task: Task) {
-        android.util.Log.d("TaksyDebug", "toggleTaskStatus: id=${task.id} titulo='${task.titulo}' estado=${task.estado} recurrencia=${task.recurrencia} guardBlocked=${!togglingTaskIds.contains(task.id).not()}")
-        if (!togglingTaskIds.add(task.id)) {
-            android.util.Log.d("TaksyDebug", "toggleTaskStatus BLOCKED by guard: id=${task.id}")
-            return
-        }
+        if (!togglingTaskIds.add(task.id)) return
         viewModelScope.launch {
             runCatching {
                 if (task.estado == TaskEstado.PENDIENTE) {

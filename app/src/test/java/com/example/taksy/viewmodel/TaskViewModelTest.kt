@@ -338,6 +338,5 @@ class TaskViewModelTest {
 
         override fun scheduleReminder(reminder: Reminder) { scheduledReminders.add(reminder) }
         override fun cancelReminder(reminderId: Long) { cancelledIds.add(reminderId) }
-        override fun cancelAllReminders() {}
     }
 }
