@@ -66,8 +66,10 @@ class TaskViewModelTest {
         val mockContext = mockk<Context>(relaxed = true)
         every { mockApp.applicationContext } returns mockContext
 
-        val useCase = com.example.taksy.domain.CompleteTaskUseCase(repo, fakeScheduler)
-        viewModel = TaskViewModel(repo, fakeScheduler, useCase, mockApp)
+        val completeUseCase = com.example.taksy.domain.CompleteTaskUseCase(repo, fakeScheduler)
+        val subtaskUseCase = com.example.taksy.domain.SubtaskUseCase(repo, completeUseCase)
+        val reminderUseCase = com.example.taksy.domain.TaskReminderUseCase(repo, fakeScheduler)
+        viewModel = TaskViewModel(repo, completeUseCase, subtaskUseCase, reminderUseCase, mockApp)
     }
 
     @After
@@ -105,21 +107,21 @@ class TaskViewModelTest {
 
     @Test
     fun `addTask ignores blank title`() = runTest {
-        viewModel.addTask("   ")
+        viewModel.addTask(TaskInput("   "))
         advanceUntilIdle()
         assertTrue(fakeTaskDao.tasks.isEmpty())
     }
 
     @Test
     fun `addTask trims title and stores`() = runTest {
-        viewModel.addTask("  My task  ")
+        viewModel.addTask(TaskInput("  My task  "))
         advanceUntilIdle()
         assertEquals("My task", fakeTaskDao.tasks[0].titulo)
     }
 
     @Test
     fun `addTask with priority stores correct priority`() = runTest {
-        viewModel.addTask("High", null, null, TaskPrioridad.ALTA)
+        viewModel.addTask(TaskInput("High", prioridad = TaskPrioridad.ALTA))
         advanceUntilIdle()
         assertEquals(TaskPrioridad.ALTA, fakeTaskDao.tasks[0].prioridad)
     }

@@ -12,9 +12,10 @@ import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.data.TipoRecordatorio
 import com.example.taksy.domain.CompleteTaskUseCase
+import com.example.taksy.domain.SubtaskUseCase
+import com.example.taksy.domain.TaskReminderUseCase
 import com.example.taksy.repository.TaskFilter
 import com.example.taksy.repository.TaskRepository
-import com.example.taksy.service.ReminderSchedulerContract
 import com.example.taksy.widget.TaskWidgetProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,18 +23,26 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import java.util.Date
 import javax.inject.Inject
 
+data class TaskInput(
+    val titulo: String,
+    val fechaVencimiento: Date? = null,
+    val categoriaId: Long? = null,
+    val prioridad: TaskPrioridad = TaskPrioridad.NINGUNA,
+    val recurrencia: TaskRecurrencia = TaskRecurrencia.NINGUNA
+)
+
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
 class TaskViewModel @Inject constructor(
     private val repository: TaskRepository,
-    private val reminderScheduler: ReminderSchedulerContract,
     private val completeTaskUseCase: CompleteTaskUseCase,
+    private val subtaskUseCase: SubtaskUseCase,
+    private val reminderUseCase: TaskReminderUseCase,
     application: Application
 ) : AndroidViewModel(application) {
 
@@ -72,60 +81,42 @@ class TaskViewModel @Inject constructor(
     fun searchAllTasks(query: String): Flow<List<Task>> =
         repository.searchAllTasks(query)
 
-    fun addTask(titulo: String) = addTask(titulo, null, null, TaskPrioridad.NINGUNA)
-
-    fun addTask(titulo: String, fechaVencimiento: Date?) = addTask(titulo, fechaVencimiento, null, TaskPrioridad.NINGUNA)
-
-    fun addTask(titulo: String, fechaVencimiento: Date?, categoriaId: Long?) = addTask(titulo, fechaVencimiento, categoriaId, TaskPrioridad.NINGUNA)
-
-    fun addTask(titulo: String, fechaVencimiento: Date?, categoriaId: Long?, prioridad: TaskPrioridad, recurrencia: TaskRecurrencia = TaskRecurrencia.NINGUNA) {
-        if (titulo.isBlank()) return
-        viewModelScope.launch {
-            runCatching {
-                repository.insertTask(Task(titulo = titulo.trim(), fechaVencimiento = fechaVencimiento, categoriaId = categoriaId, prioridad = prioridad, recurrencia = recurrencia))
-                TaskWidgetProvider.refreshAll(context)
-            }.onFailure { setError(it.message) }
+    fun addTask(input: TaskInput) {
+        if (input.titulo.isBlank()) return
+        launchSafe {
+            repository.insertTask(
+                Task(
+                    titulo = input.titulo.trim(),
+                    fechaVencimiento = input.fechaVencimiento,
+                    categoriaId = input.categoriaId,
+                    prioridad = input.prioridad,
+                    recurrencia = input.recurrencia
+                )
+            )
+            TaskWidgetProvider.refreshAll(context)
         }
     }
 
-    fun updateTask(task: Task) {
-        viewModelScope.launch { runCatching { repository.updateTask(task) }.onFailure { setError(it.message) } }
+    fun updateTask(task: Task) = launchSafe { repository.updateTask(task) }
+
+    fun deleteTask(task: Task) = launchSafe {
+        repository.deleteTask(task)
+        TaskWidgetProvider.refreshAll(context)
     }
 
-    fun deleteTask(task: Task) {
-        viewModelScope.launch {
-            runCatching {
-                repository.deleteTask(task)
-                TaskWidgetProvider.refreshAll(context)
-            }.onFailure { setError(it.message) }
-        }
+    fun restoreTask(task: Task) = launchSafe {
+        repository.insertTask(task)
+        TaskWidgetProvider.refreshAll(context)
     }
 
-    fun restoreTask(task: Task) {
-        viewModelScope.launch {
-            runCatching {
-                repository.insertTask(task)
-                TaskWidgetProvider.refreshAll(context)
-            }.onFailure { setError(it.message) }
-        }
+    fun archiveTask(task: Task) = launchSafe {
+        repository.archiveTask(task.id)
+        TaskWidgetProvider.refreshAll(context)
     }
 
-    fun archiveTask(task: Task) {
-        viewModelScope.launch {
-            runCatching {
-                repository.archiveTask(task.id)
-                TaskWidgetProvider.refreshAll(context)
-            }.onFailure { setError(it.message) }
-        }
-    }
-
-    fun unarchiveTask(task: Task) {
-        viewModelScope.launch {
-            runCatching {
-                repository.unarchiveTask(task.id)
-                TaskWidgetProvider.refreshAll(context)
-            }.onFailure { setError(it.message) }
-        }
+    fun unarchiveTask(task: Task) = launchSafe {
+        repository.unarchiveTask(task.id)
+        TaskWidgetProvider.refreshAll(context)
     }
 
     fun getArchivedTasksByCategory(categoryId: Long): Flow<List<Task>> =
@@ -155,13 +146,9 @@ class TaskViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(currentFilter = filter)
     }
 
-    fun deleteCompletedTasks() {
-        viewModelScope.launch {
-            runCatching {
-                repository.deleteCompletedTasks()
-                TaskWidgetProvider.refreshAll(context)
-            }.onFailure { setError(it.message) }
-        }
+    fun deleteCompletedTasks() = launchSafe {
+        repository.deleteCompletedTasks()
+        TaskWidgetProvider.refreshAll(context)
     }
 
     suspend fun getTaskById(id: Long): Task? = repository.getTaskById(id)
@@ -170,48 +157,24 @@ class TaskViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(error = null)
     }
 
-    // ── Subtasks ───────────────────────────────────────────────────────────
+    // ── Subtasks (delegated) ───────────────────────────────────────────────
 
-    fun getSubtasksByTaskId(taskId: Long): Flow<List<Subtask>> = repository.getSubtasksByTaskId(taskId)
+    fun getSubtasksByTaskId(taskId: Long): Flow<List<Subtask>> = subtaskUseCase.observe(taskId)
 
-    fun addSubtask(taskId: Long, titulo: String) {
-        if (titulo.isBlank()) return
-        viewModelScope.launch {
-            runCatching { repository.insertSubtask(Subtask(taskId = taskId, titulo = titulo.trim())) }
-                .onFailure { setError(it.message) }
-        }
+    fun addSubtask(taskId: Long, titulo: String) = launchSafe { subtaskUseCase.add(taskId, titulo) }
+
+    fun toggleSubtaskStatus(subtask: Subtask) = launchSafe {
+        val parentAutoCompleted = subtaskUseCase.toggle(subtask)
+        if (parentAutoCompleted) TaskWidgetProvider.refreshAll(context)
     }
 
-    fun toggleSubtaskStatus(subtask: Subtask) {
-        viewModelScope.launch {
-            runCatching {
-                val updated = subtask.copy(
-                    estado = if (subtask.estado == TaskEstado.PENDIENTE) TaskEstado.COMPLETADA else TaskEstado.PENDIENTE
-                )
-                repository.updateSubtask(updated)
+    fun deleteSubtask(subtask: Subtask) = launchSafe { subtaskUseCase.delete(subtask) }
 
-                // Auto-complete parent task when all subtasks are done
-                val subtasks = repository.getSubtasksByTaskId(subtask.taskId).first()
-                if (subtasks.isNotEmpty() && subtasks.all { it.estado == TaskEstado.COMPLETADA }) {
-                    val task = repository.getTaskById(subtask.taskId)
-                    if (task != null && task.estado == TaskEstado.PENDIENTE) {
-                        completeTaskUseCase.execute(task)
-                        TaskWidgetProvider.refreshAll(context)
-                    }
-                }
-            }.onFailure { setError(it.message) }
-        }
-    }
+    // ── Reminders (delegated) ──────────────────────────────────────────────
 
-    fun deleteSubtask(subtask: Subtask) {
-        viewModelScope.launch { runCatching { repository.deleteSubtask(subtask) }.onFailure { setError(it.message) } }
-    }
+    fun getRemindersByTaskId(taskId: Long): Flow<List<Reminder>> = reminderUseCase.observe(taskId)
 
-    // ── Reminders ──────────────────────────────────────────────────────────
-
-    fun getRemindersByTaskId(taskId: Long): Flow<List<Reminder>> = repository.getRemindersByTaskId(taskId)
-
-    fun getAllActiveReminders(): Flow<List<Reminder>> = repository.getAllActiveReminders()
+    fun getAllActiveReminders(): Flow<List<Reminder>> = reminderUseCase.observeAllActive()
 
     fun addReminder(
         taskId: Long,
@@ -219,71 +182,26 @@ class TaskViewModel @Inject constructor(
         descripcion: String?,
         fechaRecordatorio: Date,
         tipoRecordatorio: TipoRecordatorio
-    ) {
+    ) = launchSafe { reminderUseCase.add(taskId, titulo, descripcion, fechaRecordatorio, tipoRecordatorio) }
+
+    fun updateReminder(reminder: Reminder) = launchSafe { reminderUseCase.update(reminder) }
+
+    fun deleteReminder(reminder: Reminder) = launchSafe { reminderUseCase.delete(reminder) }
+
+    fun updateReminderStatus(id: Long, activo: Boolean) = launchSafe { reminderUseCase.setActive(id, activo) }
+
+    fun setQuickReminder(taskId: Long, taskTitle: String, fecha: Date) =
+        launchSafe { reminderUseCase.setQuick(taskId, taskTitle, fecha) }
+
+    fun deleteReminderForTask(taskId: Long) = launchSafe { reminderUseCase.deleteAllForTask(taskId) }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+
+    private fun launchSafe(block: suspend () -> Unit) {
         viewModelScope.launch {
-            runCatching {
-                val reminder = Reminder(
-                    taskId = taskId,
-                    titulo = titulo,
-                    descripcion = descripcion,
-                    fechaRecordatorio = fechaRecordatorio,
-                    tipoRecordatorio = tipoRecordatorio
-                )
-                val id = repository.insertReminder(reminder)
-                reminderScheduler.scheduleReminder(reminder.copy(id = id))
-            }.onFailure { setError(it.message) }
+            runCatching { block() }.onFailure { setError(it.message) }
         }
     }
-
-    fun updateReminder(reminder: Reminder) {
-        viewModelScope.launch { runCatching { repository.updateReminder(reminder) }.onFailure { setError(it.message) } }
-    }
-
-    fun deleteReminder(reminder: Reminder) {
-        viewModelScope.launch { runCatching { repository.deleteReminder(reminder) }.onFailure { setError(it.message) } }
-    }
-
-    fun updateReminderStatus(id: Long, activo: Boolean) {
-        viewModelScope.launch { runCatching { repository.updateReminderStatus(id, activo) }.onFailure { setError(it.message) } }
-    }
-
-    /**
-     * Sets a single quick reminder for a task, replacing any existing ones.
-     */
-    fun setQuickReminder(taskId: Long, taskTitle: String, fecha: Date) {
-        viewModelScope.launch {
-            runCatching {
-                repository.getRemindersByTaskIdSync(taskId).forEach {
-                    reminderScheduler.cancelReminder(it.id)
-                    repository.deleteReminder(it)
-                }
-                val reminder = Reminder(
-                    taskId = taskId,
-                    titulo = taskTitle,
-                    fechaRecordatorio = fecha,
-                    tipoRecordatorio = TipoRecordatorio.UNA_VEZ
-                )
-                val id = repository.insertReminder(reminder)
-                reminderScheduler.scheduleReminder(reminder.copy(id = id))
-            }.onFailure { setError(it.message) }
-        }
-    }
-
-    /**
-     * Deletes all reminders for a task.
-     */
-    fun deleteReminderForTask(taskId: Long) {
-        viewModelScope.launch {
-            runCatching {
-                repository.getRemindersByTaskIdSync(taskId).forEach {
-                    reminderScheduler.cancelReminder(it.id)
-                    repository.deleteReminder(it)
-                }
-            }.onFailure { setError(it.message) }
-        }
-    }
-
-    // ─��� Helpers ─────────────────────���──────────────────────────���───────────
 
     private fun setError(message: String?) {
         _uiState.value = _uiState.value.copy(error = message ?: "Error desconocido")
