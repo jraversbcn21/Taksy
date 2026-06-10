@@ -10,7 +10,7 @@ import android.net.Uri
 import android.widget.RemoteViews
 import com.example.taksy.MainActivity
 import com.example.taksy.R
-import com.example.taksy.data.AppDatabase
+import dagger.hilt.android.EntryPointAccessors
 
 class TaskWidgetProvider : AppWidgetProvider() {
 
@@ -69,8 +69,11 @@ class TaskWidgetProvider : AppWidgetProvider() {
         views.setRemoteAdapter(R.id.widget_task_list, serviceIntent)
         views.setEmptyView(R.id.widget_task_list, R.id.widget_empty)
 
-        val db = AppDatabase.getDatabase(context)
-        val count = db.taskDao().getPendingTasksSync().size
+        val taskDao = EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            WidgetEntryPoint::class.java
+        ).taskDao()
+        val count = taskDao.getPendingTasksSync().size
         val countText = context.resources.getQuantityString(R.plurals.widget_task_count, count, count)
         views.setTextViewText(R.id.widget_count, countText)
 

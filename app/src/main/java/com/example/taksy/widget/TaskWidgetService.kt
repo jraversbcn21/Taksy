@@ -6,9 +6,9 @@ import android.view.View
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
 import com.example.taksy.R
-import com.example.taksy.data.AppDatabase
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskPrioridad
+import dagger.hilt.android.EntryPointAccessors
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -25,11 +25,17 @@ class TaskWidgetRemoteViewsFactory(
 
     private var tasks: List<Task> = emptyList()
 
+    private val taskDao by lazy {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            WidgetEntryPoint::class.java
+        ).taskDao()
+    }
+
     override fun onCreate() {}
 
     override fun onDataSetChanged() {
-        val db = AppDatabase.getDatabase(context)
-        tasks = db.taskDao().getPendingTasksSync()
+        tasks = taskDao.getPendingTasksSync()
     }
 
     override fun onDestroy() {

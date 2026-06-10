@@ -11,14 +11,18 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.taksy.MainActivity
 import com.example.taksy.R
-import com.example.taksy.data.AppDatabase
 import com.example.taksy.repository.TaskRepository
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class DailyReminderService : BroadcastReceiver() {
+
+    @Inject lateinit var taskRepository: TaskRepository
 
     companion object {
         private const val CHANNEL_ID = "daily_reminders"
@@ -59,21 +63,11 @@ class DailyReminderService : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val database = AppDatabase.getDatabase(context)
-                val taskRepository = TaskRepository(
-                    database,
-                    database.taskDao(),
-                    database.subtaskDao(),
-                    database.reminderDao()
-                )
-                val pendingTasksFlow = taskRepository.getTasksByFilter(
-                    com.example.taksy.repository.TaskFilter.PENDIENTES
-                )
-                val pendingTasks = pendingTasksFlow.first()
-
+                val pendingTasks = taskRepository
+                    .getTasksByFilter(com.example.taksy.repository.TaskFilter.PENDIENTES)
+                    .first()
                 createNotification(context, pendingTasks, reminderType)
-
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 createGenericNotification(context, reminderType)
             } finally {
                 pendingResult.finish()
