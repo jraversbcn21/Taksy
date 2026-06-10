@@ -333,4 +333,16 @@
     <string name="widget_name">Ticksy - Pending tasks</string>
     <string name="widget_description">Shows your pending tasks</string>
     <string name="widget_refresh">Refresh</string>
+
+    <!-- Default categories -->
+    <string-array name="default_category_names">
+        <item>Work</item>
+        <item>Personal</item>
+        <item>Shopping</item>
+        <item>Health</item>
+        <item>Home</item>
+        <item>Study</item>
+        <item>Exercise</item>
+        <item>Other</item>
+    </string-array>
 </resources>

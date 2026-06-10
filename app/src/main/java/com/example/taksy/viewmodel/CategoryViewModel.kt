@@ -1,22 +1,25 @@
 package com.example.taksy.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.taksy.data.Category
 import com.example.taksy.repository.CategoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 @HiltViewModel
 class CategoryViewModel @Inject constructor(
-    private val repository: CategoryRepository
+    private val repository: CategoryRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     init {
         viewModelScope.launch {
-            repository.initializeDefaultCategories()
+            repository.initializeDefaultCategories(context)
         }
     }
 

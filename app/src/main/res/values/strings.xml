@@ -342,4 +342,16 @@
     <string name="widget_name">Ticksy - Tareas pendientes</string>
     <string name="widget_description">Muestra tus tareas pendientes</string>
     <string name="widget_refresh">Actualizar</string>
+
+    <!-- Default categories -->
+    <string-array name="default_category_names">
+        <item>Trabajo</item>
+        <item>Personal</item>
+        <item>Compras</item>
+        <item>Salud</item>
+        <item>Hogar</item>
+        <item>Estudios</item>
+        <item>Ejercicio</item>
+        <item>Otros</item>
+    </string-array>
 </resources>

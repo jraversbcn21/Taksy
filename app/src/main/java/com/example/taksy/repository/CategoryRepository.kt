@@ -1,5 +1,6 @@
 package com.example.taksy.repository
 
+import android.content.Context
 import com.example.taksy.data.Category
 import com.example.taksy.data.CategoryDao
 import com.example.taksy.data.DefaultCategories
@@ -27,9 +28,9 @@ class CategoryRepository @Inject constructor(
      * Inserta las categorías predefinidas solo en el primer inicio (cuando no hay ninguna).
      * Nunca borra categorías existentes.
      */
-    suspend fun initializeDefaultCategories() {
+    suspend fun initializeDefaultCategories(context: Context) {
         if (categoryDao.getCategoryCount() == 0) {
-            categoryDao.insertCategories(DefaultCategories.getAll())
+            categoryDao.insertCategories(DefaultCategories.getAll(context))
         }
     }
 }

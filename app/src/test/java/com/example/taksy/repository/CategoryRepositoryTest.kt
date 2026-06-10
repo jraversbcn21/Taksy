@@ -1,7 +1,11 @@
 package com.example.taksy.repository
 
+import android.content.Context
+import android.content.res.Resources
 import com.example.taksy.data.Category
 import com.example.taksy.data.CategoryDao
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -51,34 +55,44 @@ class CategoryRepositoryTest {
         return dao to CategoryRepository(dao)
     }
 
+    private fun fakeContext(): Context {
+        val resources = mockk<Resources>()
+        val names = arrayOf("A", "B", "C", "D", "E", "F", "G", "H")
+        every { resources.getStringArray(any()) } returns names
+        val ctx = mockk<Context>()
+        every { ctx.resources } returns resources
+        return ctx
+    }
+
     // ── initializeDefaultCategories ───────────────────────────────────────
 
     @Test
     fun `initializeDefaultCategories inserts when empty`() = runTest {
         val (dao, repo) = makeRepo(0)
-        repo.initializeDefaultCategories()
+        repo.initializeDefaultCategories(fakeContext())
         assertEquals(1, dao.insertedBatches.size)
     }
 
     @Test
     fun `initializeDefaultCategories skips when categories exist`() = runTest {
         val (dao, repo) = makeRepo(3)
-        repo.initializeDefaultCategories()
+        repo.initializeDefaultCategories(fakeContext())
         assertEquals(0, dao.insertedBatches.size)
     }
 
     @Test
     fun `initializeDefaultCategories idempotent on repeated calls`() = runTest {
         val (dao, repo) = makeRepo(0)
-        repo.initializeDefaultCategories()
-        repo.initializeDefaultCategories()
+        val ctx = fakeContext()
+        repo.initializeDefaultCategories(ctx)
+        repo.initializeDefaultCategories(ctx)
         assertEquals(1, dao.insertedBatches.size)
     }
 
     @Test
     fun `initializeDefaultCategories inserts 8 default categories`() = runTest {
         val (dao, repo) = makeRepo(0)
-        repo.initializeDefaultCategories()
+        repo.initializeDefaultCategories(fakeContext())
         assertEquals(8, dao.insertedBatches[0].size)
     }
 
