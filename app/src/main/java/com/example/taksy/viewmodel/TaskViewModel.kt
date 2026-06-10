@@ -11,7 +11,7 @@ import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.data.TipoRecordatorio
-import com.example.taksy.domain.RecurrenceCalculator
+import com.example.taksy.domain.CompleteTaskUseCase
 import com.example.taksy.repository.TaskFilter
 import com.example.taksy.repository.TaskRepository
 import com.example.taksy.service.ReminderSchedulerContract
@@ -33,6 +33,7 @@ import javax.inject.Inject
 class TaskViewModel @Inject constructor(
     private val repository: TaskRepository,
     private val reminderScheduler: ReminderSchedulerContract,
+    private val completeTaskUseCase: CompleteTaskUseCase,
     application: Application
 ) : AndroidViewModel(application) {
 
@@ -139,24 +140,7 @@ class TaskViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 if (task.estado == TaskEstado.PENDIENTE) {
-                    repository.getRemindersByTaskIdSync(task.id).forEach { reminderScheduler.cancelReminder(it.id) }
-                    repository.cancelAllRemindersForTask(task.id)
-                    if (task.recurrencia != TaskRecurrencia.NINGUNA) {
-                        val nextDate = RecurrenceCalculator.advance(task.fechaVencimiento ?: Date(), task.recurrencia)
-                        repository.completeRecurringTask(
-                            task,
-                            Task(
-                                titulo = task.titulo,
-                                descripcion = task.descripcion,
-                                fechaVencimiento = nextDate,
-                                categoriaId = task.categoriaId,
-                                prioridad = task.prioridad,
-                                recurrencia = task.recurrencia
-                            )
-                        )
-                    } else {
-                        repository.toggleTaskStatus(task)
-                    }
+                    completeTaskUseCase.execute(task)
                 } else {
                     repository.toggleTaskStatus(task)
                 }
@@ -211,22 +195,7 @@ class TaskViewModel @Inject constructor(
                 if (subtasks.isNotEmpty() && subtasks.all { it.estado == TaskEstado.COMPLETADA }) {
                     val task = repository.getTaskById(subtask.taskId)
                     if (task != null && task.estado == TaskEstado.PENDIENTE) {
-                        if (task.recurrencia != TaskRecurrencia.NINGUNA) {
-                            val nextDate = RecurrenceCalculator.advance(task.fechaVencimiento ?: Date(), task.recurrencia)
-                            repository.completeRecurringTask(
-                                task,
-                                Task(
-                                    titulo = task.titulo,
-                                    descripcion = task.descripcion,
-                                    fechaVencimiento = nextDate,
-                                    categoriaId = task.categoriaId,
-                                    prioridad = task.prioridad,
-                                    recurrencia = task.recurrencia
-                                )
-                            )
-                        } else {
-                            repository.updateTask(task.copy(estado = TaskEstado.COMPLETADA, fechaCompletada = Date()))
-                        }
+                        completeTaskUseCase.execute(task)
                         TaskWidgetProvider.refreshAll(context)
                     }
                 }

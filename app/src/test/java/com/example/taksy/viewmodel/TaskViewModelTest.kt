@@ -66,7 +66,8 @@ class TaskViewModelTest {
         val mockContext = mockk<Context>(relaxed = true)
         every { mockApp.applicationContext } returns mockContext
 
-        viewModel = TaskViewModel(repo, fakeScheduler, mockApp)
+        val useCase = com.example.taksy.domain.CompleteTaskUseCase(repo, fakeScheduler)
+        viewModel = TaskViewModel(repo, fakeScheduler, useCase, mockApp)
     }
 
     @After
