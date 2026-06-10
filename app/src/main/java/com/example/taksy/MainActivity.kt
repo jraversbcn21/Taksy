@@ -45,6 +45,7 @@ import com.example.taksy.ui.screens.StatsScreen
 import com.example.taksy.viewmodel.BackupViewModel
 import com.example.taksy.ui.screens.ThemeSettingsScreen
 import com.example.taksy.ui.theme.TicksyTheme
+import com.example.taksy.data.preferences.PreferencesRepository
 import com.example.taksy.utils.LocaleHelper
 import com.example.taksy.viewmodel.CategoryViewModel
 import com.example.taksy.viewmodel.TaskViewModel
@@ -115,9 +116,6 @@ fun MainScreen(activity: ComponentActivity) {
     }
 }
 
-private const val ONBOARDING_PREFS = "onboarding_prefs"
-private const val ONBOARDING_COMPLETED_KEY = "onboarding_completed"
-
 @Composable
 fun MainContent(
     navController: androidx.navigation.NavHostController,
@@ -131,8 +129,8 @@ fun MainContent(
     activity: ComponentActivity,
     onShowLanguageChangeDialog: (String) -> Unit
 ) {
-    val prefs = remember { context.getSharedPreferences(ONBOARDING_PREFS, Context.MODE_PRIVATE) }
-    val onboardingCompleted = remember { prefs.getBoolean(ONBOARDING_COMPLETED_KEY, false) }
+    val preferences = remember { PreferencesRepository(context.applicationContext) }
+    val onboardingCompleted = remember { preferences.isOnboardingCompleted() }
     val startDestination = if (onboardingCompleted) "category_list" else "onboarding"
 
     NavHost(
@@ -142,7 +140,7 @@ fun MainContent(
         composable("onboarding") {
             OnboardingScreen(
                 onFinish = {
-                    prefs.edit().putBoolean(ONBOARDING_COMPLETED_KEY, true).apply()
+                    preferences.setOnboardingCompleted(true)
                     navController.navigate("category_list") {
                         popUpTo("onboarding") { inclusive = true }
                     }

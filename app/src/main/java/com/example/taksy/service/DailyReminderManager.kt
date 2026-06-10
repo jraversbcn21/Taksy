@@ -5,37 +5,16 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.example.taksy.data.preferences.PreferencesRepository
 import java.util.Calendar
 
 object DailyReminderManager {
 
-    data class DailyReminderPrefs(
-        val enabled: Boolean,
-        val morningHour: Int,
-        val morningMinute: Int,
-        val eveningHour: Int,
-        val eveningMinute: Int
-    )
-
     private const val REQUEST_CODE_MORNING = 1001
     private const val REQUEST_CODE_EVENING = 1002
-    private const val PREFS_NAME = "daily_reminder_prefs"
-    private const val KEY_ENABLED = "enabled"
-    private const val KEY_MORNING_HOUR = "morning_hour"
-    private const val KEY_MORNING_MINUTE = "morning_minute"
-    private const val KEY_EVENING_HOUR = "evening_hour"
-    private const val KEY_EVENING_MINUTE = "evening_minute"
 
-    fun loadPrefs(context: Context): DailyReminderPrefs {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return DailyReminderPrefs(
-            enabled = prefs.getBoolean(KEY_ENABLED, false),
-            morningHour = prefs.getInt(KEY_MORNING_HOUR, 10),
-            morningMinute = prefs.getInt(KEY_MORNING_MINUTE, 0),
-            eveningHour = prefs.getInt(KEY_EVENING_HOUR, 18),
-            eveningMinute = prefs.getInt(KEY_EVENING_MINUTE, 0)
-        )
-    }
+    fun loadPrefs(context: Context): PreferencesRepository.DailyReminderPrefs =
+        PreferencesRepository(context.applicationContext).loadDailyReminderPrefs()
 
     fun scheduleDailyReminders(
         context: Context,
@@ -45,14 +24,15 @@ object DailyReminderManager {
         eveningMinute: Int,
         enabled: Boolean
     ) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().apply {
-            putBoolean(KEY_ENABLED, enabled)
-            putInt(KEY_MORNING_HOUR, morningHour)
-            putInt(KEY_MORNING_MINUTE, morningMinute)
-            putInt(KEY_EVENING_HOUR, eveningHour)
-            putInt(KEY_EVENING_MINUTE, eveningMinute)
-            apply()
-        }
+        PreferencesRepository(context.applicationContext).saveDailyReminderPrefs(
+            PreferencesRepository.DailyReminderPrefs(
+                enabled = enabled,
+                morningHour = morningHour,
+                morningMinute = morningMinute,
+                eveningHour = eveningHour,
+                eveningMinute = eveningMinute
+            )
+        )
 
         cancelDailyReminders(context)
         if (!enabled) return
