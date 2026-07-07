@@ -8,7 +8,6 @@ import com.example.taksy.data.Subtask
 import com.example.taksy.data.SubtaskDao
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskDao
-import com.example.taksy.data.TaskEstado
 import kotlinx.coroutines.flow.Flow
 import java.util.Date
 import javax.inject.Inject
@@ -48,21 +47,27 @@ class TaskRepository @Inject constructor(
     suspend fun unarchiveTask(taskId: Long) = taskDao.unarchiveTask(taskId)
     suspend fun reorderTasks(tasks: List<Task>) = taskDao.updateTasks(tasks)
 
-    suspend fun toggleTaskStatus(task: Task) {
-        val completing = task.estado == TaskEstado.PENDIENTE
-        val newStatus = if (completing) TaskEstado.COMPLETADA else TaskEstado.PENDIENTE
-        taskDao.updateTask(task.copy(
-            estado = newStatus,
-            fechaCompletada = if (completing) Date() else null
-        ))
-    }
+    /**
+     * Completa la tarea solo si sigue PENDIENTE en la base de datos (compare-and-swap).
+     * Devuelve true si esta llamada fue la que la completó.
+     */
+    suspend fun completeTaskIfPending(taskId: Long): Boolean =
+        taskDao.completeTaskIfPending(taskId, Date()) == 1
 
-    suspend fun completeRecurringTask(task: Task, clone: Task) {
+    suspend fun markTaskPending(taskId: Long) = taskDao.markTaskAsPending(taskId)
+
+    /**
+     * Completa una tarea recurrente e inserta su siguiente ocurrencia de forma atómica.
+     * El compare-and-swap dentro de la transacción garantiza que solo el primer caller
+     * inserta el clon: cualquier ejecución concurrente ve estado != PENDIENTE y no escribe.
+     * Devuelve true si esta llamada completó la tarea e insertó el clon.
+     */
+    suspend fun completeRecurringTask(task: Task, clone: Task): Boolean =
         appDatabase.withTransaction {
-            taskDao.insertTask(clone)
-            taskDao.updateTask(task.copy(estado = TaskEstado.COMPLETADA, fechaCompletada = Date()))
+            val won = taskDao.completeTaskIfPending(task.id, Date()) == 1
+            if (won) taskDao.insertTask(clone)
+            won
         }
-    }
 
     // ── Subtasks ───────────────────────────────────────────────────────────
 

@@ -29,8 +29,9 @@ class SubtaskUseCase @Inject constructor(
         if (siblings.isNotEmpty() && siblings.all { it.estado == TaskEstado.COMPLETADA }) {
             val task = repository.getTaskById(subtask.taskId)
             if (task != null && task.estado == TaskEstado.PENDIENTE) {
-                completeTaskUseCase.execute(task)
-                return true
+                // execute() es idempotente: devuelve false si otra ruta (radio button
+                // u otro toggle concurrente) completó la tarea primero.
+                return completeTaskUseCase.execute(task)
             }
         }
         return false

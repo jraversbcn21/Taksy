@@ -43,8 +43,20 @@ class TaskRepositoryTest {
             if (idx >= 0) tasks[idx] = task
         }
         override suspend fun deleteTask(task: Task) { tasks.removeIf { it.id == task.id } }
-        override suspend fun markTaskAsCompleted(id: Long) {}
-        override suspend fun markTaskAsPending(id: Long) {}
+        override suspend fun completeTaskIfPending(id: Long, fechaCompletada: Date): Int {
+            val idx = tasks.indexOfFirst { it.id == id && it.estado == TaskEstado.PENDIENTE }
+            if (idx < 0) return 0
+            tasks[idx] = tasks[idx].copy(estado = TaskEstado.COMPLETADA, fechaCompletada = fechaCompletada)
+            lastUpdated = tasks[idx]
+            return 1
+        }
+        override suspend fun markTaskAsPending(id: Long) {
+            val idx = tasks.indexOfFirst { it.id == id }
+            if (idx >= 0) {
+                tasks[idx] = tasks[idx].copy(estado = TaskEstado.PENDIENTE, fechaCompletada = null)
+                lastUpdated = tasks[idx]
+            }
+        }
         override suspend fun deleteCompletedTasks() { tasks.removeIf { it.estado == TaskEstado.COMPLETADA } }
         override suspend fun getTasksDueToday(startOfDay: Long, endOfDay: Long): List<Task> = emptyList()
         override suspend fun getTasksDueSoon(now: Long, nextWeek: Long): List<Task> = emptyList()
@@ -104,25 +116,37 @@ class TaskRepositoryTest {
     // ── Tests ──────────────────────────────────────────────────────────────
 
     @Test
-    fun `toggleTaskStatus flips PENDIENTE to COMPLETADA`() = runTest {
+    fun `completeTaskIfPending completes a pending task and returns true`() = runTest {
         val (dao, repo) = makeRepository()
-        val task = Task(id = 1L, titulo = "Test", estado = TaskEstado.PENDIENTE)
-        dao.tasks.add(task)
+        dao.tasks.add(Task(id = 1L, titulo = "Test", estado = TaskEstado.PENDIENTE))
 
-        repo.toggleTaskStatus(task)
+        val won = repo.completeTaskIfPending(1L)
 
-        assertEquals(TaskEstado.COMPLETADA, dao.lastUpdated?.estado)
+        assertEquals(true, won)
+        assertEquals(TaskEstado.COMPLETADA, dao.tasks[0].estado)
     }
 
     @Test
-    fun `toggleTaskStatus flips COMPLETADA to PENDIENTE`() = runTest {
+    fun `completeTaskIfPending returns false when task already completed`() = runTest {
         val (dao, repo) = makeRepository()
-        val task = Task(id = 2L, titulo = "Done", estado = TaskEstado.COMPLETADA)
-        dao.tasks.add(task)
+        dao.tasks.add(Task(id = 1L, titulo = "Test", estado = TaskEstado.PENDIENTE))
 
-        repo.toggleTaskStatus(task)
+        val first = repo.completeTaskIfPending(1L)
+        val second = repo.completeTaskIfPending(1L)
 
-        assertEquals(TaskEstado.PENDIENTE, dao.lastUpdated?.estado)
+        assertEquals(true, first)
+        assertEquals(false, second)
+    }
+
+    @Test
+    fun `markTaskPending reverts completion and clears fechaCompletada`() = runTest {
+        val (dao, repo) = makeRepository()
+        dao.tasks.add(Task(id = 2L, titulo = "Done", estado = TaskEstado.COMPLETADA, fechaCompletada = Date()))
+
+        repo.markTaskPending(2L)
+
+        assertEquals(TaskEstado.PENDIENTE, dao.tasks[0].estado)
+        assertEquals(null, dao.tasks[0].fechaCompletada)
     }
 
     @Test

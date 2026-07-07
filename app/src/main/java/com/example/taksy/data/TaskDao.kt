@@ -2,6 +2,7 @@ package com.example.taksy.data
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
+import java.util.Date
 
 /**
  * DAO (Data Access Object) para operaciones de base de datos de tareas
@@ -52,15 +53,17 @@ interface TaskDao {
     suspend fun deleteTask(task: Task)
     
     /**
-     * Marca una tarea como completada
+     * Marca una tarea como completada solo si sigue pendiente (compare-and-swap).
+     * Devuelve el número de filas afectadas: 1 si esta llamada ganó la carrera,
+     * 0 si otro caller ya la completó.
      */
-    @Query("UPDATE tasks SET estado = 'COMPLETADA' WHERE id = :id")
-    suspend fun markTaskAsCompleted(id: Long)
-    
+    @Query("UPDATE tasks SET estado = 'COMPLETADA', fechaCompletada = :fechaCompletada WHERE id = :id AND estado = 'PENDIENTE'")
+    suspend fun completeTaskIfPending(id: Long, fechaCompletada: Date): Int
+
     /**
      * Marca una tarea como pendiente
      */
-    @Query("UPDATE tasks SET estado = 'PENDIENTE' WHERE id = :id")
+    @Query("UPDATE tasks SET estado = 'PENDIENTE', fechaCompletada = NULL WHERE id = :id")
     suspend fun markTaskAsPending(id: Long)
     
     /**

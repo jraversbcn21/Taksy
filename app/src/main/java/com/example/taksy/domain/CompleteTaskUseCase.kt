@@ -11,11 +11,16 @@ class CompleteTaskUseCase @Inject constructor(
     private val repository: TaskRepository,
     private val reminderScheduler: ReminderSchedulerContract
 ) {
-    suspend fun execute(task: Task) {
+    /**
+     * Completa la tarea de forma idempotente. Devuelve true solo si esta llamada
+     * fue la que la completó; false si ya estaba completada (p. ej. porque la otra
+     * ruta de completado — radio button o auto-complete de subtareas — llegó antes).
+     */
+    suspend fun execute(task: Task): Boolean {
         repository.getRemindersByTaskIdSync(task.id).forEach { reminderScheduler.cancelReminder(it.id) }
         repository.cancelAllRemindersForTask(task.id)
 
-        if (task.recurrencia != TaskRecurrencia.NINGUNA) {
+        return if (task.recurrencia != TaskRecurrencia.NINGUNA) {
             val nextDate = RecurrenceCalculator.advance(task.fechaVencimiento ?: Date(), task.recurrencia)
             val clone = Task(
                 titulo = task.titulo,
@@ -27,7 +32,7 @@ class CompleteTaskUseCase @Inject constructor(
             )
             repository.completeRecurringTask(task, clone)
         } else {
-            repository.toggleTaskStatus(task)
+            repository.completeTaskIfPending(task.id)
         }
     }
 }

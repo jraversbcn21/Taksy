@@ -133,7 +133,7 @@ class TaskViewModel @Inject constructor(
                 if (task.estado == TaskEstado.PENDIENTE) {
                     completeTaskUseCase.execute(task)
                 } else {
-                    repository.toggleTaskStatus(task)
+                    repository.markTaskPending(task.id)
                 }
                 TaskWidgetProvider.refreshAll(context)
             }.onFailure { setError(it.message) }

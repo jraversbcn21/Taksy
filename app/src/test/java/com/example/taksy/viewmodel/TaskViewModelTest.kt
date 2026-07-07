@@ -260,8 +260,20 @@ class TaskViewModelTest {
             emit()
         }
         override suspend fun deleteTask(task: Task) { tasks.removeIf { it.id == task.id }; emit() }
-        override suspend fun markTaskAsCompleted(id: Long) {}
-        override suspend fun markTaskAsPending(id: Long) {}
+        override suspend fun completeTaskIfPending(id: Long, fechaCompletada: Date): Int {
+            val idx = tasks.indexOfFirst { it.id == id && it.estado == TaskEstado.PENDIENTE }
+            if (idx < 0) return 0
+            tasks[idx] = tasks[idx].copy(estado = TaskEstado.COMPLETADA, fechaCompletada = fechaCompletada)
+            emit()
+            return 1
+        }
+        override suspend fun markTaskAsPending(id: Long) {
+            val idx = tasks.indexOfFirst { it.id == id }
+            if (idx >= 0) {
+                tasks[idx] = tasks[idx].copy(estado = TaskEstado.PENDIENTE, fechaCompletada = null)
+                emit()
+            }
+        }
         override suspend fun deleteCompletedTasks() { tasks.removeIf { it.estado == TaskEstado.COMPLETADA }; emit() }
         override suspend fun getTasksDueToday(startOfDay: Long, endOfDay: Long): List<Task> = emptyList()
         override suspend fun getTasksDueSoon(now: Long, nextWeek: Long): List<Task> = emptyList()

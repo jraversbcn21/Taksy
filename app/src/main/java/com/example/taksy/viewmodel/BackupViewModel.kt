@@ -3,6 +3,7 @@ package com.example.taksy.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.withTransaction
 import com.example.taksy.data.*
 import com.example.taksy.service.ReminderSchedulerContract
 import com.example.taksy.utils.BackupManager
@@ -18,6 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class BackupViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val appDatabase: AppDatabase,
     private val taskDao: TaskDao,
     private val subtaskDao: SubtaskDao,
     private val categoryDao: CategoryDao,
@@ -53,15 +55,17 @@ class BackupViewModel @Inject constructor(
             try {
                 val data = BackupManager.importFromJson(json)
 
-                reminderDao.deleteAllReminders()
-                subtaskDao.deleteAllSubtasks()
-                taskDao.deleteAllTasks()
-                categoryDao.deleteAllCategories()
+                appDatabase.withTransaction {
+                    reminderDao.deleteAllReminders()
+                    subtaskDao.deleteAllSubtasks()
+                    taskDao.deleteAllTasks()
+                    categoryDao.deleteAllCategories()
 
-                categoryDao.insertCategories(data.categories)
-                data.tasks.forEach { taskDao.insertTask(it) }
-                data.subtasks.forEach { subtaskDao.insertSubtask(it) }
-                data.reminders.forEach { reminderDao.insertReminder(it) }
+                    categoryDao.insertCategories(data.categories)
+                    data.tasks.forEach { taskDao.insertTask(it) }
+                    data.subtasks.forEach { subtaskDao.insertSubtask(it) }
+                    data.reminders.forEach { reminderDao.insertReminder(it) }
+                }
 
                 val now = Date()
                 data.reminders.filter { it.activo && it.fechaRecordatorio.after(now) }
