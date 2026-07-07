@@ -139,49 +139,8 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 - **Receivers and services that need DI** are `@AndroidEntryPoint` with `@Inject lateinit var` fields. Don't construct `TaskRepository(...)` or `ReminderScheduler(context)` manually.
 - **Widget code** accesses DI via `EntryPointAccessors` because `RemoteViewsFactory` isn't an `@AndroidEntryPoint` target.
 
-## Recently Completed
-
-### Phase 1 — Stability & Quality
-- Removed 80 debug logs, moved 17 hardcoded strings to resources (ES/EN), extracted 12 widget colors to `colors.xml` + `values-night/`.
-- 74 unit tests (BackupManager 31, TaskViewModel 14, TaskRepository 15, CategoryRepository 11, misc 3).
-
-### Phase 3 — v1.1 Features
-- **Task notes** — `descripcion: String?` (migration v9→v10), editable notes section in `TaskDetailScreen` with debounced save.
-- **Undo swipe-to-delete** — swipe deletes immediately + Snackbar with "Undo". `restoreTask()` re-inserts via `@Insert(REPLACE)`.
-- **Task archiving** — `archivada: Boolean` (migration v10→v11), swipe left-to-right, archive toggle in TopAppBar. Main queries filter `archivada = 0`.
-- **Widget dark mode** — colors in `values-night/colors.xml`. Widget `previewLayout`.
-- **Splash duration** — reduced from 5.5 s to 2.5 s with tightened animations.
-- **Drag & drop reorder** — `orden: Int` (migration v11→v12) in `TasksByCategoryScreen`.
-- **Recurring task dates** — `TaskRecurrencia` enum (migration v12→v13). Completing clones with advanced `fechaVencimiento`. Recurrence selector in `InlineTaskInput` and `TaskDetailScreen`. Purple refresh icon indicator in `TaskListItem`.
-- **Statistics dashboard** — `fechaCompletada: Date?` (migration v13→v14). `StatsViewModel` + `StatsScreen` with 6 stat cards, last-7-days bar chart (today on right), top categories with completion progress.
-- **Onboarding flow** — 3-page `HorizontalPager` (organize tasks, subtasks/recurrence, smart reminders). Persisted via `PreferencesRepository.isOnboardingCompleted()`.
-- **`ReminderSchedulerContract`** — extracted for testability; injected via Hilt.
-- **Home screen widget** — pending tasks list with priority dots, due dates, task count, refresh button, auto-sync on task changes.
-
-### Phase 4 — Tech Debt
-- **Compose color consolidation** — 13 semantic constants in `ui/theme/Color.kt` (priority, due-date, recurrence, swipe, success/gold/dark-card).
-- **`LocaleHelper` API cleanup** — uses only `createConfigurationContext()` and `Configuration#setLocale()`. `MainActivity.attachBaseContext()` applies the saved locale.
-- **`ReminderViewModel` demotion** — converted to `object DailyReminderManager` in `service/`. Removed dead `alarmManager` field and `initializeAlarmManager()` method.
-
-### Phase 5 — Architecture Refactor (all 10 steps merged)
-Senior-engineer audit had flagged god-objects, duplicated domain logic (recurrence advance, alarm policy), scattered SharedPreferences, monolithic screens, and unsafe `!!` usage. Shipped in eleven commits — order optimised to land Step 0+2+5 first because Step 5 was expected to (and did) close the recurring-task duplication bug. Behavior preserved end-to-end; verified with `./gradlew testDebugUnitTest assembleDebug` per step.
-
-- **Step 0 — Ship-blocker cleanup.** Removed the five `Log.d("TaksyDebug", ...)` calls left behind by the duplication investigation. Removed the dead `cancelAllReminders()` stub from `ReminderSchedulerContract` + `ReminderScheduler` + test mock (no production caller).
-- **Step 1 — `PreferencesRepository`.** New Hilt `@Singleton` owns all four SharedPreferences files behind typed getters/setters; existing file names and keys preserved (no migration). Manual instantiation supported for `LocaleHelper.attachBaseContext()`. Refactored `ThemeViewModel`, `DailyReminderManager`, `LocaleHelper`, `MainActivity`. `DailyReminderPrefs` moved into `PreferencesRepository`.
-- **Step 2 — `RecurrenceCalculator`.** New `domain/RecurrenceCalculator.kt` with two `advance()` overloads (`TaskRecurrencia` and `TipoRecordatorio`). Replaced duplicated Calendar-add logic in `TaskViewModel.advanceDate` (removed) and `ReminderReceiver.scheduleNextRecurringReminder`. Added 10 JVM unit tests covering all enum values plus month-end overflow.
-- **Step 3 — `AlarmPolicy`.** New `service/AlarmPolicy.kt` unifies the SDK check, exact/inexact fallback, and `SecurityException` recovery. `ReminderScheduler.scheduleReminder` and `DailyReminderManager.scheduleExactAlarm` both delegate to it.
-- **Step 4 — Split `TaskViewModel`.** Extracted `SubtaskUseCase` (observe/add/toggle/delete; auto-complete returns boolean) and `TaskReminderUseCase` (observe/add/update/delete/setActive/setQuick/deleteAllForTask). TaskViewModel now delegates and its public API is stable, so no screen changes. Collapsed the four `addTask` overloads into a single method taking `TaskInput` (data class with sensible defaults). 346 L → 200 L.
-- **Step 5 — `CompleteTaskUseCase`.** Unified the two duplicated completion paths (`toggleTaskStatus` PENDIENTE branch and `toggleSubtaskStatus` auto-complete branch) into one use case that cancels reminders, advances recurring tasks via `RecurrenceCalculator`, and writes through `TaskRepository.completeRecurringTask`. **Expected to fix the recurring-task duplication bug** by removing the second code path entirely.
-- **Step 6 — Split monolithic screens.** Extracted `InlineTaskInput` (+ `PrioritySelector`, `RecurrenceSelector`) to `ui/components/tasksbycategory/`. Extracted `SubtaskItem`, `InlineSubtaskInput`, `RecurrenceSection` to `ui/components/taskdetail/`. Deleted two dead `AddTaskDialog` / `AddSubtaskDialog` composables (no callers). `TasksByCategoryScreen` 694 → 435 L, `TaskDetailScreen` 564 → 229 L.
-- **Step 7 — Eliminate `!!`.** Replaced all seven force-unwraps (`MainActivity` 3, `CategoryManagementScreen` 3, `TasksByCategoryScreen` 1) with `?.let`, `mapNotNull`, and `takeIf`. `grep '!!' app/src/main --include='*.kt'` now returns nothing.
-- **Step 8 — Localize default category names.** Eight names moved to `default_category_names` string-array (ES + EN). `DefaultCategories.getAll(Context)` reads `R.array.default_category_names`; color/icon metadata stays inline. `CategoryRepository.initializeDefaultCategories(context)` and `CategoryViewModel` propagate `@ApplicationContext`. Tests mock `Context.resources.getStringArray`. Existing installs keep their original Spanish names (array only read on first launch).
-- **Step 9 — Hilt-inject receivers + widget.** `ReminderReceiver` and `DailyReminderService` are `@AndroidEntryPoint` with `@Inject lateinit var` fields, replacing manual `ReminderScheduler(context)` and `TaskRepository(...)` constructions. Widget code accesses Hilt via new `WidgetEntryPoint` + `EntryPointAccessors.fromApplication()`. **Bumped Hilt 2.48 → 2.51.1** — required because the 2.48 Gradle plugin can't find the Hilt_*.class generated under AGP 8's javac output layout.
-- **Step 10 — `AppNavGraph`.** Extracted the `NavHost` and all `composable(...)` routes from `MainActivity` into `ui/navigation/AppNavGraph.kt`. MainActivity retains only the Activity lifecycle and the `DrawerLayout`/`ComposeView` hybrid; drawer setup is factored into `buildNavigationView` / `applyDrawerTheme` / `applyNavigationViewColors` helpers. `MainActivity` 470 → 246 L.
-
-**Outstanding from Phase 5:** smoke test on device to confirm Step 5 closes the recurring-task duplication bug. (Tests + APK build pass on every step, but the bug only reproduces interactively.)
-
 ## Pending / Future Work
 
 - Smoke-test the Step 5 fix on a device. If the duplication still reproduces, file a new bug against `TaskViewModel.toggleTaskStatus` + `togglingTaskIds` guard and look upstream of `CompleteTaskUseCase`.
-- Optional: shrink `TasksByCategoryScreen` further (currently 435 L). The drag-and-drop block is the main remaining inline section; it shares state heavily with the LazyColumn, so extraction is non-trivial.
-- Optional: `MainActivity` is 246 L (plan target was <200 L). The remaining bulk is the `DrawerLayout` AndroidView block; moving it into its own file is fine but offers little incremental value.
+- Optional: shrink `TasksByCategoryScreen` further. The drag-and-drop block is the main remaining inline section; it shares state heavily with the LazyColumn, so extraction is non-trivial.
+- Optional: `MainActivity` bulk is the `DrawerLayout` AndroidView block; moving it into its own file is fine but offers little incremental value.
