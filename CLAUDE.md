@@ -49,7 +49,7 @@ Room Database (AppDatabase, v14)
 Key business rule: when all subtasks of a task are completed, the parent task auto-completes (logic lives in `SubtaskUseCase`, surfaced via `TaskViewModel`).
 
 ### Domain Layer (`domain/`)
-- **`CompleteTaskUseCase`** — single entry point for marking a task complete. Cancels reminders, advances recurring tasks via `RecurrenceCalculator`, and writes the new clone + completed original in one Room transaction (`TaskRepository.completeRecurringTask`). Called by both `TaskViewModel.toggleTaskStatus` (radio button path) and `SubtaskUseCase.toggle` (auto-complete branch); collapsing the two paths eliminated the recurring-task duplication bug.
+- **`CompleteTaskUseCase`** — single entry point for marking a task complete. Cancels reminders, advances recurring tasks via `RecurrenceCalculator`, and writes the new clone + completed original in one Room transaction (`TaskRepository.completeRecurringTask`). `execute(task): Boolean` is idempotent via compare-and-swap: it returns `true` only if this call won the race and actually completed the task, `false` if another caller (radio button vs. subtask auto-complete) got there first. Called by both `TaskViewModel.toggleTaskStatus` (radio button path) and `SubtaskUseCase.toggle` (auto-complete branch) — the CAS, not the route collapse, is what prevents the recurring-task duplication bug.
 - **`SubtaskUseCase`** — observe/add/toggle/delete on subtasks. `toggle()` returns `true` when the parent task auto-completed, so the caller can refresh the widget.
 - **`TaskReminderUseCase`** — observe/add/update/delete/setActive/setQuick/deleteAllForTask on reminders. Wraps `ReminderSchedulerContract` so reminder DB writes and alarm scheduling stay in sync.
 - **`RecurrenceCalculator`** — `advance(Date, TaskRecurrencia): Date` for tasks and `advance(Date, TipoRecordatorio): Date?` for reminders (returns null on UNA_VEZ). Covered by 10 JVM unit tests.
@@ -58,7 +58,7 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 `di/DatabaseModule` provides `AppDatabase`, all DAOs, both repositories, and `ReminderSchedulerContract` as `@Singleton`. Use cases (`CompleteTaskUseCase`, `SubtaskUseCase`, `TaskReminderUseCase`) and `PreferencesRepository` use `@Inject` constructor with `@Singleton` and are auto-provided by Hilt — no module entry needed. ViewModels use `@HiltViewModel`; screens obtain them via `hiltViewModel()`; `MainActivity` uses `by viewModels()`. `BroadcastReceiver`s (`ReminderReceiver`, `DailyReminderService`) are `@AndroidEntryPoint` with `@Inject lateinit var` fields. The widget (`TaskWidgetProvider` and `TaskWidgetRemoteViewsFactory`) uses `WidgetEntryPoint` + `EntryPointAccessors.fromApplication()` because `RemoteViewsFactory` can't be a Hilt entry point.
 
 ### Repositories
-- **`TaskRepository`** — task/subtask/reminder DAO facade. Exposes `completeRecurringTask(task, clone)` which performs both writes inside `appDatabase.withTransaction { }` to keep Flow emissions atomic. `cancelAllRemindersForTask(taskId)` flips `activo=false` on every reminder of a task.
+- **`TaskRepository`** — task/subtask/reminder DAO facade. Exposes `completeTaskIfPending(taskId): Boolean` (atomic `UPDATE ... WHERE estado = 'PENDIENTE'` via `TaskDao.completeTaskIfPending`, compare-and-swap on the DB row) and `completeRecurringTask(task, clone): Boolean`, which performs the same CAS inside `appDatabase.withTransaction { }` and only inserts the clone if the CAS won — this is what makes concurrent completion attempts safe. `markTaskPending(taskId)` reverts completion and clears `fechaCompletada`. `cancelAllRemindersForTask(taskId)` flips `activo=false` on every reminder of a task.
 - **`CategoryRepository`** — category CRUD + `initializeDefaultCategories(Context)`. The seeded names come from `DefaultCategories.getAll(Context)`, which reads `R.array.default_category_names` so the eight default categories localize correctly.
 - **`PreferencesRepository`** — described in Data Layer above.
 
@@ -67,7 +67,7 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 - **`CategoryViewModel`** — category CRUD; injects `@ApplicationContext` so `initializeDefaultCategories` can read the localized array.
 - **`ThemeViewModel`** — dark mode + language. Injects `PreferencesRepository`; calls `AppCompatDelegate.setApplicationLocales()` on language change to trigger activity recreation.
 - **`SplashViewModel`** — splash animation state.
-- **`BackupViewModel`** — export/import via `BackupManager`. Injects `@ApplicationContext`, DAOs directly (not repositories), and `ReminderSchedulerContract` to reschedule reminders after import.
+- **`BackupViewModel`** — export/import via `BackupManager`. Injects `@ApplicationContext`, `AppDatabase` (for `withTransaction`), DAOs directly (not repositories), and `ReminderSchedulerContract` to reschedule reminders after import.
 - **`StatsViewModel`** — combines `TaskRepository.getAllTasks()` and `CategoryRepository.getAllCategories()` into a `StatsUiState` via `stateIn`. Derives totals, completion rate, streak, last-7-days bucket counts (using `fechaCompletada`), and top 5 categories by task count.
 
 ### Navigation
@@ -100,7 +100,7 @@ Navigation drawer is an Android `DrawerLayout` wrapping a `ComposeView` (not a p
 ### Backup System
 - **`BackupManager`** (`utils/`) — stateless utility that serializes/deserializes all entities to/from JSON using `org.json`. Includes `backupVersion`, `exportDate`, and arrays for categories, tasks, subtasks, reminders. `BackupImportException` + `ImportErrorType` enum (INVALID_JSON, MISSING_SECTION, INVALID_CATEGORY/TASK/SUBTASK/REMINDER, INVALID_DATE) report the exact failing record index.
 - **`BackupScreen`** — export via SAF `CreateDocument`; import via SAF `OpenDocument` with a "this will replace all data" confirmation dialog. Errors localized through `BackupState.ImportError`.
-- Import clears all tables (reminders → subtasks → tasks → categories) then inserts from the JSON preserving original IDs. After insertion, active future reminders are rescheduled via `ReminderSchedulerContract`.
+- Import clears all tables (reminders → subtasks → tasks → categories) then inserts from the JSON preserving original IDs, all inside a single `appDatabase.withTransaction { }` (a mid-import failure rolls back instead of leaving the DB empty/partial). After the transaction commits, active future reminders are rescheduled via `ReminderSchedulerContract`.
 
 ### Widget
 - **`TaskWidgetProvider`** (`widget/`) — `AppWidgetProvider` that renders pending tasks. Updates every 30 minutes via `updatePeriodMillis`. Handles `ACTION_REFRESH`. Exposes `refreshAll(context)` used by `TaskViewModel` after task mutations. Resolves `TaskDao` via `EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)`.
@@ -141,6 +141,7 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 
 ## Pending / Future Work
 
-- Smoke-test the Step 5 fix on a device. If the duplication still reproduces, file a new bug against `TaskViewModel.toggleTaskStatus` + `togglingTaskIds` guard and look upstream of `CompleteTaskUseCase`.
+**Recurring-task duplication bug — root-caused and fixed 2026-07-07 (commit `510876f`).** Root cause was check-then-act in `CompleteTaskUseCase.execute`, not the unguarded subtask route alone; fixed via atomic `completeTaskIfPending` compare-and-swap (see Domain Layer / Repositories above). 94 unit tests pass. **Not yet smoke-tested on a physical device** — do that before considering this fully closed. See `docs/debugging-taksy-duplication.md` for the full incident writeup and remaining punch list (BackupViewModel import transaction is done; `ReminderReceiver` non-atomic read-check-write and `CategoryUtils` icon mismatch are still open).
+
 - Optional: shrink `TasksByCategoryScreen` further. The drag-and-drop block is the main remaining inline section; it shares state heavily with the LazyColumn, so extraction is non-trivial.
 - Optional: `MainActivity` bulk is the `DrawerLayout` AndroidView block; moving it into its own file is fine but offers little incremental value.
