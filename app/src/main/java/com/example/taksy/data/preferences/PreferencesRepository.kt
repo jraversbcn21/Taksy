@@ -26,10 +26,22 @@ class PreferencesRepository @Inject constructor(
 
     // ── Theme ──────────────────────────────────────────────────────────────
 
-    fun isDarkMode(): Boolean = themePrefs.getBoolean(KEY_DARK_MODE, false)
+    /**
+     * Modo de tema guardado. Si aún no existe la clave nueva, respeta la elección hecha con
+     * el antiguo interruptor claro/oscuro; sin ninguna elección previa, sigue al sistema.
+     */
+    fun getThemeMode(): ThemeMode {
+        themePrefs.getString(KEY_THEME_MODE, null)
+            ?.let { saved -> ThemeMode.entries.firstOrNull { it.name == saved } }
+            ?.let { return it }
+        if (themePrefs.contains(KEY_DARK_MODE)) {
+            return if (themePrefs.getBoolean(KEY_DARK_MODE, false)) ThemeMode.DARK else ThemeMode.LIGHT
+        }
+        return ThemeMode.SYSTEM
+    }
 
-    fun setDarkMode(enabled: Boolean) {
-        themePrefs.edit { putBoolean(KEY_DARK_MODE, enabled) }
+    fun setThemeMode(mode: ThemeMode) {
+        themePrefs.edit { putString(KEY_THEME_MODE, mode.name) }
     }
 
     // ── Language ───────────────────────────────────────────────────────────
@@ -76,7 +88,8 @@ class PreferencesRepository @Inject constructor(
         private const val DAILY_REMINDER_PREFS = "daily_reminder_prefs"
         private const val ONBOARDING_PREFS = "onboarding_prefs"
 
-        private const val KEY_DARK_MODE = "is_dark_mode"
+        private const val KEY_DARK_MODE = "is_dark_mode" // legado: solo se lee para migrar
+        private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_LANGUAGE = "selected_language"
         private const val KEY_DAILY_ENABLED = "enabled"
         private const val KEY_MORNING_HOUR = "morning_hour"
@@ -88,3 +101,5 @@ class PreferencesRepository @Inject constructor(
         private const val DEFAULT_LANGUAGE = "es"
     }
 }
+
+enum class ThemeMode { LIGHT, DARK, SYSTEM }

@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import com.example.taksy.data.preferences.PreferencesRepository
+import com.example.taksy.data.preferences.ThemeMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,15 +16,15 @@ class ThemeViewModel @Inject constructor(
     private val preferences: PreferencesRepository
 ) : ViewModel() {
 
-    private val _isDarkMode = MutableStateFlow(preferences.isDarkMode())
-    val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
+    private val _themeMode = MutableStateFlow(preferences.getThemeMode())
+    val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
     private val _currentLanguage = MutableStateFlow(preferences.getLanguage())
     val currentLanguage: StateFlow<String> = _currentLanguage.asStateFlow()
 
-    fun setDarkMode(isDark: Boolean) {
-        _isDarkMode.value = isDark
-        preferences.setDarkMode(isDark)
+    fun setThemeMode(mode: ThemeMode) {
+        _themeMode.value = mode
+        preferences.setThemeMode(mode)
     }
 
     fun setLanguage(language: String) {

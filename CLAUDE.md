@@ -44,7 +44,7 @@ Room Database (AppDatabase, v14)
 - **Entities:** `Task` (`TaskPrioridad`: NINGUNA/BAJA/MEDIA/ALTA, `TaskRecurrencia`: NINGUNA/DIARIA/SEMANAL/MENSUAL/ANUAL, `descripcion: String?`, `archivada: Boolean` (legacy: no UI sets it and no query filters on it since the archive feature was removed — kept only for schema/backup compatibility), `orden: Int` (legacy for tasks: task drag-reorder was removed and task queries no longer sort by it; categories still use their own `orden` for drag-reorder), `fechaCompletada: Date?`), `Subtask`, `Category`, `Reminder`.
 - **DAOs:** `TaskDao`, `SubtaskDao`, `CategoryDao`, `ReminderDao` — each exposes `getAllXxxSync()` and `deleteAllXxx()` for backup operations.
 - **AppDatabase** uses TypeConverters for `Date` and has 14 tracked migrations.
-- **`data/preferences/PreferencesRepository`** — Hilt `@Singleton`. Owns all four SharedPreferences files (`theme_pref`, `language_pref`, `daily_reminder_prefs`, `onboarding_prefs`) behind typed getters/setters. Also constructible manually with a `Context` so `LocaleHelper.attachBaseContext()` can read the saved language before the Hilt graph is built. Holds the `DailyReminderPrefs` data class consumed by `DailyReminderManager`.
+- **`data/preferences/PreferencesRepository`** — Hilt `@Singleton`. Owns all four SharedPreferences files (`theme_pref`, `language_pref`, `daily_reminder_prefs`, `onboarding_prefs`) behind typed getters/setters. Also constructible manually with a `Context` so `LocaleHelper.attachBaseContext()` can read the saved language before the Hilt graph is built. Holds the `DailyReminderPrefs` data class consumed by `DailyReminderManager` and the `ThemeMode` enum. `getThemeMode()` reads `theme_mode`; if absent it migrates the legacy `is_dark_mode` boolean (explicit choice kept), otherwise defaults to SYSTEM.
 
 Task lists in a category are ordered: pending first, then priority (ALTA→NINGUNA), then due date (no date last), then newest. There is no manual reordering of tasks.
 
@@ -68,7 +68,7 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 ### ViewModels
 - **`TaskViewModel`** — thin facade (extends `AndroidViewModel`). Owns task CRUD, the `togglingTaskIds` guard, and the `searchAllTasks` flow. Delegates subtask operations to `SubtaskUseCase`, reminder operations to `TaskReminderUseCase`, and task completion to `CompleteTaskUseCase`. `addTask(input: TaskInput)` is the single entry point — the four legacy overloads are collapsed. Calls `TaskWidgetProvider.refreshAll(context)` after mutations.
 - **`CategoryViewModel`** — category CRUD (delete goes through `DeleteCategoryUseCase` + widget refresh); injects `@ApplicationContext` so `initializeDefaultCategories` can read the localized array.
-- **`ThemeViewModel`** — dark mode + language. Injects `PreferencesRepository`; calls `AppCompatDelegate.setApplicationLocales()` on language change to trigger activity recreation.
+- **`ThemeViewModel`** — `themeMode: StateFlow<ThemeMode>` (LIGHT/DARK/SYSTEM) + language. `MainActivity` resolves SYSTEM with `isSystemInDarkTheme()` and re-applies `enableEdgeToEdge(SystemBarStyle.auto { isDark })` so the status/navigation bars follow the app theme, not the device's. Injects `PreferencesRepository`; calls `AppCompatDelegate.setApplicationLocales()` on language change to trigger activity recreation.
 - **`BackupViewModel`** — export/import via `BackupManager`. Injects `@ApplicationContext`, `AppDatabase` (for `withTransaction`), DAOs directly (not repositories), and `ReminderSchedulerContract` to reschedule reminders after import.
 - **`StatsViewModel`** — combines `TaskRepository.getAllTasks()` and `CategoryRepository.getAllCategories()` into a `StatsUiState` via `stateIn`. Derives totals, completion rate, streak, last-7-days bucket counts (using `fechaCompletada`), and top 5 categories by task count.
 
@@ -81,14 +81,15 @@ Start destination: `"onboarding"` (first launch) or `"category_list"` (subsequen
 - `tasks_by_category/{categoryId}` → `TasksByCategoryScreen`
 - `task_detail/{taskId}` → `TaskDetailScreen`
 - `category_management` → `CategoryManagementScreen` (create via FAB, edit by tapping a category, delete via trash icon with a warning showing how many tasks go with it)
-- `daily_reminders`, `theme_settings`, `language_settings`
+- `settings` → `SettingsScreen` (theme radio: system/light/dark; language radio, which goes through MainActivity's confirm dialog because it recreates the activity; link to `daily_reminders`)
+- `daily_reminders` → `DailyReminderScreen` (reached from Settings)
 - `about` → `AboutScreen`
 - `backup` → `BackupScreen`
 - `stats` → `StatsScreen`
 
 `AppNavGraph` defines a private `NavHostController.popOrHome()` extension that collapses the repeated "popBackStack or fall back to category_list" pattern used by every drawer screen.
 
-Navigation drawer is an Android `DrawerLayout` wrapping a `ComposeView` (not a pure Compose drawer — kept as a documented architectural choice). Drawer items: Manage Categories, Theme, Language, Daily Reminders, Stats, Backup, About. Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true`.
+Navigation drawer is an Android `DrawerLayout` wrapping a `ComposeView` (not a pure Compose drawer — kept as a documented architectural choice). Drawer items: Manage Categories, Settings, Stats, Backup, About. Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true`.
 
 ### Background Work
 - **`ReminderSchedulerContract`** — interface with `scheduleReminder()` and `cancelReminder()`. Implemented by `ReminderScheduler` and provided as `@Singleton` via Hilt.

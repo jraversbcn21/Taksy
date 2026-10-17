@@ -23,12 +23,11 @@ import com.example.taksy.ui.screens.BackupScreen
 import com.example.taksy.ui.screens.CategoryListScreen
 import com.example.taksy.ui.screens.CategoryManagementScreen
 import com.example.taksy.ui.screens.DailyReminderScreen
-import com.example.taksy.ui.screens.LanguageSettingsScreen
 import com.example.taksy.ui.screens.OnboardingScreen
+import com.example.taksy.ui.screens.SettingsScreen
 import com.example.taksy.ui.screens.StatsScreen
 import com.example.taksy.ui.screens.TaskDetailScreen
 import com.example.taksy.ui.screens.TasksByCategoryScreen
-import com.example.taksy.ui.screens.ThemeSettingsScreen
 import com.example.taksy.viewmodel.BackupViewModel
 import com.example.taksy.viewmodel.CategoryViewModel
 import com.example.taksy.viewmodel.TaskInput
@@ -158,19 +157,16 @@ fun AppNavGraph(
             }
         }
 
-        composable("theme_settings") {
-            ThemeSettingsScreen(
-                isDarkMode = isDarkMode,
-                onThemeChange = { isDark -> themeViewModel.setDarkMode(isDark) },
-                onBackClick = { navController.popOrHome() }
-            )
-        }
-
-        composable("language_settings") {
-            LanguageSettingsScreen(
+        composable("settings") {
+            val themeMode by themeViewModel.themeMode.collectAsState()
+            SettingsScreen(
+                themeMode = themeMode,
                 currentLanguage = currentLanguage,
-                onLanguageChange = { language -> themeViewModel.setLanguage(language) },
-                onShowLanguageChangeDialog = onShowLanguageChangeDialog,
+                onThemeModeChange = { mode -> themeViewModel.setThemeMode(mode) },
+                onLanguageSelected = { language ->
+                    if (language != currentLanguage) onShowLanguageChangeDialog(language)
+                },
+                onDailyRemindersClick = { navController.navigate("daily_reminders") },
                 onBackClick = { navController.popOrHome() }
             )
         }

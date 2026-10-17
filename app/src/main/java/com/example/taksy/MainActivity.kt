@@ -4,11 +4,13 @@ import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.AlertDialog
@@ -17,6 +19,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.taksy.data.preferences.ThemeMode
 import com.example.taksy.ui.navigation.AppNavGraph
 import com.example.taksy.ui.theme.TicksyTheme
 import com.example.taksy.utils.LocaleHelper
@@ -84,7 +88,21 @@ private fun MainScreen(activity: ComponentActivity) {
     val categoryViewModel: CategoryViewModel = hiltViewModel()
     val navController = rememberNavController()
 
-    val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
+    val themeMode by themeViewModel.themeMode.collectAsStateWithLifecycle()
+    val isDarkMode = themeMode.isDark()
+
+    // Las barras del sistema siguen el tema de la app, no el del sistema: si no, con la app
+    // en oscuro y el móvil en claro, los iconos de la barra de estado quedan negro sobre negro.
+    DisposableEffect(isDarkMode) {
+        activity.enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            ) { isDarkMode },
+            navigationBarStyle = SystemBarStyle.auto(LightNavigationScrim, DarkNavigationScrim) { isDarkMode }
+        )
+        onDispose {}
+    }
     val currentLanguage by themeViewModel.currentLanguage.collectAsStateWithLifecycle()
 
     TicksyTheme(darkTheme = isDarkMode) {
@@ -101,6 +119,17 @@ private fun MainScreen(activity: ComponentActivity) {
             )
         }
     }
+}
+
+// Mismos scrims que usa enableEdgeToEdge() por defecto
+private val LightNavigationScrim = android.graphics.Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
+private val DarkNavigationScrim = android.graphics.Color.argb(0x80, 0x1b, 0x1b, 0x1b)
+
+@Composable
+private fun ThemeMode.isDark(): Boolean = when (this) {
+    ThemeMode.LIGHT -> false
+    ThemeMode.DARK -> true
+    ThemeMode.SYSTEM -> isSystemInDarkTheme()
 }
 
 @Composable
@@ -136,7 +165,8 @@ private fun DrawerScreen(
                             DrawerLayout.LayoutParams.MATCH_PARENT
                         )
                         setContent {
-                            val innerIsDarkMode by themeViewModel.isDarkMode.collectAsState()
+                            val innerThemeMode by themeViewModel.themeMode.collectAsState()
+                            val innerIsDarkMode = innerThemeMode.isDark()
                             val innerCurrentLanguage by themeViewModel.currentLanguage.collectAsState()
                             TicksyTheme(darkTheme = innerIsDarkMode) {
                                 AppNavGraph(
@@ -209,9 +239,7 @@ private fun buildNavigationView(
         onItemSelected()
         val route = when (menuItem.itemId) {
             R.id.nav_categories -> "category_management"
-            R.id.nav_theme -> "theme_settings"
-            R.id.nav_language -> "language_settings"
-            R.id.nav_reminders -> "daily_reminders"
+            R.id.nav_settings -> "settings"
             R.id.nav_stats -> "stats"
             R.id.nav_backup -> "backup"
             R.id.nav_about -> "about"
