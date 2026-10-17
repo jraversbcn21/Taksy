@@ -11,7 +11,6 @@ import com.example.taksy.data.Task
 import com.example.taksy.data.TaskDao
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
-import com.example.taksy.data.TipoRecordatorio
 import com.example.taksy.repository.TaskRepository
 import com.example.taksy.service.ReminderSchedulerContract
 import com.example.taksy.widget.TaskWidgetProvider
@@ -325,12 +324,6 @@ class TaskViewModelTest {
         }
         override suspend fun deactivateRemindersByTaskId(taskId: Long) {
             reminders.replaceAll { if (it.taskId == taskId) it.copy(activo = false) else it }
-        }
-        override suspend fun advanceReminderIfUnchanged(id: Long, expectedDate: Date, nextDate: Date): Int {
-            val idx = reminders.indexOfFirst { it.id == id && it.fechaRecordatorio == expectedDate && it.activo }
-            if (idx < 0) return 0
-            reminders[idx] = reminders[idx].copy(fechaRecordatorio = nextDate)
-            return 1
         }
         override suspend fun getRemindersByTaskIdSync(taskId: Long): List<Reminder> =
             reminders.filter { it.taskId == taskId }

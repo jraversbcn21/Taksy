@@ -187,10 +187,6 @@
     <string name="daily_notification_channel_description">Notificaciones diarias para recordar revisar las tareas</string>
 
     <!-- Contenido de notificaciones -->
-    <string name="notification_frequency_once">Recordatorio único</string>
-    <string name="notification_frequency_daily">Recordatorio diario</string>
-    <string name="notification_frequency_weekly">Recordatorio semanal</string>
-    <string name="notification_frequency_monthly">Recordatorio mensual</string>
     <string name="notification_default_content">No olvides completar: %s</string>
     <string name="notification_task_label">Tarea: %s</string>
 

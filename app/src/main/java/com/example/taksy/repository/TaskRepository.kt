@@ -8,7 +8,6 @@ import com.example.taksy.data.Subtask
 import com.example.taksy.data.SubtaskDao
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskDao
-import com.example.taksy.data.TaskEstado
 import kotlinx.coroutines.flow.Flow
 import java.util.Date
 import javax.inject.Inject
@@ -109,23 +108,6 @@ class TaskRepository @Inject constructor(
 
     suspend fun cancelAllRemindersForTask(taskId: Long) =
         reminderDao.deactivateRemindersByTaskId(taskId)
-
-    /**
-     * Avanza un recordatorio recurrente a [nextDate] de forma atómica.
-     * Dentro de la transacción comprueba que la tarea siga pendiente y aplica un
-     * compare-and-swap sobre la fecha leída, de modo que una alarma duplicada o una
-     * edición/desactivación concurrente no provoca un doble avance ni reactiva el recordatorio.
-     * Devuelve el recordatorio actualizado si esta llamada ganó, o null en caso contrario.
-     */
-    suspend fun advanceRecurringReminder(reminder: Reminder, nextDate: Date): Reminder? =
-        appDatabase.withTransaction {
-            val task = taskDao.getTaskById(reminder.taskId)
-            if (task == null || task.estado == TaskEstado.COMPLETADA) return@withTransaction null
-            val won = reminderDao.advanceReminderIfUnchanged(
-                reminder.id, reminder.fechaRecordatorio, nextDate
-            ) == 1
-            if (won) reminderDao.getReminderById(reminder.id) else null
-        }
 }
 
 enum class TaskFilter { TODAS, PENDIENTES, COMPLETADAS }

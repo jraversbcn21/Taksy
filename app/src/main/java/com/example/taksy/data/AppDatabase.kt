@@ -13,7 +13,7 @@ import android.content.Context
  */
 @Database(
     entities = [Task::class, Subtask::class, Category::class, Reminder::class],
-    version = 14,
+    version = 15,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -200,6 +200,52 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // Elimina columnas legacy: tasks.archivada y tasks.orden (sin UI desde que se
+        // quitaron el archivo y el reordenado de tareas) y reminders.tipoRecordatorio
+        // (todos los recordatorios son de una vez; la repetición vive en la tarea).
+        // SQLite < 3.35 no tiene DROP COLUMN: se recrean las tablas.
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "CREATE TABLE tasks_new (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`titulo` TEXT NOT NULL, `descripcion` TEXT, `fechaCreacion` INTEGER NOT NULL, " +
+                        "`fechaVencimiento` INTEGER, `categoriaId` INTEGER, `estado` TEXT NOT NULL, " +
+                        "`prioridad` TEXT NOT NULL, `recurrencia` TEXT NOT NULL, `fechaCompletada` INTEGER)"
+                )
+                database.execSQL(
+                    "INSERT INTO tasks_new (id, titulo, descripcion, fechaCreacion, fechaVencimiento, " +
+                        "categoriaId, estado, prioridad, recurrencia, fechaCompletada) " +
+                        "SELECT id, titulo, descripcion, fechaCreacion, fechaVencimiento, " +
+                        "categoriaId, estado, prioridad, recurrencia, fechaCompletada FROM tasks"
+                )
+                // Conserva el contador AUTOINCREMENT para no reutilizar ids borrados
+                database.execSQL(
+                    "UPDATE sqlite_sequence SET seq = (SELECT seq FROM sqlite_sequence WHERE name = 'tasks') " +
+                        "WHERE name = 'tasks_new' AND EXISTS (SELECT 1 FROM sqlite_sequence WHERE name = 'tasks')"
+                )
+                database.execSQL("DROP TABLE tasks")
+                database.execSQL("ALTER TABLE tasks_new RENAME TO tasks")
+
+                database.execSQL(
+                    "CREATE TABLE reminders_new (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`taskId` INTEGER NOT NULL, `titulo` TEXT NOT NULL, `descripcion` TEXT, " +
+                        "`fechaRecordatorio` INTEGER NOT NULL, `activo` INTEGER NOT NULL, " +
+                        "`fechaCreacion` INTEGER NOT NULL)"
+                )
+                database.execSQL(
+                    "INSERT INTO reminders_new (id, taskId, titulo, descripcion, fechaRecordatorio, activo, fechaCreacion) " +
+                        "SELECT id, taskId, titulo, descripcion, fechaRecordatorio, activo, fechaCreacion FROM reminders"
+                )
+                // Conserva el contador AUTOINCREMENT para no reutilizar ids borrados
+                database.execSQL(
+                    "UPDATE sqlite_sequence SET seq = (SELECT seq FROM sqlite_sequence WHERE name = 'reminders') " +
+                        "WHERE name = 'reminders_new' AND EXISTS (SELECT 1 FROM sqlite_sequence WHERE name = 'reminders')"
+                )
+                database.execSQL("DROP TABLE reminders")
+                database.execSQL("ALTER TABLE reminders_new RENAME TO reminders")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -220,7 +266,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_10_11,
                     MIGRATION_11_12,
                     MIGRATION_12_13,
-                    MIGRATION_13_14
+                    MIGRATION_13_14,
+                    MIGRATION_14_15
                 )
                 .build()
                 INSTANCE = instance

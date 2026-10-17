@@ -7,7 +7,6 @@ import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TaskRecurrencia
-import com.example.taksy.data.TipoRecordatorio
 import com.example.taksy.utils.BackupManager.ImportErrorType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -37,7 +36,7 @@ class BackupManagerTest {
             Reminder(
                 id = 200, taskId = 10, titulo = "Recordar",
                 descripcion = "Desc", fechaRecordatorio = fixedDate,
-                tipoRecordatorio = TipoRecordatorio.DIARIO, fechaCreacion = fixedDate
+                fechaCreacion = fixedDate
             )
         )
     )
@@ -114,7 +113,6 @@ class BackupManagerTest {
         assertEquals("Recordar", rem.titulo)
         assertEquals("Desc", rem.descripcion)
         assertEquals(true, rem.activo)
-        assertEquals(TipoRecordatorio.DIARIO, rem.tipoRecordatorio)
     }
 
     @Test
@@ -243,12 +241,6 @@ class BackupManagerTest {
         assertImportError(json, ImportErrorType.INVALID_REMINDER, "#1")
     }
 
-    @Test
-    fun `import throws INVALID_REMINDER for invalid tipoRecordatorio`() {
-        val json = """{"categories":[],"tasks":[],"subtasks":[],"reminders":[{"id":1,"taskId":1,"titulo":"R","fechaRecordatorio":"2023-01-01T00:00:00.000","activo":true,"tipoRecordatorio":"INVALID","fechaCreacion":"2023-01-01T00:00:00.000"}]}"""
-        assertImportError(json, ImportErrorType.INVALID_REMINDER, "#1")
-    }
-
     // ── Description (2.1) ──────────────────────────────────────────────
 
     @Test
@@ -269,27 +261,11 @@ class BackupManagerTest {
     }
 
     @Test
-    fun `round trip preserves archivada flag`() {
-        val data = BackupManager.BackupData(
-            categories = emptyList(),
-            tasks = listOf(
-                Task(id = 1, titulo = "Activa", archivada = false, fechaCreacion = fixedDate),
-                Task(id = 2, titulo = "Archivada", archivada = true, fechaCreacion = fixedDate)
-            ),
-            subtasks = emptyList(), reminders = emptyList()
-        )
-        val json = BackupManager.exportToJson(data)
+    fun `import ignores legacy archivada, orden and tipoRecordatorio fields`() {
+        val json = """{"categories":[],"tasks":[{"id":1,"titulo":"X","fechaCreacion":"2023-01-01T00:00:00.000","fechaVencimiento":null,"categoriaId":null,"estado":"PENDIENTE","archivada":true,"orden":3}],"subtasks":[],"reminders":[{"id":1,"taskId":1,"titulo":"R","descripcion":null,"fechaRecordatorio":"2023-01-02T09:00:00.000","activo":true,"tipoRecordatorio":"DIARIO","fechaCreacion":"2023-01-01T00:00:00.000"}]}"""
         val imported = BackupManager.importFromJson(json)
-
-        assertEquals(false, imported.tasks[0].archivada)
-        assertEquals(true, imported.tasks[1].archivada)
-    }
-
-    @Test
-    fun `import defaults archivada to false when missing`() {
-        val json = """{"categories":[],"tasks":[{"id":1,"titulo":"X","fechaCreacion":"2023-01-01T00:00:00.000","fechaVencimiento":null,"categoriaId":null,"estado":"PENDIENTE"}],"subtasks":[],"reminders":[]}"""
-        val imported = BackupManager.importFromJson(json)
-        assertEquals(false, imported.tasks[0].archivada)
+        assertEquals("X", imported.tasks.single().titulo)
+        assertEquals("R", imported.reminders.single().titulo)
     }
 
     @Test
@@ -318,25 +294,6 @@ class BackupManagerTest {
     }
 
     @Test
-    fun `round trip preserves task orden`() {
-        val data = BackupManager.BackupData(
-            categories = emptyList(),
-            tasks = listOf(
-                Task(id = 1, titulo = "Primera", orden = 3, fechaCreacion = fixedDate),
-                Task(id = 2, titulo = "Segunda", orden = 1, fechaCreacion = fixedDate),
-                Task(id = 3, titulo = "Tercera", orden = 0, fechaCreacion = fixedDate)
-            ),
-            subtasks = emptyList(), reminders = emptyList()
-        )
-        val json = BackupManager.exportToJson(data)
-        val imported = BackupManager.importFromJson(json)
-
-        assertEquals(3, imported.tasks[0].orden)
-        assertEquals(1, imported.tasks[1].orden)
-        assertEquals(0, imported.tasks[2].orden)
-    }
-
-    @Test
     fun `round trip preserves task recurrencia`() {
         val data = BackupManager.BackupData(
             categories = emptyList(),
@@ -360,13 +317,6 @@ class BackupManagerTest {
         val json = """{"categories":[],"tasks":[{"id":1,"titulo":"X","fechaCreacion":"2023-01-01T00:00:00.000","fechaVencimiento":null,"categoriaId":null,"estado":"PENDIENTE"}],"subtasks":[],"reminders":[]}"""
         val imported = BackupManager.importFromJson(json)
         assertEquals(TaskRecurrencia.NINGUNA, imported.tasks[0].recurrencia)
-    }
-
-    @Test
-    fun `import defaults orden to 0 when missing`() {
-        val json = """{"categories":[],"tasks":[{"id":1,"titulo":"X","fechaCreacion":"2023-01-01T00:00:00.000","fechaVencimiento":null,"categoriaId":null,"estado":"PENDIENTE"}],"subtasks":[],"reminders":[]}"""
-        val imported = BackupManager.importFromJson(json)
-        assertEquals(0, imported.tasks[0].orden)
     }
 
     @Test

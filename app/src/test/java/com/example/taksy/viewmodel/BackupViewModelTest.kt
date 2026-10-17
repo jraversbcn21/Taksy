@@ -116,7 +116,6 @@ class BackupViewModelTest {
         override suspend fun deleteRemindersByTaskId(taskId: Long) {}
         override suspend fun updateReminderStatus(id: Long, activo: Boolean) {}
         override suspend fun deactivateRemindersByTaskId(taskId: Long) {}
-        override suspend fun advanceReminderIfUnchanged(id: Long, expectedDate: Date, nextDate: Date): Int = 0
         override suspend fun getRemindersByTaskIdSync(taskId: Long): List<Reminder> = emptyList()
         override suspend fun getAllRemindersSync(): List<Reminder> = reminders.toList()
         override suspend fun deleteAllReminders() { reminders.clear() }

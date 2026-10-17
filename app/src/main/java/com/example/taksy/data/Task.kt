@@ -15,8 +15,6 @@ data class Task(
     val categoriaId: Long? = null,
     val estado: TaskEstado = TaskEstado.PENDIENTE,
     val prioridad: TaskPrioridad = TaskPrioridad.NINGUNA,
-    val archivada: Boolean = false,
-    val orden: Int = 0,
     val recurrencia: TaskRecurrencia = TaskRecurrencia.NINGUNA,
     val fechaCompletada: Date? = null
 )

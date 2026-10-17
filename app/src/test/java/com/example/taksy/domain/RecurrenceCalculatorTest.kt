@@ -1,7 +1,6 @@
 package com.example.taksy.domain
 
 import com.example.taksy.data.TaskRecurrencia
-import com.example.taksy.data.TipoRecordatorio
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -67,30 +66,4 @@ class RecurrenceCalculatorTest {
         assertEquals(Calendar.FEBRUARY, m)
     }
 
-    @Test
-    fun `reminder UNA_VEZ returns null`() {
-        val from = dateOf(2026, Calendar.JUNE, 10)
-        assertNull(RecurrenceCalculator.advance(from, TipoRecordatorio.UNA_VEZ))
-    }
-
-    @Test
-    fun `reminder DIARIO adds one day`() {
-        val from = dateOf(2026, Calendar.JUNE, 10)
-        val result = RecurrenceCalculator.advance(from, TipoRecordatorio.DIARIO)!!
-        assertEquals(Triple(2026, Calendar.JUNE, 11), fieldsOf(result))
-    }
-
-    @Test
-    fun `reminder SEMANAL adds one week`() {
-        val from = dateOf(2026, Calendar.JUNE, 10)
-        val result = RecurrenceCalculator.advance(from, TipoRecordatorio.SEMANAL)!!
-        assertEquals(Triple(2026, Calendar.JUNE, 17), fieldsOf(result))
-    }
-
-    @Test
-    fun `reminder MENSUAL adds one month`() {
-        val from = dateOf(2026, Calendar.JUNE, 10)
-        val result = RecurrenceCalculator.advance(from, TipoRecordatorio.MENSUAL)!!
-        assertEquals(Triple(2026, Calendar.JULY, 10), fieldsOf(result))
-    }
 }

@@ -184,10 +184,6 @@
     <string name="daily_notification_channel_description">Daily notifications to remind you to review your tasks</string>
 
     <!-- Notification content -->
-    <string name="notification_frequency_once">One-time reminder</string>
-    <string name="notification_frequency_daily">Daily reminder</string>
-    <string name="notification_frequency_weekly">Weekly reminder</string>
-    <string name="notification_frequency_monthly">Monthly reminder</string>
     <string name="notification_default_content">Don\'t forget to complete: %s</string>
     <string name="notification_task_label">Task: %s</string>
 

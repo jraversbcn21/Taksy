@@ -58,13 +58,6 @@ class NotificationService(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val frequencyText = when (reminder.tipoRecordatorio) {
-            com.example.taksy.data.TipoRecordatorio.UNA_VEZ -> context.getString(R.string.notification_frequency_once)
-            com.example.taksy.data.TipoRecordatorio.DIARIO -> context.getString(R.string.notification_frequency_daily)
-            com.example.taksy.data.TipoRecordatorio.SEMANAL -> context.getString(R.string.notification_frequency_weekly)
-            com.example.taksy.data.TipoRecordatorio.MENSUAL -> context.getString(R.string.notification_frequency_monthly)
-        }
-
         val contentText = if (reminder.descripcion.isNullOrBlank()) {
             context.getString(R.string.notification_default_content, task.titulo)
         } else {
@@ -76,7 +69,7 @@ class NotificationService(private val context: Context) {
             .setContentTitle(reminder.titulo)
             .setContentText(context.getString(R.string.notification_task_label, task.titulo))
             .setStyle(NotificationCompat.BigTextStyle()
-                .bigText("$contentText\n\n$frequencyText"))
+                .bigText(contentText))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)

@@ -16,16 +16,6 @@ data class Reminder(
     val descripcion: String? = null, // Descripción opcional
     val fechaRecordatorio: Date, // Fecha y hora del recordatorio
     val activo: Boolean = true, // Si el recordatorio está activo
-    val tipoRecordatorio: TipoRecordatorio = TipoRecordatorio.UNA_VEZ,
     val fechaCreacion: Date = Date()
 )
 
-/**
- * Tipos de recordatorios
- */
-enum class TipoRecordatorio {
-    UNA_VEZ,        // Recordatorio único
-    DIARIO,         // Todos los días
-    SEMANAL,        // Cada semana
-    MENSUAL         // Cada mes
-}

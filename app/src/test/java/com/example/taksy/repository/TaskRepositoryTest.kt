@@ -8,7 +8,6 @@ import com.example.taksy.data.SubtaskDao
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskDao
 import com.example.taksy.data.TaskEstado
-import com.example.taksy.data.TipoRecordatorio
 import androidx.room.withTransaction
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -109,12 +108,6 @@ class TaskRepositoryTest {
         override suspend fun deactivateRemindersByTaskId(taskId: Long) {
             reminders.replaceAll { if (it.taskId == taskId) it.copy(activo = false) else it }
         }
-        override suspend fun advanceReminderIfUnchanged(id: Long, expectedDate: Date, nextDate: Date): Int {
-            val idx = reminders.indexOfFirst { it.id == id && it.fechaRecordatorio == expectedDate && it.activo }
-            if (idx < 0) return 0
-            reminders[idx] = reminders[idx].copy(fechaRecordatorio = nextDate)
-            return 1
-        }
         override suspend fun getRemindersByTaskIdSync(taskId: Long): List<Reminder> = reminders.filter { it.taskId == taskId }
         override suspend fun getAllRemindersSync(): List<Reminder> = reminders.toList()
         override suspend fun deleteAllReminders() { reminders.clear() }
@@ -142,12 +135,11 @@ class TaskRepositoryTest {
         unmockkStatic("androidx.room.RoomDatabaseKt")
     }
 
-    private fun recurringReminder(fecha: Date = Date(1_000_000L)) = Reminder(
+    private fun reminder(fecha: Date = Date(1_000_000L)) = Reminder(
         id = 10L,
         taskId = 1L,
         titulo = "Recordatorio",
-        fechaRecordatorio = fecha,
-        tipoRecordatorio = TipoRecordatorio.DIARIO
+        fechaRecordatorio = fecha
     )
 
     // ── Tests ──────────────────────────────────────────────────────────────
@@ -190,11 +182,11 @@ class TaskRepositoryTest {
     fun `deleteTasksInCategory removes only that category's tasks and returns their reminder ids`() = runTest {
         val (taskDao, reminderDao, repo) = makeTransactionalRepository()
         taskDao.tasks.add(Task(id = 1L, titulo = "A", categoriaId = 5L))
-        taskDao.tasks.add(Task(id = 2L, titulo = "B", categoriaId = 5L, estado = TaskEstado.COMPLETADA, archivada = true))
+        taskDao.tasks.add(Task(id = 2L, titulo = "B", categoriaId = 5L, estado = TaskEstado.COMPLETADA))
         taskDao.tasks.add(Task(id = 3L, titulo = "C", categoriaId = 6L))
-        reminderDao.reminders.add(recurringReminder().copy(id = 11L, taskId = 1L))
-        reminderDao.reminders.add(recurringReminder().copy(id = 12L, taskId = 2L))
-        reminderDao.reminders.add(recurringReminder().copy(id = 13L, taskId = 3L))
+        reminderDao.reminders.add(reminder().copy(id = 11L, taskId = 1L))
+        reminderDao.reminders.add(reminder().copy(id = 12L, taskId = 2L))
+        reminderDao.reminders.add(reminder().copy(id = 13L, taskId = 3L))
 
         val reminderIds = repo.deleteTasksInCategory(5L)
 
@@ -316,83 +308,13 @@ class TaskRepositoryTest {
     @Test
     fun `cancelAllRemindersForTask deactivates only reminders of that task`() = runTest {
         val (_, reminderDao, repo) = makeTransactionalRepository()
-        reminderDao.reminders.add(recurringReminder().copy(id = 1L, taskId = 1L))
-        reminderDao.reminders.add(recurringReminder().copy(id = 2L, taskId = 1L))
-        reminderDao.reminders.add(recurringReminder().copy(id = 3L, taskId = 2L))
+        reminderDao.reminders.add(reminder().copy(id = 1L, taskId = 1L))
+        reminderDao.reminders.add(reminder().copy(id = 2L, taskId = 1L))
+        reminderDao.reminders.add(reminder().copy(id = 3L, taskId = 2L))
 
         repo.cancelAllRemindersForTask(1L)
 
         assertEquals(listOf(false, false, true), reminderDao.reminders.map { it.activo })
-    }
-
-    @Test
-    fun `advanceRecurringReminder advances date and returns updated reminder`() = runTest {
-        val (taskDao, reminderDao, repo) = makeTransactionalRepository()
-        taskDao.tasks.add(Task(id = 1L, titulo = "Test"))
-        val reminder = recurringReminder()
-        reminderDao.reminders.add(reminder)
-        val next = Date(2_000_000L)
-
-        val result = repo.advanceRecurringReminder(reminder, next)
-
-        assertEquals(next, result?.fechaRecordatorio)
-        assertEquals(next, reminderDao.reminders.single().fechaRecordatorio)
-    }
-
-    @Test
-    fun `advanceRecurringReminder with duplicate fire advances only once`() = runTest {
-        val (taskDao, reminderDao, repo) = makeTransactionalRepository()
-        taskDao.tasks.add(Task(id = 1L, titulo = "Test"))
-        val snapshot = recurringReminder()
-        reminderDao.reminders.add(snapshot)
-        val next = Date(2_000_000L)
-
-        // Dos disparos de alarma que leyeron el mismo snapshot antes de escribir
-        val first = repo.advanceRecurringReminder(snapshot, next)
-        val second = repo.advanceRecurringReminder(snapshot, next)
-
-        assertNotNull(first)
-        assertNull(second)
-        assertEquals(next, reminderDao.reminders.single().fechaRecordatorio)
-    }
-
-    @Test
-    fun `advanceRecurringReminder does not reactivate a reminder deactivated after read`() = runTest {
-        val (taskDao, reminderDao, repo) = makeTransactionalRepository()
-        taskDao.tasks.add(Task(id = 1L, titulo = "Test"))
-        val snapshot = recurringReminder()
-        reminderDao.reminders.add(snapshot)
-
-        // Se cancela tras la lectura del receiver pero antes de su escritura
-        repo.cancelAllRemindersForTask(1L)
-        val result = repo.advanceRecurringReminder(snapshot, Date(2_000_000L))
-
-        assertNull(result)
-        val stored = reminderDao.reminders.single()
-        assertFalse(stored.activo)
-        assertEquals(snapshot.fechaRecordatorio, stored.fechaRecordatorio)
-    }
-
-    @Test
-    fun `advanceRecurringReminder skips when task is completed`() = runTest {
-        val (taskDao, reminderDao, repo) = makeTransactionalRepository()
-        taskDao.tasks.add(Task(id = 1L, titulo = "Test", estado = TaskEstado.COMPLETADA))
-        val reminder = recurringReminder()
-        reminderDao.reminders.add(reminder)
-
-        val result = repo.advanceRecurringReminder(reminder, Date(2_000_000L))
-
-        assertNull(result)
-        assertEquals(reminder.fechaRecordatorio, reminderDao.reminders.single().fechaRecordatorio)
-    }
-
-    @Test
-    fun `advanceRecurringReminder skips when task no longer exists`() = runTest {
-        val (_, reminderDao, repo) = makeTransactionalRepository()
-        val reminder = recurringReminder()
-        reminderDao.reminders.add(reminder)
-
-        assertNull(repo.advanceRecurringReminder(reminder, Date(2_000_000L)))
     }
 
     @Test

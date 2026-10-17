@@ -7,7 +7,6 @@ import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TaskRecurrencia
-import com.example.taksy.data.TipoRecordatorio
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -70,8 +69,6 @@ object BackupManager {
                     put("categoriaId", t.categoriaId ?: JSONObject.NULL)
                     put("estado", t.estado.name)
                     put("prioridad", t.prioridad.name)
-                    put("archivada", t.archivada)
-                    put("orden", t.orden)
                     put("recurrencia", t.recurrencia.name)
                     put("fechaCompletada", t.fechaCompletada?.let { dateFormat.format(it) })
                 })
@@ -98,7 +95,6 @@ object BackupManager {
                     put("descripcion", r.descripcion ?: JSONObject.NULL)
                     put("fechaRecordatorio", dateFormat.format(r.fechaRecordatorio))
                     put("activo", r.activo)
-                    put("tipoRecordatorio", r.tipoRecordatorio.name)
                     put("fechaCreacion", dateFormat.format(r.fechaCreacion))
                 })
             }
@@ -170,8 +166,6 @@ object BackupManager {
                         categoriaId = if (t.isNull("categoriaId")) null else t.getLong("categoriaId"),
                         estado = TaskEstado.valueOf(t.getString("estado")),
                         prioridad = try { TaskPrioridad.valueOf(t.optString("prioridad", "NINGUNA")) } catch (_: Exception) { TaskPrioridad.NINGUNA },
-                        archivada = t.optBoolean("archivada", false),
-                        orden = t.optInt("orden", 0),
                         recurrencia = try { TaskRecurrencia.valueOf(t.optString("recurrencia", "NINGUNA")) } catch (_: Exception) { TaskRecurrencia.NINGUNA },
                         fechaCompletada = if (t.has("fechaCompletada") && !t.isNull("fechaCompletada"))
                             dateFormat.parse(t.getString("fechaCompletada")) else null
@@ -219,7 +213,6 @@ object BackupManager {
                         descripcion = if (r.isNull("descripcion")) null else r.getString("descripcion"),
                         fechaRecordatorio = dateFormat.parse(r.getString("fechaRecordatorio")) ?: throw Exception(),
                         activo = r.getBoolean("activo"),
-                        tipoRecordatorio = TipoRecordatorio.valueOf(r.getString("tipoRecordatorio")),
                         fechaCreacion = dateFormat.parse(r.getString("fechaCreacion")) ?: throw Exception()
                     )
                 )

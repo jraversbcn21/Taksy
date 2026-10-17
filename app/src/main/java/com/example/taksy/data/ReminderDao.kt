@@ -2,7 +2,6 @@ package com.example.taksy.data
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
-import java.util.Date
 
 /**
  * DAO para operaciones de recordatorios
@@ -42,14 +41,6 @@ interface ReminderDao {
 
     @Query("UPDATE reminders SET activo = 0 WHERE taskId = :taskId")
     suspend fun deactivateRemindersByTaskId(taskId: Long)
-
-    /**
-     * Avanza la fecha de un recordatorio recurrente solo si sigue activo y su fecha
-     * no ha cambiado desde que se leyó (compare-and-swap).
-     * Devuelve 1 si esta llamada ganó, 0 si otro caller ya lo avanzó, lo editó o lo desactivó.
-     */
-    @Query("UPDATE reminders SET fechaRecordatorio = :nextDate WHERE id = :id AND fechaRecordatorio = :expectedDate AND activo = 1")
-    suspend fun advanceReminderIfUnchanged(id: Long, expectedDate: Date, nextDate: Date): Int
 
     @Query("SELECT * FROM reminders WHERE taskId = :taskId")
     suspend fun getRemindersByTaskIdSync(taskId: Long): List<Reminder>

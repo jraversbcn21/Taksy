@@ -1,7 +1,6 @@
 package com.example.taksy.domain
 
 import com.example.taksy.data.Reminder
-import com.example.taksy.data.TipoRecordatorio
 import com.example.taksy.repository.TaskRepository
 import com.example.taksy.service.ReminderSchedulerContract
 import kotlinx.coroutines.flow.Flow
@@ -10,10 +9,8 @@ import javax.inject.Inject
 
 /**
  * Recordatorios de una tarea. Desde la UI solo existe el recordatorio rápido: uno por
- * tarea y de una sola vez. Los recordatorios con repetición propia (DIARIO/SEMANAL/MENSUAL)
- * ya no se pueden crear; ReminderReceiver los sigue atendiendo por compatibilidad con
- * datos antiguos o importados. Una tarea recurrente pasa su recordatorio a la siguiente
- * ocurrencia en CompleteTaskUseCase.
+ * tarea y de una sola vez. La repetición vive en la tarea: una tarea recurrente pasa su
+ * recordatorio a la siguiente ocurrencia en CompleteTaskUseCase.
  */
 class TaskReminderUseCase @Inject constructor(
     private val repository: TaskRepository,
@@ -29,8 +26,7 @@ class TaskReminderUseCase @Inject constructor(
         val reminder = Reminder(
             taskId = taskId,
             titulo = taskTitle,
-            fechaRecordatorio = fecha,
-            tipoRecordatorio = TipoRecordatorio.UNA_VEZ
+            fechaRecordatorio = fecha
         )
         val id = repository.insertReminder(reminder)
         scheduler.scheduleReminder(reminder.copy(id = id))
