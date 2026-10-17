@@ -53,6 +53,7 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 - **`SubtaskUseCase`** — observe/add/toggle/delete on subtasks. `toggle()` returns `true` when the parent task auto-completed, so the caller can refresh the widget.
 - **`TaskReminderUseCase`** — observe/add/update/delete/setActive/setQuick/deleteAllForTask on reminders. Wraps `ReminderSchedulerContract` so reminder DB writes and alarm scheduling stay in sync.
 - **`RecurrenceCalculator`** — `advance(Date, TaskRecurrencia): Date` for tasks and `advance(Date, TipoRecordatorio): Date?` for reminders (returns null on UNA_VEZ). Covered by 10 JVM unit tests.
+- **`DeleteCategoryUseCase`** — deletes a category together with all its tasks (incl. archived/completed), their subtasks and reminders in one transaction (`TaskRepository.deleteTasksInCategory`), then cancels the reminders' alarms after commit. Needed because there is no foreign key between `tasks.categoriaId` and `categories`: deleting only the category would leave invisible orphan tasks that still appear in the widget and keep firing alarms.
 
 ### Dependency Injection (Hilt)
 `di/DatabaseModule` provides `AppDatabase`, all DAOs, both repositories, and `ReminderSchedulerContract` as `@Singleton`. Use cases (`CompleteTaskUseCase`, `SubtaskUseCase`, `TaskReminderUseCase`) and `PreferencesRepository` use `@Inject` constructor with `@Singleton` and are auto-provided by Hilt — no module entry needed. ViewModels use `@HiltViewModel`; screens obtain them via `hiltViewModel()`; `MainActivity` uses `by viewModels()`. `BroadcastReceiver`s (`ReminderReceiver`, `DailyReminderService`) are `@AndroidEntryPoint` with `@Inject lateinit var` fields. The widget (`TaskWidgetProvider` and `TaskWidgetRemoteViewsFactory`) uses `WidgetEntryPoint` + `EntryPointAccessors.fromApplication()` because `RemoteViewsFactory` can't be a Hilt entry point.
@@ -63,8 +64,8 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 - **`PreferencesRepository`** — described in Data Layer above.
 
 ### ViewModels
-- **`TaskViewModel`** — thin facade (extends `AndroidViewModel`). Owns task CRUD, the filter `StateFlow`, the `togglingTaskIds` guard, and the `searchAllTasks` flow. Delegates subtask operations to `SubtaskUseCase`, reminder operations to `TaskReminderUseCase`, and task completion to `CompleteTaskUseCase`. `addTask(input: TaskInput)` is the single entry point — the four legacy overloads are collapsed. Calls `TaskWidgetProvider.refreshAll(context)` after mutations.
-- **`CategoryViewModel`** — category CRUD; injects `@ApplicationContext` so `initializeDefaultCategories` can read the localized array.
+- **`TaskViewModel`** — thin facade (extends `AndroidViewModel`). Owns task CRUD, the `togglingTaskIds` guard, and the `searchAllTasks` flow. Delegates subtask operations to `SubtaskUseCase`, reminder operations to `TaskReminderUseCase`, and task completion to `CompleteTaskUseCase`. `addTask(input: TaskInput)` is the single entry point — the four legacy overloads are collapsed. Calls `TaskWidgetProvider.refreshAll(context)` after mutations.
+- **`CategoryViewModel`** — category CRUD (delete goes through `DeleteCategoryUseCase` + widget refresh); injects `@ApplicationContext` so `initializeDefaultCategories` can read the localized array.
 - **`ThemeViewModel`** — dark mode + language. Injects `PreferencesRepository`; calls `AppCompatDelegate.setApplicationLocales()` on language change to trigger activity recreation.
 - **`SplashViewModel`** — splash animation state.
 - **`BackupViewModel`** — export/import via `BackupManager`. Injects `@ApplicationContext`, `AppDatabase` (for `withTransaction`), DAOs directly (not repositories), and `ReminderSchedulerContract` to reschedule reminders after import.
@@ -78,14 +79,15 @@ Start destination: `"onboarding"` (first launch) or `"category_list"` (subsequen
 - `category_list` → `CategoryListScreen`
 - `tasks_by_category/{categoryId}` → `TasksByCategoryScreen`
 - `task_detail/{taskId}` → `TaskDetailScreen`
-- `reminders`, `daily_reminders`, `theme_settings`, `language_settings`
+- `category_management` → `CategoryManagementScreen` (create via FAB, edit by tapping a category, delete via trash icon with a warning showing how many tasks go with it)
+- `daily_reminders`, `theme_settings`, `language_settings`
 - `about` → `AboutScreen`
 - `backup` → `BackupScreen`
 - `stats` → `StatsScreen`
 
 `AppNavGraph` defines a private `NavHostController.popOrHome()` extension that collapses the repeated "popBackStack or fall back to category_list" pattern used by every drawer screen.
 
-Navigation drawer is an Android `DrawerLayout` wrapping a `ComposeView` (not a pure Compose drawer — kept as a documented architectural choice). Drawer items: Theme, Language, Daily Reminders, Stats, Backup, About. Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true`.
+Navigation drawer is an Android `DrawerLayout` wrapping a `ComposeView` (not a pure Compose drawer — kept as a documented architectural choice). Drawer items: Manage Categories, Theme, Language, Daily Reminders, Stats, Backup, About. Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true`.
 
 ### Background Work
 - **`ReminderSchedulerContract`** — interface with `scheduleReminder()` and `cancelReminder()`. Implemented by `ReminderScheduler` and provided as `@Singleton` via Hilt.
@@ -143,7 +145,7 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 
 ## Pending / Future Work
 
-**Recurring-task duplication bug — root-caused and fixed 2026-07-07 (commit `510876f`).** Root cause was check-then-act in `CompleteTaskUseCase.execute`, not the unguarded subtask route alone; fixed via atomic `completeTaskIfPending` compare-and-swap (see Domain Layer / Repositories above). 103 unit tests pass. **Smoke-tested on a physical device (Moto g35, 2026-10-17): no duplicates** — rapid radio taps and subtask auto-complete each produced exactly one next occurrence (verified in the on-device DB). The perceived "duplicates" were completed occurrences piling up in the category list; `getTasksByCategory`/`searchTasksByCategory` now hide completed recurring occurrences and `TaskListItem` shows "Completed on <date>" (commit `1bdf007`). See `docs/debugging-taksy-duplication.md` for the full incident writeup and remaining punch list (BackupViewModel import transaction is done; `ReminderReceiver` recurring-reminder advance is now CAS-guarded too, and the `CategoryUtils` icon mapping is fixed).
+**Recurring-task duplication bug — root-caused and fixed 2026-07-07 (commit `510876f`).** Root cause was check-then-act in `CompleteTaskUseCase.execute`, not the unguarded subtask route alone; fixed via atomic `completeTaskIfPending` compare-and-swap (see Domain Layer / Repositories above). 105 unit tests pass. **Smoke-tested on a physical device (Moto g35, 2026-10-17): no duplicates** — rapid radio taps and subtask auto-complete each produced exactly one next occurrence (verified in the on-device DB). The perceived "duplicates" were completed occurrences piling up in the category list; `getTasksByCategory`/`searchTasksByCategory` now hide completed recurring occurrences and `TaskListItem` shows "Completed on <date>" (commit `1bdf007`). See `docs/debugging-taksy-duplication.md` for the full incident writeup and remaining punch list (BackupViewModel import transaction is done; `ReminderReceiver` recurring-reminder advance is now CAS-guarded too, and the `CategoryUtils` icon mapping is fixed).
 
 - Optional: shrink `TasksByCategoryScreen` further. The drag-and-drop block is the main remaining inline section; it shares state heavily with the LazyColumn, so extraction is non-trivial.
 - Optional: `MainActivity` bulk is the `DrawerLayout` AndroidView block; moving it into its own file is fine but offers little incremental value.

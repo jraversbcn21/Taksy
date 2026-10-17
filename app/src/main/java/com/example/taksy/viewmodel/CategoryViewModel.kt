@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.taksy.data.Category
+import com.example.taksy.domain.DeleteCategoryUseCase
 import com.example.taksy.repository.CategoryRepository
+import com.example.taksy.widget.TaskWidgetProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
@@ -14,6 +16,7 @@ import javax.inject.Inject
 @HiltViewModel
 class CategoryViewModel @Inject constructor(
     private val repository: CategoryRepository,
+    private val deleteCategoryUseCase: DeleteCategoryUseCase,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -38,7 +41,10 @@ class CategoryViewModel @Inject constructor(
     }
 
     fun deleteCategory(category: Category) {
-        viewModelScope.launch { repository.deleteCategory(category) }
+        viewModelScope.launch {
+            deleteCategoryUseCase.execute(category)
+            TaskWidgetProvider.refreshAll(context)
+        }
     }
 
     fun reorderCategories(categories: List<Category>) {

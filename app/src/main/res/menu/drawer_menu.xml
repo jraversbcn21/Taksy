@@ -2,6 +2,10 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <group android:checkableBehavior="single">
         <item
+            android:id="@+id/nav_categories"
+            android:icon="@drawable/ic_category"
+            android:title="@string/manage_categories" />
+        <item
             android:id="@+id/nav_theme"
             android:icon="@drawable/ic_settings"
             android:title="@string/theme" />

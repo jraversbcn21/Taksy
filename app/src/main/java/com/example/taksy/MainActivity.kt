@@ -208,6 +208,7 @@ private fun buildNavigationView(
     setNavigationItemSelectedListener { menuItem ->
         onItemSelected()
         val route = when (menuItem.itemId) {
+            R.id.nav_categories -> "category_management"
             R.id.nav_theme -> "theme_settings"
             R.id.nav_language -> "language_settings"
             R.id.nav_reminders -> "daily_reminders"

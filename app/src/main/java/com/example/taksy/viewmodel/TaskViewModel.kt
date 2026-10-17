@@ -14,16 +14,13 @@ import com.example.taksy.data.TipoRecordatorio
 import com.example.taksy.domain.CompleteTaskUseCase
 import com.example.taksy.domain.SubtaskUseCase
 import com.example.taksy.domain.TaskReminderUseCase
-import com.example.taksy.repository.TaskFilter
 import com.example.taksy.repository.TaskRepository
 import com.example.taksy.widget.TaskWidgetProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import java.util.Date
 import javax.inject.Inject
@@ -37,7 +34,6 @@ data class TaskInput(
 )
 
 @HiltViewModel
-@OptIn(ExperimentalCoroutinesApi::class)
 class TaskViewModel @Inject constructor(
     private val repository: TaskRepository,
     private val completeTaskUseCase: CompleteTaskUseCase,
@@ -51,22 +47,7 @@ class TaskViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(TaskUiState())
     val uiState: StateFlow<TaskUiState> = _uiState.asStateFlow()
 
-    private val _currentFilter = MutableStateFlow(TaskFilter.TODAS)
-
     private val togglingTaskIds = mutableSetOf<Long>()
-
-    init {
-        viewModelScope.launch {
-            _currentFilter
-                .flatMapLatest { filter ->
-                    _uiState.value = _uiState.value.copy(isLoading = true)
-                    repository.getTasksByFilter(filter)
-                }
-                .collect { tasks ->
-                    _uiState.value = _uiState.value.copy(tasks = tasks, isLoading = false)
-                }
-        }
-    }
 
     // ── Tasks ──────────────────────────────────────────────────────────────
 
@@ -141,16 +122,6 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    fun setFilter(filter: TaskFilter) {
-        _currentFilter.value = filter
-        _uiState.value = _uiState.value.copy(currentFilter = filter)
-    }
-
-    fun deleteCompletedTasks() = launchSafe {
-        repository.deleteCompletedTasks()
-        TaskWidgetProvider.refreshAll(context)
-    }
-
     suspend fun getTaskById(id: Long): Task? = repository.getTaskById(id)
 
     fun clearError() {
@@ -209,8 +180,5 @@ class TaskViewModel @Inject constructor(
 }
 
 data class TaskUiState(
-    val tasks: List<Task> = emptyList(),
-    val isLoading: Boolean = true,
-    val currentFilter: TaskFilter = TaskFilter.TODAS,
     val error: String? = null
 )

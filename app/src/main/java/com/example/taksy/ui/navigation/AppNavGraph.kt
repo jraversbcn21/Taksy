@@ -1,6 +1,7 @@
 package com.example.taksy.ui.navigation
 
 import android.content.Context
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,10 +21,10 @@ import com.example.taksy.data.preferences.PreferencesRepository
 import com.example.taksy.ui.screens.AboutScreen
 import com.example.taksy.ui.screens.BackupScreen
 import com.example.taksy.ui.screens.CategoryListScreen
+import com.example.taksy.ui.screens.CategoryManagementScreen
 import com.example.taksy.ui.screens.DailyReminderScreen
 import com.example.taksy.ui.screens.LanguageSettingsScreen
 import com.example.taksy.ui.screens.OnboardingScreen
-import com.example.taksy.ui.screens.RemindersScreen
 import com.example.taksy.ui.screens.StatsScreen
 import com.example.taksy.ui.screens.TaskDetailScreen
 import com.example.taksy.ui.screens.TasksByCategoryScreen
@@ -102,19 +103,22 @@ fun AppNavGraph(
             )
         }
 
-        composable("reminders") {
-            val reminders by taskViewModel.getAllActiveReminders().collectAsState(initial = emptyList())
+        composable("category_management") {
+            val categories by categoryViewModel.getAllCategories().collectAsState(initial = emptyList())
+            val allTasks by taskViewModel.getAllTasks().collectAsState(initial = emptyList())
+            // Todas las tareas (no solo pendientes): son las que se borran junto con la categoría
+            val taskCountByCategory = remember(allTasks) {
+                allTasks.mapNotNull { it.categoriaId }.groupingBy { it }.eachCount()
+            }
 
-            RemindersScreen(
-                reminders = reminders,
-                onBackClick = { navController.popBackStack() },
-                onAddReminder = { titulo, descripcion, fecha, tipo ->
-                    taskViewModel.addReminder(0, titulo, descripcion, fecha, tipo)
-                },
-                onToggleReminder = { reminderId, activo ->
-                    taskViewModel.updateReminderStatus(reminderId, activo)
-                },
-                onDeleteReminder = { reminder -> taskViewModel.deleteReminder(reminder) }
+            CategoryManagementScreen(
+                categories = categories,
+                taskCountByCategory = taskCountByCategory,
+                onBackClick = { navController.popOrHome() },
+                onAddCategory = { nombre, color, icono -> categoryViewModel.addCategory(nombre, color, icono) },
+                onUpdateCategory = { category -> categoryViewModel.updateCategory(category) },
+                onDeleteCategory = { category -> categoryViewModel.deleteCategory(category) },
+                showToast = { message -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show() }
             )
         }
 

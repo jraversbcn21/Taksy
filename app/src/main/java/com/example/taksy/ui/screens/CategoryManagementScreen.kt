@@ -18,16 +18,16 @@ import com.example.taksy.data.Category
 import com.example.taksy.ui.components.AddCategoryDialog
 import com.example.taksy.ui.components.CategoryItem
 import com.example.taksy.ui.components.DeleteCategoryDialog
-import com.example.taksy.viewmodel.TaskViewModel
 
 /**
  * Pantalla para gestionar categorías
- * Permite ver, añadir, editar y eliminar categorías
+ * Permite ver, añadir, editar (tocando la categoría) y eliminar categorías
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryManagementScreen(
     categories: List<Category>,
+    taskCountByCategory: Map<Long, Int>,
     onBackClick: () -> Unit,
     onAddCategory: (String, String, String) -> Unit,
     onUpdateCategory: (Category) -> Unit,
@@ -46,11 +46,6 @@ fun CategoryManagementScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showAddDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_category))
                     }
                 }
             )
@@ -111,9 +106,27 @@ fun CategoryManagementScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(categories, key = { it.id }) { category ->
-                        CategoryItem(
-                            category = category
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CategoryItem(
+                                category = category,
+                                taskCount = taskCountByCategory[category.id] ?: 0,
+                                onClick = {
+                                    selectedCategory = category
+                                    showEditDialog = true
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(onClick = {
+                                selectedCategory = category
+                                showDeleteDialog = true
+                            }) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = stringResource(R.string.delete_category),
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -158,6 +171,7 @@ fun CategoryManagementScreen(
     selectedCategory?.takeIf { showDeleteDialog }?.let { deleting ->
         DeleteCategoryDialog(
             category = deleting,
+            taskCount = taskCountByCategory[deleting.id] ?: 0,
             onDismiss = {
                 showDeleteDialog = false
                 selectedCategory = null

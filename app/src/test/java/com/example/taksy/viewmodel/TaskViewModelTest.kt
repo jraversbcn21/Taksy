@@ -11,7 +11,6 @@ import com.example.taksy.data.TaskDao
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TipoRecordatorio
-import com.example.taksy.repository.TaskFilter
 import com.example.taksy.repository.TaskRepository
 import com.example.taksy.service.ReminderSchedulerContract
 import com.example.taksy.widget.TaskWidgetProvider
@@ -76,31 +75,6 @@ class TaskViewModelTest {
     fun tearDown() {
         Dispatchers.resetMain()
         unmockkAll()
-    }
-
-    // ── Filter switching ──────────────────────────────────────────────────
-
-    @Test
-    fun `initial filter is TODAS`() {
-        assertEquals(TaskFilter.TODAS, viewModel.uiState.value.currentFilter)
-    }
-
-    @Test
-    fun `setFilter updates currentFilter in state`() {
-        viewModel.setFilter(TaskFilter.PENDIENTES)
-        assertEquals(TaskFilter.PENDIENTES, viewModel.uiState.value.currentFilter)
-    }
-
-    @Test
-    fun `setFilter to PENDIENTES shows only pending tasks`() = runTest {
-        fakeTaskDao.tasks.add(Task(id = 1, titulo = "Pending", estado = TaskEstado.PENDIENTE))
-        fakeTaskDao.tasks.add(Task(id = 2, titulo = "Done", estado = TaskEstado.COMPLETADA))
-
-        viewModel.setFilter(TaskFilter.PENDIENTES)
-        advanceUntilIdle()
-
-        val tasks = viewModel.uiState.value.tasks
-        assertTrue(tasks.all { it.estado == TaskEstado.PENDIENTE })
     }
 
     // ── Add task ──────────────────────────────────────────────────────────
@@ -274,7 +248,7 @@ class TaskViewModelTest {
                 emit()
             }
         }
-        override suspend fun deleteCompletedTasks() { tasks.removeIf { it.estado == TaskEstado.COMPLETADA }; emit() }
+        override suspend fun getAllTasksByCategorySync(categoryId: Long): List<Task> = tasks.filter { it.categoriaId == categoryId }
         override suspend fun getTasksDueToday(startOfDay: Long, endOfDay: Long): List<Task> = emptyList()
         override suspend fun getTasksDueSoon(now: Long, nextWeek: Long): List<Task> = emptyList()
         override suspend fun getOverdueTasks(now: Long): List<Task> = emptyList()

@@ -22,8 +22,6 @@ class TaskRepository @Inject constructor(
     // ── Tasks ──────────────────────────────────────────────────────────────
 
     fun getAllTasks(): Flow<List<Task>> = taskDao.getAllTasks()
-    fun getPendingTasks(): Flow<List<Task>> = taskDao.getPendingTasks()
-    fun getCompletedTasks(): Flow<List<Task>> = taskDao.getCompletedTasks()
     fun getTasksByCategoryId(categoryId: Long): Flow<List<Task>> = taskDao.getTasksByCategory(categoryId)
     fun searchTasksByCategory(categoryId: Long, query: String): Flow<List<Task>> =
         taskDao.searchTasksByCategory(categoryId, query)
@@ -40,7 +38,6 @@ class TaskRepository @Inject constructor(
     suspend fun insertTask(task: Task): Long = taskDao.insertTask(task)
     suspend fun updateTask(task: Task) = taskDao.updateTask(task)
     suspend fun deleteTask(task: Task) = taskDao.deleteTask(task)
-    suspend fun deleteCompletedTasks() = taskDao.deleteCompletedTasks()
 
     fun getArchivedTasksByCategory(categoryId: Long): Flow<List<Task>> =
         taskDao.getArchivedTasksByCategory(categoryId)
@@ -68,6 +65,22 @@ class TaskRepository @Inject constructor(
             val won = taskDao.completeTaskIfPending(task.id, Date()) == 1
             if (won) taskDao.insertTask(clone)
             won
+        }
+
+    /**
+     * Borra todas las tareas de una categoría junto con sus subtareas y recordatorios,
+     * en una sola transacción. Devuelve los ids de los recordatorios borrados para que
+     * el caller cancele sus alarmas.
+     */
+    suspend fun deleteTasksInCategory(categoryId: Long): List<Long> =
+        appDatabase.withTransaction {
+            taskDao.getAllTasksByCategorySync(categoryId).flatMap { task ->
+                val reminderIds = reminderDao.getRemindersByTaskIdSync(task.id).map { it.id }
+                reminderDao.deleteRemindersByTaskId(task.id)
+                subtaskDao.deleteSubtasksByTaskId(task.id)
+                taskDao.deleteTask(task)
+                reminderIds
+            }
         }
 
     // ── Subtasks ───────────────────────────────────────────────────────────

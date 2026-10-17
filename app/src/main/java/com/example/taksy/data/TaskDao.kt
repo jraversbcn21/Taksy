@@ -66,11 +66,6 @@ interface TaskDao {
     @Query("UPDATE tasks SET estado = 'PENDIENTE', fechaCompletada = NULL WHERE id = :id")
     suspend fun markTaskAsPending(id: Long)
     
-    /**
-     * Elimina todas las tareas completadas
-     */
-    @Query("DELETE FROM tasks WHERE estado = 'COMPLETADA'")
-    suspend fun deleteCompletedTasks()
     
     /**
      * Obtiene tareas por categoría.
@@ -80,6 +75,10 @@ interface TaskDao {
      */
     @Query("SELECT * FROM tasks WHERE categoriaId = :categoryId AND archivada = 0 AND NOT (estado = 'COMPLETADA' AND recurrencia != 'NINGUNA') ORDER BY CASE WHEN estado = 'PENDIENTE' THEN 0 ELSE 1 END, orden ASC, CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
     fun getTasksByCategory(categoryId: Long): Flow<List<Task>>
+
+    /** Todas las tareas de una categoría, incluidas archivadas y completadas (para borrarla). */
+    @Query("SELECT * FROM tasks WHERE categoriaId = :categoryId")
+    suspend fun getAllTasksByCategorySync(categoryId: Long): List<Task>
     
     /**
      * Obtiene tareas sin categoría

@@ -4,4 +4,8 @@
         <item quantity="one">%d tarea</item>
         <item quantity="other">%d tareas</item>
     </plurals>
+    <plurals name="delete_category_tasks_warning">
+        <item quantity="one">Se eliminará también su %d tarea, con sus subtareas y recordatorios.</item>
+        <item quantity="other">Se eliminarán también sus %d tareas, con sus subtareas y recordatorios.</item>
+    </plurals>
 </resources>

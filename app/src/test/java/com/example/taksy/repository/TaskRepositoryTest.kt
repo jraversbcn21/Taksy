@@ -66,7 +66,7 @@ class TaskRepositoryTest {
                 lastUpdated = tasks[idx]
             }
         }
-        override suspend fun deleteCompletedTasks() { tasks.removeIf { it.estado == TaskEstado.COMPLETADA } }
+        override suspend fun getAllTasksByCategorySync(categoryId: Long): List<Task> = tasks.filter { it.categoriaId == categoryId }
         override suspend fun getTasksDueToday(startOfDay: Long, endOfDay: Long): List<Task> = emptyList()
         override suspend fun getTasksDueSoon(now: Long, nextWeek: Long): List<Task> = emptyList()
         override suspend fun getOverdueTasks(now: Long): List<Task> = emptyList()
@@ -143,7 +143,7 @@ class TaskRepositoryTest {
     private fun makeTransactionalRepository(): Triple<FakeTaskDao, FakeReminderDao, TaskRepository> {
         mockkStatic("androidx.room.RoomDatabaseKt")
         val db = mockk<AppDatabase>(relaxed = true)
-        val blockSlot = slot<suspend () -> Reminder?>()
+        val blockSlot = slot<suspend () -> Any?>()
         coEvery { db.withTransaction(capture(blockSlot)) } coAnswers { blockSlot.captured.invoke() }
         val taskDao = FakeTaskDao()
         val reminderDao = FakeReminderDao()
@@ -200,15 +200,20 @@ class TaskRepositoryTest {
     }
 
     @Test
-    fun `deleteCompletedTasks removes only completed`() = runTest {
-        val (dao, repo) = makeRepository()
-        dao.tasks.add(Task(id = 1L, titulo = "Pending", estado = TaskEstado.PENDIENTE))
-        dao.tasks.add(Task(id = 2L, titulo = "Done", estado = TaskEstado.COMPLETADA))
+    fun `deleteTasksInCategory removes only that category's tasks and returns their reminder ids`() = runTest {
+        val (taskDao, reminderDao, repo) = makeTransactionalRepository()
+        taskDao.tasks.add(Task(id = 1L, titulo = "A", categoriaId = 5L))
+        taskDao.tasks.add(Task(id = 2L, titulo = "B", categoriaId = 5L, estado = TaskEstado.COMPLETADA, archivada = true))
+        taskDao.tasks.add(Task(id = 3L, titulo = "C", categoriaId = 6L))
+        reminderDao.reminders.add(recurringReminder().copy(id = 11L, taskId = 1L))
+        reminderDao.reminders.add(recurringReminder().copy(id = 12L, taskId = 2L))
+        reminderDao.reminders.add(recurringReminder().copy(id = 13L, taskId = 3L))
 
-        repo.deleteCompletedTasks()
+        val reminderIds = repo.deleteTasksInCategory(5L)
 
-        assertEquals(1, dao.tasks.size)
-        assertEquals(TaskEstado.PENDIENTE, dao.tasks[0].estado)
+        assertEquals(setOf(11L, 12L), reminderIds.toSet())
+        assertEquals(listOf(3L), taskDao.tasks.map { it.id })
+        assertEquals(listOf(13L), reminderDao.reminders.map { it.id })
     }
 
     @Test

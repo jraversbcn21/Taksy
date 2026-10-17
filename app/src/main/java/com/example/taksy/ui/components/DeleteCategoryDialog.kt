@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,6 +30,7 @@ fun DeleteCategoryDialog(
     category: Category,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
+    taskCount: Int = 0,
     activity: androidx.activity.ComponentActivity? = null
 ) {
     val view = LocalView.current
@@ -122,8 +124,8 @@ fun DeleteCategoryDialog(
                     style = MaterialTheme.typography.bodyMedium
                 )
 
-                // Advertencia adicional
-                Card(
+                // Advertencia: también se borran sus tareas
+                if (taskCount > 0) Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
@@ -144,7 +146,7 @@ fun DeleteCategoryDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = stringResource(R.string.category_in_use),
+                            text = pluralStringResource(R.plurals.delete_category_tasks_warning, taskCount, taskCount),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )

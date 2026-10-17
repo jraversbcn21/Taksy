@@ -71,7 +71,7 @@ class CompleteTaskUseCaseTest {
             val idx = tasks.indexOfFirst { it.id == id }
             if (idx >= 0) tasks[idx] = tasks[idx].copy(estado = TaskEstado.PENDIENTE, fechaCompletada = null)
         }
-        override suspend fun deleteCompletedTasks() { tasks.removeIf { it.estado == TaskEstado.COMPLETADA } }
+        override suspend fun getAllTasksByCategorySync(categoryId: Long): List<Task> = tasks.filter { it.categoriaId == categoryId }
         override suspend fun getTasksDueToday(startOfDay: Long, endOfDay: Long): List<Task> = emptyList()
         override suspend fun getTasksDueSoon(now: Long, nextWeek: Long): List<Task> = emptyList()
         override suspend fun getOverdueTasks(now: Long): List<Task> = emptyList()

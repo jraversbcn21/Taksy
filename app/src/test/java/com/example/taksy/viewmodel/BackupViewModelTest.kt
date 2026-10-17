@@ -68,7 +68,7 @@ class BackupViewModelTest {
         override suspend fun deleteTask(task: Task) {}
         override suspend fun completeTaskIfPending(id: Long, fechaCompletada: java.util.Date): Int = 0
         override suspend fun markTaskAsPending(id: Long) {}
-        override suspend fun deleteCompletedTasks() {}
+        override suspend fun getAllTasksByCategorySync(categoryId: Long): List<Task> = emptyList()
         override suspend fun getTasksDueToday(startOfDay: Long, endOfDay: Long): List<Task> = emptyList()
         override suspend fun getTasksDueSoon(now: Long, nextWeek: Long): List<Task> = emptyList()
         override suspend fun getOverdueTasks(now: Long): List<Task> = emptyList()
