@@ -1,5 +1,6 @@
 package com.example.taksy.ui.screens
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -7,9 +8,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -36,7 +35,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -51,6 +55,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.example.taksy.R
 import com.example.taksy.data.Category
 import com.example.taksy.data.Task
@@ -71,7 +76,6 @@ import com.example.taksy.utils.DueDateStatus
 import com.example.taksy.utils.GreetingUtils
 import com.example.taksy.utils.getCategoryIcon
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -104,24 +108,62 @@ fun CategoryListScreen(
 
     var categoriesState by remember { mutableStateOf(categories) }
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
-    var draggingIndex by remember { mutableStateOf(-1) }
-    var accumulatedDelta by remember { mutableStateOf(0f) }
+    // Reordenar listas: mantener pulsada una fila la levanta y entonces se puede arrastrar.
+    // Un deslizamiento normal hace scroll de la pantalla.
+    var draggedKey by remember { mutableStateOf<Long?>(null) }
+    var dragOffset by remember { mutableFloatStateOf(0f) }
+    val haptics = LocalHapticFeedback.current
+    val baseViewConfiguration = LocalViewConfiguration.current
+    val reorderViewConfiguration = remember(baseViewConfiguration) {
+        object : ViewConfiguration by baseViewConfiguration {
+            override val longPressTimeoutMillis = REORDER_LONG_PRESS_MILLIS
+        }
+    }
 
     var showSearch by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
-    LaunchedEffect(categories) { categoriesState = categories }
+    LaunchedEffect(categories) { if (draggedKey == null) categoriesState = categories }
     val categoryMap = remember(categories) { categories.associateBy { it.id } }
 
-    fun moveCategory(fromIndex: Int, toIndex: Int) {
-        if (fromIndex == toIndex) return
-        val newCategories = categoriesState.toMutableList()
-        val item = newCategories.removeAt(fromIndex)
-        newCategories.add(toIndex, item)
-        val reordered = newCategories.mapIndexed { index, category -> category.copy(orden = index + 1) }
-        categoriesState = reordered
-        onReorderCategories(reordered)
+    // dragOffset es el desplazamiento de la fila arrastrada respecto a su posición en la lista
+    fun dragBy(delta: Float) {
+        val key = draggedKey ?: return
+        dragOffset += delta
+        val layoutInfo = listState.layoutInfo
+        val current = layoutInfo.visibleItemsInfo.firstOrNull { it.key == key } ?: return
+
+        // Cerca del borde de la pantalla la lista hace scroll sola; la fila sigue bajo el dedo
+        val top = current.offset + dragOffset
+        val edge = current.size / 2f
+        val scrollDelta = when {
+            delta > 0 && top + current.size > layoutInfo.viewportEndOffset - edge -> delta
+            delta < 0 && top < layoutInfo.viewportStartOffset + edge -> delta
+            else -> 0f
+        }
+        if (scrollDelta != 0f) dragOffset += listState.dispatchRawDelta(scrollDelta)
+
+        val center = (current.offset + dragOffset + current.size / 2f).toInt()
+        val target = layoutInfo.visibleItemsInfo.firstOrNull {
+            it.key is Long && it.key != key && center in it.offset until it.offset + it.size
+        } ?: return
+        val from = categoriesState.indexOfFirst { it.id == key }
+        val to = categoriesState.indexOfFirst { it.id == target.key }
+        if (from < 0 || to < 0) return
+        categoriesState = categoriesState.toMutableList().apply { add(to, removeAt(from)) }
+        dragOffset += current.offset - target.offset
+    }
+
+    // El orden se guarda una sola vez, al soltar
+    fun endDrag() {
+        if (draggedKey == null) return
+        draggedKey = null
+        dragOffset = 0f
+        if (categoriesState.map { it.id } != categories.map { it.id }) {
+            val reordered = categoriesState.mapIndexed { index, category -> category.copy(orden = index + 1) }
+            categoriesState = reordered
+            onReorderCategories(reordered)
+        }
     }
 
     fun closeSearch() {
@@ -234,44 +276,41 @@ fun CategoryListScreen(
                     )
                 }
                 items(items = categoriesState, key = { it.id }) { category ->
-                    val index = categoriesState.indexOf(category)
+                    val isDragged = draggedKey == category.id
                     val pending = taskCountByCategory[category.id] ?: 0
                     val total = maxOf(totalTaskCountByCategory[category.id] ?: 0, pending)
-                    HomeCategoryRow(
-                        category = category,
-                        doneCount = total - pending,
-                        totalCount = total,
-                        palette = palette,
-                        isDragging = draggingIndex == index,
-                        onClick = { onCategoryClick(category) },
-                        modifier = Modifier
-                            .animateItem()
-                            .padding(horizontal = 14.dp)
-                            .draggable(
-                                state = rememberDraggableState { delta ->
-                                    accumulatedDelta += delta
-                                    if (kotlin.math.abs(accumulatedDelta) < 50f) return@rememberDraggableState
-                                    val threshold = if (accumulatedDelta < 0) 300f else 350f
-                                    val change = (accumulatedDelta / threshold).toInt().coerceIn(-1, 1)
-                                    if (change != 0) {
-                                        val newIndex = (index + change).coerceIn(0, categoriesState.size - 1)
-                                        if (newIndex != index) {
-                                            scope.launch { moveCategory(index, newIndex) }
-                                            accumulatedDelta = 0f
-                                        }
-                                    }
-                                },
-                                orientation = Orientation.Vertical,
-                                onDragStarted = {
-                                    draggingIndex = index
-                                    accumulatedDelta = 0f
-                                },
-                                onDragStopped = {
-                                    draggingIndex = -1
-                                    accumulatedDelta = 0f
+                    CompositionLocalProvider(LocalViewConfiguration provides reorderViewConfiguration) {
+                        HomeCategoryRow(
+                            category = category,
+                            doneCount = total - pending,
+                            totalCount = total,
+                            palette = palette,
+                            isDragging = isDragged,
+                            // Al soltar tras mantener pulsado no se abre la lista
+                            onClick = { if (draggedKey == null) onCategoryClick(category) },
+                            modifier = Modifier
+                                .then(
+                                    if (isDragged) Modifier.zIndex(1f).graphicsLayer { translationY = dragOffset }
+                                    else Modifier.animateItem()
+                                )
+                                .padding(horizontal = 14.dp)
+                                .pointerInput(category.id) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = {
+                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            draggedKey = category.id
+                                            dragOffset = 0f
+                                        },
+                                        onDrag = { change, amount ->
+                                            change.consume()
+                                            dragBy(amount.y)
+                                        },
+                                        onDragEnd = ::endDrag,
+                                        onDragCancel = ::endDrag
+                                    )
                                 }
-                            )
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -526,7 +565,8 @@ private fun HomeCategoryRow(
     modifier: Modifier = Modifier
 ) {
     val color = category.parsedColor()
-    val scale by animateFloatAsState(if (isDragging) 1.03f else 1f, tween(200), label = "scale")
+    val scale by animateFloatAsState(if (isDragging) 1.04f else 1f, tween(200), label = "scale")
+    val elevation by animateDpAsState(if (isDragging) 10.dp else 0.dp, tween(200), label = "elevation")
     val target = if (totalCount > 0) doneCount.toFloat() / totalCount else 0f
     val progress by animateFloatAsState(target, tween(450), label = "progress")
 
@@ -536,8 +576,9 @@ private fun HomeCategoryRow(
         modifier = modifier
             .fillMaxWidth()
             .scale(scale)
+            .shadow(elevation, RoundedCornerShape(16.dp))
             .clip(RoundedCornerShape(16.dp))
-            .background(if (isDragging) palette.pressed else Color.Transparent)
+            .background(if (isDragging) palette.surface else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 10.dp)
     ) {
@@ -711,3 +752,6 @@ private fun SearchResultItem(task: Task, category: Category?, onClick: () -> Uni
         }
     }
 }
+
+/** Tiempo que hay que mantener pulsada una lista para poder moverla. */
+private const val REORDER_LONG_PRESS_MILLIS = 1000L
