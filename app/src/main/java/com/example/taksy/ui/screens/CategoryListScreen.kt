@@ -66,6 +66,7 @@ import com.example.taksy.ui.theme.DueOverdueRed
 import com.example.taksy.ui.theme.DueTodayOrange
 import com.example.taksy.ui.theme.DueTomorrowOrange
 import com.example.taksy.ui.theme.HomePalette
+import com.example.taksy.ui.theme.accentColor
 import com.example.taksy.ui.theme.PlusJakartaSans
 import com.example.taksy.ui.theme.PriorityHighRed
 import com.example.taksy.ui.theme.PriorityLowGreen
@@ -445,7 +446,7 @@ private fun TodayTaskCard(
     val done = task.estado == TaskEstado.COMPLETADA
     // Una ocurrencia recurrente completada ya generó la siguiente: reabrirla dejaría dos pendientes
     val canToggle = !(done && task.recurrencia != TaskRecurrencia.NINGUNA)
-    val color = category?.parsedColor() ?: palette.brand
+    val color = category?.accentColor() ?: palette.brand
     val accentText = if (palette.isDark) lerp(color, Color.White, 0.4f) else lerp(color, Color.Black, 0.3f)
     val shape = RoundedCornerShape(20.dp)
     val bg = when {
@@ -564,7 +565,7 @@ private fun HomeCategoryRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val color = category.parsedColor()
+    val color = category.accentColor()
     val scale by animateFloatAsState(if (isDragging) 1.04f else 1f, tween(200), label = "scale")
     val elevation by animateDpAsState(if (isDragging) 10.dp else 0.dp, tween(200), label = "elevation")
     val target = if (totalCount > 0) doneCount.toFloat() / totalCount else 0f
@@ -645,8 +646,6 @@ private fun CategoryIconTile(category: Category, color: Color, palette: HomePale
         )
     }
 }
-
-private fun Category.parsedColor(): Color = Color(android.graphics.Color.parseColor(color))
 
 // ── Búsqueda (sin cambios respecto a la versión anterior) ────────────────
 

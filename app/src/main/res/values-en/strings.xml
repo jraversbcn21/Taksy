@@ -255,4 +255,9 @@
     <string name="settings_section_notifications">Notifications</string>
     <string name="settings_reminders_on">On · %1$s and %2$s</string>
     <string name="settings_reminders_off">Off</string>
+
+    <!-- Task list -->
+    <string name="tasks_section_pending">Pending</string>
+    <string name="tasks_section_done">Completed</string>
+    <string name="task_priority">Priority</string>
 </resources>

@@ -258,4 +258,9 @@
     <string name="settings_section_notifications">Notificaciones</string>
     <string name="settings_reminders_on">Activados · %1$s y %2$s</string>
     <string name="settings_reminders_off">Desactivados</string>
+
+    <!-- Lista de tareas -->
+    <string name="tasks_section_pending">Pendientes</string>
+    <string name="tasks_section_done">Completadas</string>
+    <string name="task_priority">Prioridad</string>
 </resources>

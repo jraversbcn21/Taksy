@@ -160,14 +160,13 @@ fun AppNavGraph(
                         category = resolvedCategory,
                         tasks = tasks,
                         taskViewModel = taskViewModel,
+                        isDarkMode = isDarkMode,
                         onBackClick = { navController.popBackStack() },
                         onTaskClick = { task -> navController.navigate("task_detail/${task.id}") },
                         onTaskToggle = { task -> taskViewModel.toggleTaskStatus(task) },
-                        onTaskDelete = { task -> taskViewModel.deleteTask(task) },
                         onAddTask = { title, dueDate, prioridad, recurrencia ->
                             taskViewModel.addTask(TaskInput(title, dueDate, categoryId, prioridad, recurrencia))
-                        },
-                        showToast = {}
+                        }
                     )
                 }
             }

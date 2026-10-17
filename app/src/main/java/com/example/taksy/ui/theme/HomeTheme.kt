@@ -6,6 +6,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import com.example.taksy.R
+import com.example.taksy.data.Category
 
 /** Plus Jakarta Sans — ficheros .ttf en res/font (ver LEEME.md). */
 val PlusJakartaSans = FontFamily(
@@ -66,3 +67,6 @@ data class HomePalette(
         )
     }
 }
+
+/** Color de una categoría (hex guardado en `Category.color`) como Color de Compose. */
+fun Category.accentColor(): Color = Color(android.graphics.Color.parseColor(color))
