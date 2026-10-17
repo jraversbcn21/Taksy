@@ -20,6 +20,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -34,6 +35,8 @@ import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TaskRecurrencia
+import com.example.taksy.service.AlarmPolicy
+import com.example.taksy.ui.components.ExactAlarmPermissionDialog
 import com.example.taksy.ui.components.QuickReminderDialog
 import com.example.taksy.ui.components.TaskListItem
 import com.example.taksy.ui.components.tasksbycategory.InlineTaskInput
@@ -65,6 +68,8 @@ fun TasksByCategoryScreen(
     var searchQuery by remember { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
     var taskForReminder by remember { mutableStateOf<Task?>(null) }
+    var showExactAlarmDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     val focusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -300,6 +305,8 @@ fun TasksByCategoryScreen(
                 onSetReminder = { date ->
                     taskViewModel.setQuickReminder(reminderTask.id, reminderTask.titulo, date)
                     taskForReminder = null
+                    // El recordatorio se guarda igual; sin el permiso solo puede llegar con retraso
+                    showExactAlarmDialog = AlarmPolicy.needsExactAlarmPermission(context)
                 },
                 onDeleteReminder = {
                     taskViewModel.deleteReminderForTask(reminderTask.id)
@@ -307,6 +314,10 @@ fun TasksByCategoryScreen(
                 },
                 onDismiss = { taskForReminder = null }
             )
+        }
+
+        if (showExactAlarmDialog) {
+            ExactAlarmPermissionDialog(onDismiss = { showExactAlarmDialog = false })
         }
     }
 }

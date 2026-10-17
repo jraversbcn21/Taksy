@@ -1,5 +1,6 @@
 package com.example.taksy.receiver
 
+import android.app.AlarmManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -27,8 +28,11 @@ class ReminderReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 when (intent.action) {
-                    Intent.ACTION_BOOT_COMPLETED -> {
-                        rescheduleAllRemindersAfterBoot()
+                    // Al conceder el permiso de alarmas exactas, las ya programadas siguen siendo
+                    // inexactas: se reprograman igual que tras un reinicio.
+                    Intent.ACTION_BOOT_COMPLETED,
+                    AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED -> {
+                        rescheduleAllActiveReminders()
                         DailyReminderManager.rescheduleFromPrefs(context)
                     }
                     else -> handleReminderAlarm(context, intent)
@@ -39,7 +43,7 @@ class ReminderReceiver : BroadcastReceiver() {
         }
     }
 
-    private suspend fun rescheduleAllRemindersAfterBoot() {
+    private suspend fun rescheduleAllActiveReminders() {
         val activeReminders = database.reminderDao().getAllActiveRemindersSync()
         activeReminders.forEach { reminder ->
             if (reminder.fechaRecordatorio.time > System.currentTimeMillis()) {

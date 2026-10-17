@@ -241,4 +241,8 @@
         <item>Exercise</item>
         <item>Other</item>
     </string-array>
+    <string name="exact_alarm_title">On-time reminders</string>
+    <string name="exact_alarm_message">Android is not letting Taksy fire reminders at the exact time, so they may arrive several minutes late. Turn it on in \"Alarms &amp; reminders\".</string>
+    <string name="exact_alarm_enable">Turn on</string>
+    <string name="exact_alarm_later">Not now</string>
 </resources>
