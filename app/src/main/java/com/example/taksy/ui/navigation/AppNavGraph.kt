@@ -17,6 +17,7 @@ import androidx.navigation.compose.composable
 import com.example.taksy.data.Category
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
+import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.data.preferences.PreferencesRepository
 import com.example.taksy.ui.screens.AboutScreen
 import com.example.taksy.ui.screens.BackupScreen
@@ -28,6 +29,7 @@ import com.example.taksy.ui.screens.SettingsScreen
 import com.example.taksy.ui.screens.StatsScreen
 import com.example.taksy.ui.screens.TaskDetailScreen
 import com.example.taksy.ui.screens.TasksByCategoryScreen
+import com.example.taksy.utils.DateUtils
 import com.example.taksy.viewmodel.BackupViewModel
 import com.example.taksy.viewmodel.CategoryViewModel
 import com.example.taksy.viewmodel.TaskInput
@@ -78,6 +80,20 @@ fun AppNavGraph(
                     .groupingBy { it }
                     .eachCount()
             }
+            // Total por lista para la barra de progreso. Se excluyen las ocurrencias completadas
+            // de tareas recurrentes, igual que hace la lista de cada categoría.
+            val totalTaskCountByCategory = remember(allTasks) {
+                allTasks
+                    .filterNot { it.recurrencia != TaskRecurrencia.NINGUNA && it.estado == TaskEstado.COMPLETADA }
+                    .mapNotNull { it.categoriaId }
+                    .groupingBy { it }
+                    .eachCount()
+            }
+            val todayTasks = remember(allTasks) {
+                allTasks
+                    .filter { task -> task.fechaVencimiento?.let { DateUtils.isToday(it) } == true }
+                    .sortedWith(compareBy<Task> { it.estado == TaskEstado.COMPLETADA }.thenBy { it.fechaVencimiento })
+            }
 
             var globalSearchQuery by remember { mutableStateOf("") }
             val searchResults by taskViewModel.searchAllTasks(globalSearchQuery)
@@ -86,6 +102,8 @@ fun AppNavGraph(
             CategoryListScreen(
                 categories = categories,
                 taskCountByCategory = taskCountByCategory,
+                totalTaskCountByCategory = totalTaskCountByCategory,
+                todayTasks = todayTasks,
                 isDarkMode = isDarkMode,
                 currentLanguage = currentLanguage,
                 onSettingsClick = onMenuClick,
@@ -98,7 +116,8 @@ fun AppNavGraph(
                 showToast = {},
                 searchResults = searchResults,
                 onSearchQueryChanged = { globalSearchQuery = it },
-                onTaskClick = { task -> navController.navigate("task_detail/${task.id}") }
+                onTaskClick = { task -> navController.navigate("task_detail/${task.id}") },
+                onToggleTask = { task -> taskViewModel.toggleTaskStatus(task) }
             )
         }
 

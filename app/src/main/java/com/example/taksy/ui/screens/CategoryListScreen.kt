@@ -1,60 +1,91 @@
 package com.example.taksy.ui.screens
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import com.example.taksy.utils.CategoryUtils
+import androidx.compose.ui.unit.sp
 import com.example.taksy.R
 import com.example.taksy.data.Category
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
-import com.example.taksy.ui.components.CategoryItem
-import com.example.taksy.ui.components.HamburgerMenu
-import com.example.taksy.ui.components.Toast
+import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.ui.theme.DueOverdueRed
 import com.example.taksy.ui.theme.DueTodayOrange
 import com.example.taksy.ui.theme.DueTomorrowOrange
+import com.example.taksy.ui.theme.HomePalette
+import com.example.taksy.ui.theme.PlusJakartaSans
 import com.example.taksy.ui.theme.PriorityHighRed
 import com.example.taksy.ui.theme.PriorityLowGreen
 import com.example.taksy.ui.theme.PriorityMediumOrange
-import com.example.taksy.ui.theme.SwipeDeleteBgLight
+import com.example.taksy.utils.CategoryUtils
 import com.example.taksy.utils.DateUtils
 import com.example.taksy.utils.DueDateStatus
-import com.example.taksy.utils.DeviceUtils
+import com.example.taksy.utils.GreetingUtils
+import com.example.taksy.utils.getCategoryIcon
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 /**
- * Pantalla principal que muestra las categorias como elementos clicables
+ * Pantalla principal: saludo según la hora, tareas de hoy y listas (categorías) con progreso.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun CategoryListScreen(
     categories: List<Category>,
     taskCountByCategory: Map<Long, Int> = emptyMap(),
+    totalTaskCountByCategory: Map<Long, Int> = emptyMap(),
+    todayTasks: List<Task> = emptyList(),
     isDarkMode: Boolean = false,
     currentLanguage: String = "es",
     onSettingsClick: () -> Unit = {},
@@ -66,55 +97,45 @@ fun CategoryListScreen(
     searchResults: List<Task> = emptyList(),
     onSearchQueryChanged: (String) -> Unit = {},
     onTaskClick: (Task) -> Unit = {},
+    onToggleTask: (Task) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var toastMessage by remember { mutableStateOf("") }
-    var showToastState by remember { mutableStateOf(false) }
+    val palette = if (isDarkMode) HomePalette.Dark else HomePalette.Light
 
-    // Estado para drag & drop
     var categoriesState by remember { mutableStateOf(categories) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var draggingIndex by remember { mutableStateOf(-1) }
     var accumulatedDelta by remember { mutableStateOf(0f) }
 
-    // Estado de busqueda
     var showSearch by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
-    // Actualizar el estado cuando cambien las categorias
-    LaunchedEffect(categories) {
-        categoriesState = categories
-    }
+    LaunchedEffect(categories) { categoriesState = categories }
+    val categoryMap = remember(categories) { categories.associateBy { it.id } }
 
-    // Mapa de categorias para busqueda rapida por id
-    val categoryMap = remember(categories) {
-        categories.associateBy { it.id }
-    }
-
-    // Funcion para reordenar categorias
     fun moveCategory(fromIndex: Int, toIndex: Int) {
         if (fromIndex == toIndex) return
-
         val newCategories = categoriesState.toMutableList()
         val item = newCategories.removeAt(fromIndex)
         newCategories.add(toIndex, item)
+        val reordered = newCategories.mapIndexed { index, category -> category.copy(orden = index + 1) }
+        categoriesState = reordered
+        onReorderCategories(reordered)
+    }
 
-        val reorderedCategories = newCategories.mapIndexed { index, category ->
-            category.copy(orden = index + 1)
-        }
-
-        categoriesState = reorderedCategories
-        onReorderCategories(reorderedCategories)
+    fun closeSearch() {
+        showSearch = false
+        searchQuery = ""
+        onSearchQueryChanged("")
     }
 
     Scaffold(
+        containerColor = palette.background,
         topBar = {
             if (showSearch) {
                 val focusRequester = remember { FocusRequester() }
-                LaunchedEffect(Unit) {
-                    focusRequester.requestFocus()
-                }
+                LaunchedEffect(Unit) { focusRequester.requestFocus() }
                 TopAppBar(
                     title = {
                         TextField(
@@ -137,183 +158,481 @@ fun CategoryListScreen(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = {
-                            showSearch = false
-                            searchQuery = ""
-                            onSearchQueryChanged("")
-                        }) {
+                        IconButton(onClick = ::closeSearch) {
                             Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent
-                    )
-                )
-            } else {
-                TopAppBar(
-                    title = {
-                        Column {
-                            Text(
-                                text = stringResource(R.string.app_name),
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = stringResource(R.string.app_subtitle),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        HamburgerMenu(
-                            isDarkMode = isDarkMode,
-                            currentLanguage = currentLanguage,
-                            onSettingsClick = onSettingsClick
-                        )
-                    },
-                    actions = {
-                        IconButton(onClick = { showSearch = true }) {
-                            Icon(
-                                Icons.Default.Search,
-                                contentDescription = stringResource(R.string.search_tasks)
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent
-                    )
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                 )
             }
         },
         modifier = modifier
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            if (showSearch && searchQuery.isNotBlank()) {
-                // Mostrar resultados de busqueda
-                if (searchResults.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = stringResource(R.string.no_search_results),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        items(searchResults, key = { it.id }) { task ->
-                            SearchResultItem(
-                                task = task,
-                                category = task.categoriaId?.let { categoryMap[it] },
-                                onClick = { onTaskClick(task) }
-                            )
+        if (showSearch && searchQuery.isNotBlank()) {
+            SearchResults(
+                results = searchResults,
+                categoryMap = categoryMap,
+                onTaskClick = onTaskClick,
+                modifier = Modifier.padding(paddingValues)
+            )
+        } else if (!showSearch) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
+            ) {
+                item(key = "header") {
+                    HomeHeader(palette, onMenuClick = onSettingsClick, modifier = Modifier.padding(horizontal = 22.dp))
+                }
+                item(key = "greeting") {
+                    HomeGreeting(
+                        todayTasks = todayTasks,
+                        palette = palette,
+                        modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 26.dp)
+                    )
+                }
+                item(key = "search") {
+                    SearchPill(
+                        palette = palette,
+                        onClick = { showSearch = true },
+                        modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 20.dp)
+                    )
+                }
+                if (todayTasks.isNotEmpty()) {
+                    item(key = "today") {
+                        LazyRow(
+                            modifier = Modifier.padding(top = 20.dp),
+                            contentPadding = PaddingValues(horizontal = 22.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(todayTasks, key = { it.id }) { task ->
+                                TodayTaskCard(
+                                    task = task,
+                                    category = task.categoriaId?.let { categoryMap[it] },
+                                    palette = palette,
+                                    onClick = { onTaskClick(task) },
+                                    onToggle = { onToggleTask(task) },
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
                         }
                     }
                 }
-            } else {
-                // Lista de categorias con drag & drop
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        start = 8.dp,
-                        end = 8.dp,
-                        top = 8.dp,
-                        bottom = 16.dp
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    flingBehavior = androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior(listState)
-                ) {
-                    items(
-                        items = categoriesState,
-                        key = { it.id },
-                        itemContent = { category ->
-                            val index = categoriesState.indexOf(category)
-                            CategoryItem(
-                                category = category,
-                                taskCount = taskCountByCategory[category.id] ?: 0,
-                                onClick = { onCategoryClick(category) },
-                                isDragging = draggingIndex == index,
-                                modifier = Modifier
-                                    .animateItem()
-                                    .draggable(
-                                        state = rememberDraggableState { delta ->
-                                            accumulatedDelta += delta
-
-                                            val minThreshold = 50f
-                                            if (kotlin.math.abs(accumulatedDelta) < minThreshold) {
-                                                return@rememberDraggableState
-                                            }
-
-                                            val thresholdUp = 300f
-                                            val thresholdDown = 350f
-                                            val threshold = if (accumulatedDelta < 0) thresholdUp else thresholdDown
-                                            val positionChange = (accumulatedDelta / threshold).toInt()
-                                            val actualPositionChange = positionChange.coerceIn(-1, 1)
-
-                                            if (actualPositionChange != 0) {
-                                                val newIndex = (index + actualPositionChange).coerceIn(0, categoriesState.size - 1)
-                                                if (newIndex != index) {
-                                                    scope.launch {
-                                                        moveCategory(index, newIndex)
-                                                    }
-                                                    accumulatedDelta = 0f
-                                                }
-                                            }
-                                        },
-                                        orientation = androidx.compose.foundation.gestures.Orientation.Vertical,
-                                        onDragStarted = {
-                                            draggingIndex = index
-                                            accumulatedDelta = 0f
-                                        },
-                                        onDragStopped = {
-                                            draggingIndex = -1
+                item(key = "lists_title") {
+                    Text(
+                        text = stringResource(R.string.home_your_lists).uppercase(),
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 13.sp,
+                        letterSpacing = 1.sp,
+                        color = palette.muted,
+                        modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 24.dp, bottom = 6.dp)
+                    )
+                }
+                items(items = categoriesState, key = { it.id }) { category ->
+                    val index = categoriesState.indexOf(category)
+                    val pending = taskCountByCategory[category.id] ?: 0
+                    val total = maxOf(totalTaskCountByCategory[category.id] ?: 0, pending)
+                    HomeCategoryRow(
+                        category = category,
+                        doneCount = total - pending,
+                        totalCount = total,
+                        palette = palette,
+                        isDragging = draggingIndex == index,
+                        onClick = { onCategoryClick(category) },
+                        modifier = Modifier
+                            .animateItem()
+                            .padding(horizontal = 14.dp)
+                            .draggable(
+                                state = rememberDraggableState { delta ->
+                                    accumulatedDelta += delta
+                                    if (kotlin.math.abs(accumulatedDelta) < 50f) return@rememberDraggableState
+                                    val threshold = if (accumulatedDelta < 0) 300f else 350f
+                                    val change = (accumulatedDelta / threshold).toInt().coerceIn(-1, 1)
+                                    if (change != 0) {
+                                        val newIndex = (index + change).coerceIn(0, categoriesState.size - 1)
+                                        if (newIndex != index) {
+                                            scope.launch { moveCategory(index, newIndex) }
                                             accumulatedDelta = 0f
                                         }
-                                    )
+                                    }
+                                },
+                                orientation = Orientation.Vertical,
+                                onDragStarted = {
+                                    draggingIndex = index
+                                    accumulatedDelta = 0f
+                                },
+                                onDragStopped = {
+                                    draggingIndex = -1
+                                    accumulatedDelta = 0f
+                                }
                             )
-                        }
                     )
                 }
             }
         }
+    }
+}
 
-        // Toast para mostrar mensajes
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            Toast(
-                message = toastMessage,
-                isVisible = showToastState,
-                onDismiss = { showToastState = false },
-                backgroundColor = SwipeDeleteBgLight.copy(alpha = 0.9f)
+// ── Cabecera ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun HomeHeader(palette: HomePalette, onMenuClick: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Image(
+            painter = painterResource(R.drawable.ticksy_icon),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(26.dp)
+                .clip(CircleShape)
+                .graphicsLayer { scaleX = 1.3f; scaleY = 1.3f }
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.app_name),
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp,
+            color = palette.brand,
+            modifier = Modifier.weight(1f)
+        )
+        IconButton(onClick = onMenuClick) {
+            Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.settings), tint = palette.ink)
+        }
+    }
+}
+
+/** Hora actual que se actualiza al cambiar de minuto (para el saludo y la fecha). */
+@Composable
+private fun rememberNow(): State<Calendar> = produceState(initialValue = Calendar.getInstance()) {
+    while (true) {
+        delay(60_000L - System.currentTimeMillis() % 60_000L)
+        value = Calendar.getInstance()
+    }
+}
+
+@OptIn(ExperimentalTextApi::class)
+@Composable
+private fun HomeGreeting(todayTasks: List<Task>, palette: HomePalette, modifier: Modifier = Modifier) {
+    val now by rememberNow()
+    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+    val datePattern = stringResource(R.string.home_date_pattern)
+    val dayKey = now.get(Calendar.YEAR) * 1000 + now.get(Calendar.DAY_OF_YEAR)
+    val dateText = remember(dayKey, datePattern, locale) {
+        SimpleDateFormat(datePattern, locale).format(now.time).replaceFirstChar { it.titlecase(locale) }
+    }
+    val greeting = stringResource(GreetingUtils.greetingRes(now.get(Calendar.HOUR_OF_DAY)))
+    val pendingToday = todayTasks.count { it.estado == TaskEstado.PENDIENTE }
+    val headline = when {
+        todayTasks.isEmpty() -> stringResource(R.string.home_today_free)
+        pendingToday == 0 -> stringResource(R.string.home_today_done)
+        else -> pluralStringResource(R.plurals.home_today_left, pendingToday, pendingToday)
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = modifier) {
+        Text(
+            text = dateText,
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.sp,
+            color = palette.muted
+        )
+        Text(
+            text = buildAnnotatedString {
+                append(greeting)
+                append("\n")
+                withStyle(SpanStyle(brush = Brush.horizontalGradient(palette.headlineGradient))) {
+                    append(headline)
+                }
+            },
+            style = TextStyle(
+                fontFamily = PlusJakartaSans,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 34.sp,
+                lineHeight = 37.sp,
+                letterSpacing = (-1).sp,
+                color = palette.ink
             )
+        )
+    }
+}
+
+@Composable
+private fun SearchPill(palette: HomePalette, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(16.dp)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(50.dp)
+            .clip(shape)
+            .background(palette.surface)
+            .border(1.dp, palette.border, shape)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 16.dp)
+    ) {
+        Icon(Icons.Default.Search, contentDescription = null, tint = palette.placeholder, modifier = Modifier.size(20.dp))
+        Text(
+            text = stringResource(R.string.search_tasks),
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.sp,
+            color = palette.placeholder
+        )
+    }
+}
+
+// ── Tareas de hoy ────────────────────────────────────────────────────────
+
+@Composable
+private fun TodayTaskCard(
+    task: Task,
+    category: Category?,
+    palette: HomePalette,
+    onClick: () -> Unit,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val done = task.estado == TaskEstado.COMPLETADA
+    // Una ocurrencia recurrente completada ya generó la siguiente: reabrirla dejaría dos pendientes
+    val canToggle = !(done && task.recurrencia != TaskRecurrencia.NINGUNA)
+    val color = category?.parsedColor() ?: palette.brand
+    val accentText = if (palette.isDark) lerp(color, Color.White, 0.4f) else lerp(color, Color.Black, 0.3f)
+    val shape = RoundedCornerShape(20.dp)
+    val bg = when {
+        done -> palette.doneCard
+        palette.isDark -> color.copy(alpha = 0.12f)
+        else -> color.copy(alpha = 0.08f)
+    }
+    val borderColor = when {
+        done -> palette.border
+        palette.isDark -> color.copy(alpha = 0.25f)
+        else -> color.copy(alpha = 0.2f)
+    }
+    val timeLabel = when {
+        done -> stringResource(R.string.home_task_done)
+        else -> task.fechaVencimiento?.let { due ->
+            val cal = Calendar.getInstance().apply { time = due }
+            if (cal.get(Calendar.HOUR_OF_DAY) == 0 && cal.get(Calendar.MINUTE) == 0) null
+            else String.format(Locale.ROOT, "%02d:%02d", cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
+        } ?: stringResource(R.string.home_today_label)
+    }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = modifier
+            .width(150.dp)
+            .clip(shape)
+            .background(bg)
+            .border(1.dp, borderColor, shape)
+            .clickable(onClick = onClick)
+            .padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 14.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = timeLabel,
+                fontFamily = PlusJakartaSans,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                color = accentText,
+                modifier = Modifier.weight(1f)
+            )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .clickable(enabled = canToggle, role = Role.Checkbox, onClick = onToggle)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(if (done) color else Color.Transparent)
+                        .then(if (done) Modifier else Modifier.border(2.dp, color, CircleShape))
+                ) {
+                    if (done) {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = stringResource(R.string.home_mark_done),
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+        Column(
+            verticalArrangement = Arrangement.spacedBy(3.dp),
+            modifier = Modifier.padding(end = 8.dp)
+        ) {
+            Text(
+                text = task.titulo,
+                fontFamily = PlusJakartaSans,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                lineHeight = 18.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                color = if (done) palette.doneText else palette.ink,
+                textDecoration = if (done) TextDecoration.LineThrough else TextDecoration.None
+            )
+            if (category != null) {
+                Text(
+                    text = CategoryUtils.getCategoryName(category),
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 12.sp,
+                    color = palette.muted
+                )
+            }
+        }
+    }
+}
+
+// ── Listas (categorías) ──────────────────────────────────────────────────
+
+@Composable
+private fun HomeCategoryRow(
+    category: Category,
+    doneCount: Int,
+    totalCount: Int,
+    palette: HomePalette,
+    isDragging: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val color = category.parsedColor()
+    val scale by animateFloatAsState(if (isDragging) 1.03f else 1f, tween(200), label = "scale")
+    val target = if (totalCount > 0) doneCount.toFloat() / totalCount else 0f
+    val progress by animateFloatAsState(target, tween(450), label = "progress")
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (isDragging) palette.pressed else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 10.dp)
+    ) {
+        CategoryIconTile(category, color, palette, size = 44)
+        Column(verticalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = CategoryUtils.getCategoryName(category),
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = palette.ink,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = if (totalCount == 0) stringResource(R.string.home_no_tasks)
+                    else stringResource(R.string.home_done_of, doneCount, totalCount),
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp,
+                    color = palette.muted
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(5.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(palette.track)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(color)
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun SearchResultItem(
-    task: Task,
-    category: Category?,
-    onClick: () -> Unit
-) {
-    val isCompleted = task.estado == TaskEstado.COMPLETADA
+private fun CategoryIconTile(category: Category, color: Color, palette: HomePalette, size: Int) {
+    val shape = RoundedCornerShape((size * 0.32f).dp)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(size.dp)
+            .then(
+                if (palette.isDark) Modifier
+                else Modifier.shadow(6.dp, shape, ambientColor = color, spotColor = color)
+            )
+            .clip(shape)
+            .background(color)
+    ) {
+        Icon(
+            getCategoryIcon(category.icono),
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size((size / 2).dp)
+        )
+    }
+}
 
+private fun Category.parsedColor(): Color = Color(android.graphics.Color.parseColor(color))
+
+// ── Búsqueda (sin cambios respecto a la versión anterior) ────────────────
+
+@Composable
+private fun SearchResults(
+    results: List<Task>,
+    categoryMap: Map<Long, Category>,
+    onTaskClick: (Task) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (results.isEmpty()) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = stringResource(R.string.no_search_results),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            items(results, key = { it.id }) { task ->
+                SearchResultItem(
+                    task = task,
+                    category = task.categoriaId?.let { categoryMap[it] },
+                    onClick = { onTaskClick(task) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchResultItem(task: Task, category: Category?, onClick: () -> Unit) {
+    val isCompleted = task.estado == TaskEstado.COMPLETADA
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -347,18 +666,13 @@ private fun SearchResultItem(
                     Text(
                         text = task.titulo,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = if (isCompleted)
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                        else
-                            MaterialTheme.colorScheme.onSurface,
+                        color = if (isCompleted) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        else MaterialTheme.colorScheme.onSurface,
                         textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
                     )
                 }
-
-                // Fecha de vencimiento
                 if (!isCompleted && task.fechaVencimiento != null) {
-                    val status = DateUtils.getDueDateStatus(task.fechaVencimiento)
-                    val dueColor = when (status) {
+                    val dueColor = when (DateUtils.getDueDateStatus(task.fechaVencimiento)) {
                         DueDateStatus.OVERDUE -> DueOverdueRed
                         DueDateStatus.DUE_TODAY -> DueTodayOrange
                         DueDateStatus.DUE_TOMORROW -> DueTomorrowOrange
@@ -371,8 +685,6 @@ private fun SearchResultItem(
                         color = dueColor
                     )
                 }
-
-                // Nombre de la categoria
                 if (category != null) {
                     Text(
                         text = CategoryUtils.getCategoryName(category),

@@ -244,4 +244,18 @@
     <string name="exact_alarm_message">Android no permite a Taksy hacer sonar los recordatorios a la hora exacta, así que pueden llegar con varios minutos de retraso. Actívalo en \"Alarmas y recordatorios\".</string>
     <string name="exact_alarm_enable">Activar</string>
     <string name="exact_alarm_later">Ahora no</string>
+
+    <!-- Pantalla de inicio -->
+    <string name="greeting_morning">Buenos días.</string>
+    <string name="greeting_afternoon">Buenas tardes.</string>
+    <string name="greeting_night">Buenas noches.</string>
+    <string name="home_date_pattern">EEEE, d \'de\' MMMM</string>
+    <string name="home_today_done">Día completado.</string>
+    <string name="home_today_free">Hoy no tienes tareas.</string>
+    <string name="home_your_lists">Tus listas</string>
+    <string name="home_done_of">%1$d de %2$d</string>
+    <string name="home_no_tasks">Sin tareas</string>
+    <string name="home_today_label">Hoy</string>
+    <string name="home_task_done">Hecho</string>
+    <string name="home_mark_done">Marcar como hecha</string>
 </resources>

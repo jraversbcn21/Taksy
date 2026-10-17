@@ -8,4 +8,8 @@
         <item quantity="one">Its %d task will also be deleted, with its subtasks and reminders.</item>
         <item quantity="other">Its %d tasks will also be deleted, with their subtasks and reminders.</item>
     </plurals>
+    <plurals name="home_today_left">
+        <item quantity="one">Just 1 task today.</item>
+        <item quantity="other">%d tasks for today.</item>
+    </plurals>
 </resources>

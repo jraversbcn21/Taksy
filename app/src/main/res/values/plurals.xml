@@ -8,4 +8,8 @@
         <item quantity="one">Se eliminará también su %d tarea, con sus subtareas y recordatorios.</item>
         <item quantity="other">Se eliminarán también sus %d tareas, con sus subtareas y recordatorios.</item>
     </plurals>
+    <plurals name="home_today_left">
+        <item quantity="one">Solo 1 tarea hoy.</item>
+        <item quantity="other">%d tareas para hoy.</item>
+    </plurals>
 </resources>

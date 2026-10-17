@@ -241,4 +241,18 @@
     <string name="exact_alarm_message">Android is not letting Taksy fire reminders at the exact time, so they may arrive several minutes late. Turn it on in \"Alarms &amp; reminders\".</string>
     <string name="exact_alarm_enable">Turn on</string>
     <string name="exact_alarm_later">Not now</string>
+
+    <!-- Home screen -->
+    <string name="greeting_morning">Good morning.</string>
+    <string name="greeting_afternoon">Good afternoon.</string>
+    <string name="greeting_night">Good evening.</string>
+    <string name="home_date_pattern">EEEE, MMMM d</string>
+    <string name="home_today_done">Day complete.</string>
+    <string name="home_today_free">Nothing due today.</string>
+    <string name="home_your_lists">Your lists</string>
+    <string name="home_done_of">%1$d of %2$d</string>
+    <string name="home_no_tasks">No tasks</string>
+    <string name="home_today_label">Today</string>
+    <string name="home_task_done">Done</string>
+    <string name="home_mark_done">Mark as done</string>
 </resources>
