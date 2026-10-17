@@ -2,7 +2,9 @@ package com.example.taksy.viewmodel
 
 import android.app.Application
 import android.content.Context
+import androidx.room.withTransaction
 import com.example.taksy.R
+import com.example.taksy.data.AppDatabase
 import com.example.taksy.data.Reminder
 import com.example.taksy.data.ReminderDao
 import com.example.taksy.data.Subtask
@@ -14,12 +16,16 @@ import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.repository.TaskRepository
 import com.example.taksy.service.ReminderSchedulerContract
 import com.example.taksy.widget.TaskWidgetProvider
+import io.mockk.Runs
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.Runs
+import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkAll
+import java.util.Date
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -36,7 +42,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.util.Date
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TaskViewModelTest {
@@ -58,7 +63,12 @@ class TaskViewModelTest {
         fakeTaskDao = FakeTaskDao()
         fakeSubtaskDao = FakeSubtaskDao()
         fakeReminderDao = FakeReminderDao()
-        repo = TaskRepository(mockk(relaxed = true), fakeTaskDao, fakeSubtaskDao, fakeReminderDao)
+        // withTransaction ejecuta el bloque directamente sobre los fakes
+        mockkStatic("androidx.room.RoomDatabaseKt")
+        val db = mockk<AppDatabase>(relaxed = true)
+        val blockSlot = slot<suspend () -> Any?>()
+        coEvery { db.withTransaction(capture(blockSlot)) } coAnswers { blockSlot.captured.invoke() }
+        repo = TaskRepository(db, fakeTaskDao, fakeSubtaskDao, fakeReminderDao)
         fakeScheduler = FakeReminderScheduler()
 
         val mockApp = mockk<Application>(relaxed = true)
@@ -68,7 +78,8 @@ class TaskViewModelTest {
         val completeUseCase = com.example.taksy.domain.CompleteTaskUseCase(repo, fakeScheduler)
         val subtaskUseCase = com.example.taksy.domain.SubtaskUseCase(repo, completeUseCase)
         val reminderUseCase = com.example.taksy.domain.TaskReminderUseCase(repo, fakeScheduler)
-        viewModel = TaskViewModel(repo, completeUseCase, subtaskUseCase, reminderUseCase, mockApp)
+        val deleteTaskUseCase = com.example.taksy.domain.DeleteTaskUseCase(repo, fakeScheduler)
+        viewModel = TaskViewModel(repo, completeUseCase, subtaskUseCase, reminderUseCase, deleteTaskUseCase, mockApp)
     }
 
     @After
@@ -124,6 +135,42 @@ class TaskViewModelTest {
         advanceUntilIdle()
 
         assertTrue(fakeScheduler.cancelledIds.contains(5L))
+    }
+
+    // ── Delete / undo ─────────────────────────────────────────────────────
+
+    @Test
+    fun `deleteTask removes subtasks and reminders and cancels the alarms`() = runTest {
+        val task = Task(id = 1L, titulo = "T")
+        fakeTaskDao.tasks.add(task)
+        fakeSubtaskDao.subtaskList.add(Subtask(id = 3L, taskId = 1L, titulo = "s"))
+        fakeReminderDao.reminders.add(Reminder(id = 5L, taskId = 1L, titulo = "r", fechaRecordatorio = Date(Long.MAX_VALUE / 2)))
+
+        viewModel.deleteTask(task)
+        advanceUntilIdle()
+
+        assertTrue(fakeTaskDao.tasks.isEmpty())
+        assertTrue(fakeSubtaskDao.subtaskList.isEmpty())
+        assertTrue(fakeReminderDao.reminders.isEmpty())
+        assertEquals(listOf(5L), fakeScheduler.cancelledIds)
+    }
+
+    @Test
+    fun `restoreTask brings back subtasks and reminders and reschedules only future ones`() = runTest {
+        val task = Task(id = 1L, titulo = "T")
+        fakeTaskDao.tasks.add(task)
+        fakeSubtaskDao.subtaskList.add(Subtask(id = 3L, taskId = 1L, titulo = "s"))
+        fakeReminderDao.reminders.add(Reminder(id = 5L, taskId = 1L, titulo = "future", fechaRecordatorio = Date(Long.MAX_VALUE / 2)))
+        fakeReminderDao.reminders.add(Reminder(id = 6L, taskId = 1L, titulo = "past", fechaRecordatorio = Date(1_000L)))
+
+        viewModel.deleteTask(task)
+        viewModel.restoreTask(task)
+        advanceUntilIdle()
+
+        assertEquals(listOf(1L), fakeTaskDao.tasks.map { it.id })
+        assertEquals(listOf(3L), fakeSubtaskDao.subtaskList.map { it.id })
+        assertEquals(setOf(5L, 6L), fakeReminderDao.reminders.map { it.id }.toSet())
+        assertEquals(listOf(5L), fakeScheduler.scheduledReminders.map { it.id })
     }
 
     // ── Auto-complete ─────────────────────────────────────────────────────
@@ -287,6 +334,7 @@ class TaskViewModelTest {
         override fun getSubtasksByTaskId(taskId: Long): Flow<List<Subtask>> =
             flowOf(subtaskList.filter { it.taskId == taskId })
         override suspend fun insertSubtask(subtask: Subtask): Long { subtaskList.add(subtask); return subtask.id }
+        override suspend fun getSubtasksByTaskIdSync(taskId: Long): List<Subtask> = subtaskList.filter { it.taskId == taskId }
         override suspend fun updateSubtask(subtask: Subtask) {
             val idx = subtaskList.indexOfFirst { it.id == subtask.id }
             if (idx >= 0) subtaskList[idx] = subtask
@@ -308,7 +356,9 @@ class TaskViewModelTest {
         override suspend fun getAllActiveRemindersSync(): List<Reminder> = reminders.filter { it.activo }
         override suspend fun getReminderById(id: Long): Reminder? = reminders.find { it.id == id }
         override suspend fun insertReminder(reminder: Reminder): Long {
-            val id = nextId++
+            // Como Room: un id ya puesto se conserva (REPLACE); 0 genera uno nuevo
+            val id = if (reminder.id != 0L) reminder.id else nextId++
+            reminders.removeIf { it.id == id }
             reminders.add(reminder.copy(id = id))
             return id
         }

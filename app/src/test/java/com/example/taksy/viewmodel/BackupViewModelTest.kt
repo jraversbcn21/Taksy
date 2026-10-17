@@ -81,6 +81,7 @@ class BackupViewModelTest {
         val subtasks = mutableListOf<Subtask>()
         override fun getSubtasksByTaskId(taskId: Long): Flow<List<Subtask>> = flowOf(emptyList())
         override suspend fun insertSubtask(subtask: Subtask): Long { subtasks.add(subtask); return subtask.id }
+        override suspend fun getSubtasksByTaskIdSync(taskId: Long): List<Subtask> = subtasks.filter { it.taskId == taskId }
         override suspend fun updateSubtask(subtask: Subtask) {}
         override suspend fun deleteSubtask(subtask: Subtask) {}
         override suspend fun deleteSubtasksByTaskId(taskId: Long) {}

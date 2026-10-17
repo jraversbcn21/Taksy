@@ -14,18 +14,22 @@ import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.domain.CompleteTaskUseCase
+import com.example.taksy.domain.DeleteTaskUseCase
 import com.example.taksy.domain.SubtaskUseCase
 import com.example.taksy.domain.TaskReminderUseCase
+import com.example.taksy.repository.DeletedTask
 import com.example.taksy.repository.TaskRepository
 import com.example.taksy.widget.TaskWidgetProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.Date
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import java.util.Date
-import javax.inject.Inject
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 data class TaskInput(
     val titulo: String,
@@ -41,6 +45,7 @@ class TaskViewModel @Inject constructor(
     private val completeTaskUseCase: CompleteTaskUseCase,
     private val subtaskUseCase: SubtaskUseCase,
     private val reminderUseCase: TaskReminderUseCase,
+    private val deleteTaskUseCase: DeleteTaskUseCase,
     application: Application
 ) : AndroidViewModel(application) {
 
@@ -84,13 +89,23 @@ class TaskViewModel @Inject constructor(
 
     fun updateTask(task: Task) = launchSafe(R.string.error_update_task) { repository.updateTask(task) }
 
+    // Lo borrado se guarda hasta que se deshace, para restaurar también subtareas y recordatorios.
+    // El mutex hace que un "Deshacer" rápido espere a que termine el borrado.
+    private val recentlyDeleted = mutableMapOf<Long, DeletedTask>()
+    private val deleteMutex = Mutex()
+
     fun deleteTask(task: Task) = launchSafe(R.string.error_delete_task) {
-        repository.deleteTask(task)
+        deleteMutex.withLock {
+            recentlyDeleted[task.id] = deleteTaskUseCase.delete(task)
+        }
         TaskWidgetProvider.refreshAll(context)
     }
 
     fun restoreTask(task: Task) = launchSafe(R.string.error_add_task) {
-        repository.insertTask(task)
+        deleteMutex.withLock {
+            val deleted = recentlyDeleted.remove(task.id) ?: return@withLock
+            deleteTaskUseCase.restore(deleted)
+        }
         TaskWidgetProvider.refreshAll(context)
     }
 

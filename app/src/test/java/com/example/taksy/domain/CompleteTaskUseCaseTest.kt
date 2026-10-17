@@ -83,6 +83,7 @@ class CompleteTaskUseCaseTest {
     private class FakeSubtaskDao : SubtaskDao {
         override fun getSubtasksByTaskId(taskId: Long): Flow<List<Subtask>> = flowOf(emptyList())
         override suspend fun insertSubtask(subtask: Subtask): Long = 1L
+        override suspend fun getSubtasksByTaskIdSync(taskId: Long): List<Subtask> = emptyList()
         override suspend fun updateSubtask(subtask: Subtask) {}
         override suspend fun deleteSubtask(subtask: Subtask) {}
         override suspend fun deleteSubtasksByTaskId(taskId: Long) {}

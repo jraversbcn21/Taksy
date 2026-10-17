@@ -36,7 +36,30 @@ class TaskRepository @Inject constructor(
     suspend fun getTaskById(id: Long): Task? = taskDao.getTaskById(id)
     suspend fun insertTask(task: Task): Long = taskDao.insertTask(task)
     suspend fun updateTask(task: Task) = taskDao.updateTask(task)
-    suspend fun deleteTask(task: Task) = taskDao.deleteTask(task)
+    /**
+     * Borra una tarea con sus subtareas y recordatorios en una sola transacción y devuelve
+     * lo borrado, para poder deshacerlo con [restoreDeletedTask] y cancelar las alarmas.
+     */
+    suspend fun deleteTaskWithChildren(task: Task): DeletedTask =
+        appDatabase.withTransaction {
+            val deleted = DeletedTask(
+                task = task,
+                subtasks = subtaskDao.getSubtasksByTaskIdSync(task.id),
+                reminders = reminderDao.getRemindersByTaskIdSync(task.id)
+            )
+            reminderDao.deleteRemindersByTaskId(task.id)
+            subtaskDao.deleteSubtasksByTaskId(task.id)
+            taskDao.deleteTask(task)
+            deleted
+        }
+
+    /** Vuelve a insertar una tarea borrada con sus subtareas y recordatorios, conservando los ids. */
+    suspend fun restoreDeletedTask(deleted: DeletedTask) =
+        appDatabase.withTransaction {
+            taskDao.insertTask(deleted.task)
+            deleted.subtasks.forEach { subtaskDao.insertSubtask(it) }
+            deleted.reminders.forEach { reminderDao.insertReminder(it) }
+        }
 
 
     /**
@@ -109,5 +132,8 @@ class TaskRepository @Inject constructor(
     suspend fun cancelAllRemindersForTask(taskId: Long) =
         reminderDao.deactivateRemindersByTaskId(taskId)
 }
+
+/** Una tarea borrada junto con sus subtareas y recordatorios, para poder deshacer el borrado. */
+data class DeletedTask(val task: Task, val subtasks: List<Subtask>, val reminders: List<Reminder>)
 
 enum class TaskFilter { TODAS, PENDIENTES, COMPLETADAS }

@@ -33,18 +33,19 @@ ViewModels (TaskViewModel, CategoryViewModel, ThemeViewModel,
             BackupViewModel, StatsViewModel)
   ↓ delegates to
 Domain use cases (CompleteTaskUseCase, SubtaskUseCase,
-                  TaskReminderUseCase, DeleteCategoryUseCase,
+                  TaskReminderUseCase, DeleteTaskUseCase,
+                  DeleteCategoryUseCase,
                   RecurrenceCalculator)
   ↓ calls
 Repositories (TaskRepository, CategoryRepository, PreferencesRepository)
   ↓ delegates to DAOs / SharedPreferences
-Room Database (AppDatabase, v15)
+Room Database (AppDatabase, v16)
 ```
 
 ### Data Layer
 - **Entities:** `Task` (`TaskPrioridad`: NINGUNA/BAJA/MEDIA/ALTA, `TaskRecurrencia`: NINGUNA/DIARIA/SEMANAL/MENSUAL/ANUAL, `descripcion: String?`, `fechaCompletada: Date?`), `Subtask`, `Category` (has `orden` for drag-reorder), `Reminder` (always one-shot; no type field).
 - **DAOs:** `TaskDao`, `SubtaskDao`, `CategoryDao`, `ReminderDao` — each exposes `getAllXxxSync()` and `deleteAllXxx()` for backup operations.
-- **AppDatabase** uses TypeConverters for `Date` and has 15 tracked migrations. v15 dropped the legacy `tasks.archivada`, `tasks.orden` and `reminders.tipoRecordatorio` columns (table recreation, keeps the AUTOINCREMENT counter).
+- **AppDatabase** uses TypeConverters for `Date` and has 16 tracked migrations. v15 dropped the legacy `tasks.archivada`, `tasks.orden` and `reminders.tipoRecordatorio` columns (table recreation, keeps the AUTOINCREMENT counter). v16 has no schema change: it deletes subtasks/reminders orphaned by task deletes before the cascade fix.
 - **`data/preferences/PreferencesRepository`** — Hilt `@Singleton`. Owns all four SharedPreferences files (`theme_pref`, `language_pref`, `daily_reminder_prefs`, `onboarding_prefs`) behind typed getters/setters. Also constructible manually with a `Context` so `LocaleHelper.attachBaseContext()` can read the saved language before the Hilt graph is built. Holds the `DailyReminderPrefs` data class consumed by `DailyReminderManager` and the `ThemeMode` enum. `getThemeMode()` reads `theme_mode`; if absent it migrates the legacy `is_dark_mode` boolean (explicit choice kept), otherwise defaults to SYSTEM.
 
 Task lists in a category (`TaskDao.getTasksByCategory` / `searchTasksByCategory`) hide completed occurrences of recurring tasks — only the next pending occurrence matters there; they stay in the DB for stats and backup. Order: pending first, then priority (ALTA→NINGUNA), then due date (no date last), then newest. There is no manual reordering of tasks. Completed rows show "Completed on <date>" (`fechaCompletada`).
@@ -56,13 +57,14 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 - **`SubtaskUseCase`** — observe/add/toggle/delete on subtasks. `toggle()` returns `true` when the parent task auto-completed, so the caller can refresh the widget.
 - **`TaskReminderUseCase`** — observe/setQuick/deleteAllForTask on reminders. Wraps `ReminderSchedulerContract` so reminder DB writes and alarm scheduling stay in sync. The only reminder is the quick one (one per task, one-shot); recurrence lives on the task, not the reminder.
 - **`RecurrenceCalculator`** — `advance(Date, TaskRecurrencia): Date`. Covered by JVM unit tests.
+- **`DeleteTaskUseCase`** — `delete(task): DeletedTask` removes the task with its subtasks and reminders in one transaction (`TaskRepository.deleteTaskWithChildren`), then cancels the alarms; `restore(deleted)` re-inserts all of it with the original ids (`restoreDeletedTask`) and reschedules active future reminders. `TaskViewModel` keeps the `DeletedTask` until the undo snackbar is used and serialises delete/restore with a `Mutex`, so a quick undo waits for the delete to commit. There is no foreign key, so deleting only the task row used to leave invisible orphans whose alarms kept firing.
 - **`DeleteCategoryUseCase`** — deletes a category together with all its tasks (incl. completed), their subtasks and reminders in one transaction (`TaskRepository.deleteTasksInCategory`), then cancels the reminders' alarms after commit. Needed because there is no foreign key between `tasks.categoriaId` and `categories`: deleting only the category would leave invisible orphan tasks that still appear in the widget and keep firing alarms.
 
 ### Dependency Injection (Hilt)
-`di/DatabaseModule` provides `AppDatabase`, all DAOs, both repositories, and `ReminderSchedulerContract` as `@Singleton`. Use cases (`CompleteTaskUseCase`, `SubtaskUseCase`, `TaskReminderUseCase`, `DeleteCategoryUseCase`) and `PreferencesRepository` use `@Inject` constructor with `@Singleton` and are auto-provided by Hilt — no module entry needed. ViewModels use `@HiltViewModel`; screens obtain them via `hiltViewModel()`; `MainActivity` uses `by viewModels()`. `BroadcastReceiver`s (`ReminderReceiver`, `DailyReminderService`) are `@AndroidEntryPoint` with `@Inject lateinit var` fields. The widget (`TaskWidgetProvider` and `TaskWidgetRemoteViewsFactory`) uses `WidgetEntryPoint` + `EntryPointAccessors.fromApplication()` because `RemoteViewsFactory` can't be a Hilt entry point.
+`di/DatabaseModule` provides `AppDatabase`, all DAOs, both repositories, and `ReminderSchedulerContract` as `@Singleton`. Use cases (`CompleteTaskUseCase`, `SubtaskUseCase`, `TaskReminderUseCase`, `DeleteTaskUseCase`, `DeleteCategoryUseCase`) and `PreferencesRepository` use `@Inject` constructor with `@Singleton` and are auto-provided by Hilt — no module entry needed. ViewModels use `@HiltViewModel`; screens obtain them via `hiltViewModel()`; `MainActivity` uses `by viewModels()`. `BroadcastReceiver`s (`ReminderReceiver`, `DailyReminderService`) are `@AndroidEntryPoint` with `@Inject lateinit var` fields. The widget (`TaskWidgetProvider` and `TaskWidgetRemoteViewsFactory`) uses `WidgetEntryPoint` + `EntryPointAccessors.fromApplication()` because `RemoteViewsFactory` can't be a Hilt entry point.
 
 ### Repositories
-- **`TaskRepository`** — task/subtask/reminder DAO facade. Exposes `completeTaskIfPending(taskId): Boolean` (atomic `UPDATE ... WHERE estado = 'PENDIENTE'` via `TaskDao.completeTaskIfPending`, compare-and-swap on the DB row) and `completeRecurringTask(task, clone, cloneReminders): List<Reminder>?`, which performs the same CAS inside `appDatabase.withTransaction { }` and only inserts the clone (and its inherited reminders) if the CAS won, returning the inserted reminders or `null` if it lost — this is what makes concurrent completion attempts safe. `deleteTasksInCategory(categoryId): List<Long>` deletes a category's tasks/subtasks/reminders in one transaction and returns the reminder ids to cancel. `markTaskPending(taskId)` reverts completion and clears `fechaCompletada`. `cancelAllRemindersForTask(taskId)` flips `activo=false` on every reminder of a task via a single `UPDATE`.
+- **`TaskRepository`** — task/subtask/reminder DAO facade. Exposes `completeTaskIfPending(taskId): Boolean` (atomic `UPDATE ... WHERE estado = 'PENDIENTE'` via `TaskDao.completeTaskIfPending`, compare-and-swap on the DB row) and `completeRecurringTask(task, clone, cloneReminders): List<Reminder>?`, which performs the same CAS inside `appDatabase.withTransaction { }` and only inserts the clone (and its inherited reminders) if the CAS won, returning the inserted reminders or `null` if it lost — this is what makes concurrent completion attempts safe. `deleteTaskWithChildren(task): DeletedTask` / `restoreDeletedTask(deleted)` back task delete and undo. `deleteTasksInCategory(categoryId): List<Long>` deletes a category's tasks/subtasks/reminders in one transaction and returns the reminder ids to cancel. `markTaskPending(taskId)` reverts completion and clears `fechaCompletada`. `cancelAllRemindersForTask(taskId)` flips `activo=false` on every reminder of a task via a single `UPDATE`.
 - **`CategoryRepository`** — category CRUD + `initializeDefaultCategories(Context)`. The seeded names come from `DefaultCategories.getAll(Context)`, which reads `R.array.default_category_names` so the eight default categories localize correctly.
 - **`PreferencesRepository`** — described in Data Layer above.
 
@@ -132,7 +134,7 @@ Navigation drawer is an Android `DrawerLayout` wrapping a `ComposeView` (not a p
 
 ## Adding Database Migrations
 
-When modifying Room entities, always add a migration in `AppDatabase.kt` and increment the version. The current version is **15**. Never use `fallbackToDestructiveMigration` in production builds.
+When modifying Room entities, always add a migration in `AppDatabase.kt` and increment the version. The current version is **16**. Never use `fallbackToDestructiveMigration` in production builds.
 
 ## Coding Conventions
 
@@ -173,7 +175,4 @@ done
 - ViewModel errors shown to the user (`d527367`); 98 unused strings removed (`b5857cd`); exact-alarm permission prompt — on Android 14+ reminders were firing 20–60 min late (`eb96419`).
 - 109 unit tests pass. Kotlin in `src/main` went from ~10,900 to ~8,500 lines.
 - DB v15 migration drops the legacy columns (`archivada`, task `orden`, `tipoRecordatorio`) and the recurring-reminder advance path; device-verified on the Moto g35 (32 tasks / 8 reminders kept). Old backups still import (legacy fields ignored; a DIARIO/SEMANAL/MENSUAL reminder becomes one-shot). 96 unit tests pass.
-
-## Known Issues
-
-- `TaskViewModel.deleteTask` deletes only the task row: its subtasks and reminders stay in the DB as orphans (invisible, but an active reminder still fires its alarm). Undo (`restoreTask`) currently relies on that, since it re-inserts the task with the same id. A fix must delete subtasks/reminders and cancel alarms in one transaction, and make undo restore them.
+- Task delete now cascades to subtasks/reminders with full undo (`DeleteTaskUseCase`); DB v16 cleaned the existing orphans. Device-verified on the Moto g35. 100 unit tests pass.

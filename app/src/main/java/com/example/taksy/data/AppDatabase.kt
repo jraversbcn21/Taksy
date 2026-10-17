@@ -13,7 +13,7 @@ import android.content.Context
  */
 @Database(
     entities = [Task::class, Subtask::class, Category::class, Reminder::class],
-    version = 15,
+    version = 16,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -246,6 +246,15 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // Sin cambio de esquema: limpia subtareas y recordatorios de tareas ya borradas.
+        // Hasta la v16, borrar una tarea dejaba sus filas hijas huérfanas.
+        private val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("DELETE FROM subtasks WHERE taskId NOT IN (SELECT id FROM tasks)")
+                database.execSQL("DELETE FROM reminders WHERE taskId NOT IN (SELECT id FROM tasks)")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -267,7 +276,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_11_12,
                     MIGRATION_12_13,
                     MIGRATION_13_14,
-                    MIGRATION_14_15
+                    MIGRATION_14_15,
+                    MIGRATION_15_16
                 )
                 .build()
                 INSTANCE = instance

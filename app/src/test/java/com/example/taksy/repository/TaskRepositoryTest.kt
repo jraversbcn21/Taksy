@@ -77,13 +77,16 @@ class TaskRepositoryTest {
     }
 
     private class FakeSubtaskDao : SubtaskDao {
-        override fun getSubtasksByTaskId(taskId: Long): Flow<List<Subtask>> = flowOf(emptyList())
-        override suspend fun insertSubtask(subtask: Subtask): Long = 1L
+        val subtasks = mutableListOf<Subtask>()
+
+        override fun getSubtasksByTaskId(taskId: Long): Flow<List<Subtask>> = flowOf(subtasks.filter { it.taskId == taskId })
+        override suspend fun insertSubtask(subtask: Subtask): Long { subtasks.add(subtask); return subtask.id }
         override suspend fun updateSubtask(subtask: Subtask) {}
-        override suspend fun deleteSubtask(subtask: Subtask) {}
-        override suspend fun deleteSubtasksByTaskId(taskId: Long) {}
-        override suspend fun getAllSubtasksSync(): List<Subtask> = emptyList()
-        override suspend fun deleteAllSubtasks() {}
+        override suspend fun deleteSubtask(subtask: Subtask) { subtasks.removeIf { it.id == subtask.id } }
+        override suspend fun getSubtasksByTaskIdSync(taskId: Long): List<Subtask> = subtasks.filter { it.taskId == taskId }
+        override suspend fun deleteSubtasksByTaskId(taskId: Long) { subtasks.removeIf { it.taskId == taskId } }
+        override suspend fun getAllSubtasksSync(): List<Subtask> = subtasks.toList()
+        override suspend fun deleteAllSubtasks() { subtasks.clear() }
     }
 
     private class FakeReminderDao : ReminderDao {
@@ -120,14 +123,16 @@ class TaskRepositoryTest {
     }
 
     /** Repositorio con withTransaction mockeado para ejecutar el bloque directamente sobre los fakes. */
-    private fun makeTransactionalRepository(): Triple<FakeTaskDao, FakeReminderDao, TaskRepository> {
+    private fun makeTransactionalRepository(
+        subtaskDao: FakeSubtaskDao = FakeSubtaskDao()
+    ): Triple<FakeTaskDao, FakeReminderDao, TaskRepository> {
         mockkStatic("androidx.room.RoomDatabaseKt")
         val db = mockk<AppDatabase>(relaxed = true)
         val blockSlot = slot<suspend () -> Any?>()
         coEvery { db.withTransaction(capture(blockSlot)) } coAnswers { blockSlot.captured.invoke() }
         val taskDao = FakeTaskDao()
         val reminderDao = FakeReminderDao()
-        return Triple(taskDao, reminderDao, TaskRepository(db, taskDao, FakeSubtaskDao(), reminderDao))
+        return Triple(taskDao, reminderDao, TaskRepository(db, taskDao, subtaskDao, reminderDao))
     }
 
     @After
@@ -225,16 +230,42 @@ class TaskRepositoryTest {
     }
 
     @Test
-    fun `deleteTask removes specific task`() = runTest {
-        val (dao, repo) = makeRepository()
-        val task1 = Task(id = 1L, titulo = "Keep")
-        val task2 = Task(id = 2L, titulo = "Delete")
-        dao.tasks.addAll(listOf(task1, task2))
+    fun `deleteTaskWithChildren removes the task with its subtasks and reminders`() = runTest {
+        val subtaskDao = FakeSubtaskDao()
+        val (taskDao, reminderDao, repo) = makeTransactionalRepository(subtaskDao)
+        val keep = Task(id = 1L, titulo = "Keep")
+        val delete = Task(id = 2L, titulo = "Delete")
+        taskDao.tasks.addAll(listOf(keep, delete))
+        subtaskDao.subtasks.addAll(listOf(
+            Subtask(id = 10L, taskId = 1L, titulo = "keep"),
+            Subtask(id = 11L, taskId = 2L, titulo = "a"),
+            Subtask(id = 12L, taskId = 2L, titulo = "b")
+        ))
+        reminderDao.reminders.addAll(listOf(reminder().copy(id = 20L, taskId = 1L), reminder().copy(id = 21L, taskId = 2L)))
 
-        repo.deleteTask(task2)
+        val deleted = repo.deleteTaskWithChildren(delete)
 
-        assertEquals(1, dao.tasks.size)
-        assertEquals("Keep", dao.tasks[0].titulo)
+        assertEquals(listOf("Keep"), taskDao.tasks.map { it.titulo })
+        assertEquals(listOf(10L), subtaskDao.subtasks.map { it.id })
+        assertEquals(listOf(20L), reminderDao.reminders.map { it.id })
+        assertEquals(listOf(11L, 12L), deleted.subtasks.map { it.id })
+        assertEquals(listOf(21L), deleted.reminders.map { it.id })
+    }
+
+    @Test
+    fun `restoreDeletedTask brings back the task, subtasks and reminders with their ids`() = runTest {
+        val subtaskDao = FakeSubtaskDao()
+        val (taskDao, reminderDao, repo) = makeTransactionalRepository(subtaskDao)
+        val task = Task(id = 2L, titulo = "Delete")
+        taskDao.tasks.add(task)
+        subtaskDao.subtasks.add(Subtask(id = 11L, taskId = 2L, titulo = "a"))
+        reminderDao.reminders.add(reminder().copy(id = 21L, taskId = 2L))
+
+        repo.restoreDeletedTask(repo.deleteTaskWithChildren(task))
+
+        assertEquals(listOf(2L), taskDao.tasks.map { it.id })
+        assertEquals(listOf(11L), subtaskDao.subtasks.map { it.id })
+        assertEquals(listOf(21L), reminderDao.reminders.map { it.id })
     }
 
     @Test
