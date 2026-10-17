@@ -3,6 +3,7 @@ package com.example.taksy.utils
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import com.example.taksy.R
 
@@ -12,21 +13,41 @@ import com.example.taksy.R
 object CategoryUtils {
     
     /**
+     * Iconos que el usuario puede elegir al crear/editar una categoría, en orden de presentación.
+     * Fuente única: el diálogo y el renderizado usan este mismo mapa.
+     */
+    val selectableIcons: List<Pair<String, ImageVector>> = listOf(
+        "work" to Icons.Default.Build,
+        "person" to Icons.Default.Person,
+        "shopping_cart" to Icons.Default.ShoppingCart,
+        "favorite" to Icons.Default.Favorite,
+        "school" to Icons.Default.Create,
+        "home" to Icons.Default.Home,
+        "star" to Icons.Default.Star,
+        "schedule" to Icons.Default.DateRange,
+        "business" to Icons.Default.Info,
+        "sports" to Icons.Default.Notifications
+    )
+
+    /**
+     * Nombres que solo existen en datos ya guardados: categorías por defecto
+     * (fitness_center, more_horiz) o heredadas de MIGRATION_4_5 (health, label).
+     * "health" es un alias intencionado de "favorite" (misma categoría Salud).
+     */
+    private val legacyIcons: Map<String, ImageVector> = mapOf(
+        "fitness_center" to Icons.Default.Star,
+        "more_horiz" to Icons.Default.MoreVert,
+        "health" to Icons.Default.Favorite,
+        "label" to Icons.Default.Info
+    )
+
+    private val iconsByName: Map<String, ImageVector> = selectableIcons.toMap() + legacyIcons
+
+    /**
      * Obtiene el icono correspondiente al nombre del icono
      */
-    fun getCategoryIcon(iconName: String) = when (iconName) {
-        "work" -> Icons.Default.Build
-        "person" -> Icons.Default.Person
-        "shopping_cart" -> Icons.Default.ShoppingCart
-        "favorite" -> Icons.Default.Favorite
-        "school" -> Icons.Default.Settings
-        "home" -> Icons.Default.Home
-        "fitness_center" -> Icons.Default.Star
-        "more_horiz" -> Icons.Default.MoreVert
-        "health" -> Icons.Default.Favorite
-        "label" -> Icons.Default.Info
-        else -> Icons.Default.Info // Icono por defecto
-    }
+    fun getCategoryIcon(iconName: String): ImageVector =
+        iconsByName[iconName] ?: Icons.Default.Info // Icono por defecto
     
     /**
      * Obtiene el nombre de la categoría en el idioma actual

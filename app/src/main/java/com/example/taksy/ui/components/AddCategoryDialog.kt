@@ -28,6 +28,7 @@ import androidx.compose.ui.window.DialogWindowProvider
 import android.util.Log
 import com.example.taksy.R
 import com.example.taksy.data.Category
+import com.example.taksy.utils.CategoryUtils
 import com.example.taksy.utils.getCategoryIcon
 
 /**
@@ -61,18 +62,7 @@ fun AddCategoryDialog(
     )
 
     // Iconos predefinidos
-    val icons = listOf(
-        "work" to Icons.Default.Build,
-        "person" to Icons.Default.Person,
-        "shopping_cart" to Icons.Default.ShoppingCart,
-        "favorite" to Icons.Default.Favorite,
-        "school" to Icons.Default.Settings,
-        "home" to Icons.Default.Home,
-        "star" to Icons.Default.Star,
-        "schedule" to Icons.Default.DateRange,
-        "business" to Icons.Default.Info,
-        "sports" to Icons.Default.Notifications
-    )
+    val icons = CategoryUtils.selectableIcons
 
     Dialog(
         onDismissRequest = onDismiss,

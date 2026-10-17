@@ -135,13 +135,14 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 - **Use cases own domain logic.** Anything that mutates more than one entity or needs to coordinate the scheduler should be a use case. ViewModels are thin and delegate.
 - **No SharedPreferences access outside `PreferencesRepository`.** If you need a new key, add it there.
 - **No alarm scheduling outside `AlarmPolicy`.** New alarm sites call `AlarmPolicy.scheduleExactOrFallback()`.
+- **Category icons live in `CategoryUtils`.** `selectableIcons` is the single map for both the picker and rendering; don't redefine icon lists in UI code.
 - **No category names hardcoded in Kotlin.** Default category names live in the `default_category_names` string-array; only metadata (color, icon) stays inline.
 - **Receivers and services that need DI** are `@AndroidEntryPoint` with `@Inject lateinit var` fields. Don't construct `TaskRepository(...)` or `ReminderScheduler(context)` manually.
 - **Widget code** accesses DI via `EntryPointAccessors` because `RemoteViewsFactory` isn't an `@AndroidEntryPoint` target.
 
 ## Pending / Future Work
 
-**Recurring-task duplication bug — root-caused and fixed 2026-07-07 (commit `510876f`).** Root cause was check-then-act in `CompleteTaskUseCase.execute`, not the unguarded subtask route alone; fixed via atomic `completeTaskIfPending` compare-and-swap (see Domain Layer / Repositories above). 99 unit tests pass. **Not yet smoke-tested on a physical device** — do that before considering this fully closed. See `docs/debugging-taksy-duplication.md` for the full incident writeup and remaining punch list (BackupViewModel import transaction is done; `ReminderReceiver` recurring-reminder advance is now CAS-guarded too; `CategoryUtils` icon mismatch is still open).
+**Recurring-task duplication bug — root-caused and fixed 2026-07-07 (commit `510876f`).** Root cause was check-then-act in `CompleteTaskUseCase.execute`, not the unguarded subtask route alone; fixed via atomic `completeTaskIfPending` compare-and-swap (see Domain Layer / Repositories above). 103 unit tests pass. **Not yet smoke-tested on a physical device** — do that before considering this fully closed. See `docs/debugging-taksy-duplication.md` for the full incident writeup and remaining punch list (BackupViewModel import transaction is done; `ReminderReceiver` recurring-reminder advance is now CAS-guarded too, and the `CategoryUtils` icon mapping is fixed).
 
 - Optional: shrink `TasksByCategoryScreen` further. The drag-and-drop block is the main remaining inline section; it shares state heavily with the LazyColumn, so extraction is non-trivial.
 - Optional: `MainActivity` bulk is the `DrawerLayout` AndroidView block; moving it into its own file is fine but offers little incremental value.
