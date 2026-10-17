@@ -2,49 +2,29 @@
     <string name="app_name">Ticksy</string>
     
     <!-- Main screen -->
-    <string name="tasks_title">Tasks</string>
     <string name="app_subtitle">Manage your tasks</string>
     <string name="add_task">Add task</string>
     <string name="task_title_hint">Task title</string>
-    <string name="task_description_hint">Description (optional)</string>
-    <string name="no_due_date">No due date</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>
     <string name="edit_task">Edit task</string>
     <string name="delete_task">Delete task</string>
-    <string name="mark_completed">Mark as completed</string>
-    <string name="mark_pending">Mark as pending</string>
     
-    <!-- Filters -->
-    <string name="filter_all">All</string>
-    <string name="filter_pending">Pending</string>
-    <string name="filter_completed">Completed</string>
     
     <!-- States -->
-    <string name="task_pending">Pending</string>
-    <string name="task_completed">Completed</string>
     <string name="completed_on">Completed on %1$s</string>
     
     <!-- Messages -->
-    <string name="no_tasks">No tasks</string>
     <string name="no_pending_tasks">No pending tasks</string>
-    <string name="no_completed_tasks">No completed tasks</string>
     <string name="no_tasks_in_category">No tasks in %1$s</string>
     <string name="add_first_task_to_category">Add your first task to this category</string>
     <string name="create_first_category">Create your first category to better organize your tasks</string>
-    <string name="delete_completed_tasks">Delete completed tasks</string>
-    <string name="confirm_delete">Delete this task?</string>
-    <string name="confirm_delete_completed">Delete all completed tasks?</string>
     <string name="pending_subtasks_message">You have pending tasks</string>
-    <string name="view_subtasks">View subtasks</string>
     <string name="add_subtask">Add subtask</string>
-    <string name="add_subtask_hint">Subtask title</string>
-    <string name="new_subtask">New subtask</string>
     <string name="all_subtasks_completed">All subtasks completed!</string>
     <string name="subtasks_title">Subtasks</string>
     <string name="add_subtask_description">Add subtask</string>
-    <string name="task_locked_message">This task is locked because all its subtasks are completed</string>
     
     <!-- Categories -->
     <string name="task_count_singular">%d task</string>
@@ -66,11 +46,9 @@
     <string name="category_color">Color</string>
     <string name="category_icon">Icon</string>
     <string name="delete_category">Delete category</string>
-    <string name="edit_category_action">Edit category</string>
     
     <!-- Errors -->
     <string name="error_generic">An error occurred</string>
-    <string name="error_empty_title">Title cannot be empty</string>
     <string name="error_add_task">Error adding task</string>
     <string name="error_update_task">Error updating task</string>
     <string name="error_delete_task">Error deleting task</string>
@@ -83,9 +61,7 @@
     <string name="error_delete_category">Error deleting category</string>
     <string name="error_reorder_categories">Error reordering categories</string>
     <string name="error_add_reminder">Error adding reminder</string>
-    <string name="error_update_reminder">Error updating reminder</string>
     <string name="error_delete_reminder">Error deleting reminder</string>
-    <string name="error_toggle_reminder">Error updating reminder status</string>
     
     <!-- Settings -->
     <string name="settings">Settings</string>
@@ -95,35 +71,16 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     
-    <!-- Splash Screen -->
-    <string name="splash_subtitle">Manage your tasks efficiently</string>
     
-    <!-- Dialogs -->
-    <string name="new_task">New Task</string>
     
     <!-- Settings Modal -->
     <string name="settings_modal_title">Settings</string>
-    <string name="theme_settings">Theme Settings</string>
-    <string name="language_settings">Language Settings</string>
     <string name="reminders_settings">Reminders</string>
     <string name="language_spanish">Spanish</string>
     <string name="language_english">English</string>
-    <string name="theme_preview">Theme Preview</string>
-    <string name="language_preview">Language Preview</string>
     <string name="close">Close</string>
     
-    <!-- Theme Settings -->
-    <string name="select_theme">Select Theme</string>
-    <string name="theme_light_description">Light theme for better visibility during the day</string>
-    <string name="theme_dark_description">Dark theme for better night experience</string>
-    <string name="quick_change">Quick Change</string>
-    <string name="quick_change_description">Use the toggle to switch between themes</string>
     
-    <!-- Language Settings -->
-    <string name="select_language">Select Language</string>
-    <string name="language_spanish_description">Spanish interface for Spanish-speaking users</string>
-    <string name="language_english_description">English interface for English-speaking users</string>
-    <string name="language_change_info">The language change will be applied immediately and will restart the application for a better experience.</string>
     
     <!-- Language Change Dialog -->
     <string name="change_language">Change Language</string>
@@ -138,31 +95,9 @@
     <!-- Toast messages -->
     <string name="task_deleted_toast">Task deleted</string>
     <string name="undo">Undo</string>
-    <string name="subtask_completed_toast">Subtask completed</string>
-    <string name="all_subtasks_completed_toast">All subtasks completed!</string>
     
-    <!-- Reminders -->
-    <string name="reminders">Reminders</string>
-    <string name="add_reminder">Add reminder</string>
-    <string name="reminder_title">Reminder title</string>
-    <string name="reminder_description">Description (optional)</string>
-    <string name="reminder_date">Date and time</string>
-    <string name="reminder_type">Reminder type</string>
-    <string name="reminder_once">Once</string>
-    <string name="reminder_daily">Daily</string>
-    <string name="reminder_weekly">Weekly</string>
-    <string name="reminder_monthly">Monthly</string>
-    <string name="reminder_active">Active</string>
-    <string name="reminder_inactive">Inactive</string>
-    <string name="no_reminders">No reminders</string>
-    <string name="reminder_created">Reminder created</string>
-    <string name="reminder_deleted">Reminder deleted</string>
-    <string name="reminder_updated">Reminder updated</string>
-    <string name="select_date">Select date</string>
-    <string name="select_time">Select time</string>
     
     <!-- Category messages -->
-    <string name="categories">Categories</string>
     <string name="manage_categories">Manage Categories</string>
     <string name="no_categories">No categories</string>
     <string name="category_created">Category created</string>
@@ -190,7 +125,6 @@
     <string name="reminder_generic_message">Time to review your task app!</string>
     
     <!-- Priority -->
-    <string name="priority">Priority</string>
     <string name="priority_none">No priority</string>
     <string name="priority_low">Low</string>
     <string name="priority_medium">Medium</string>
@@ -200,18 +134,6 @@
     <string name="search_tasks">Search tasks</string>
     <string name="no_search_results">No results found</string>
 
-    <!-- Side menu -->
-    <string name="menu_title">Menu</string>
-    <string name="menu_home">Home</string>
-    <string name="menu_active_habits">Active Habits</string>
-    <string name="menu_dashboard">Dashboard</string>
-    <string name="menu_achieved_habits">Achieved Habits</string>
-    <string name="menu_badges">Badges</string>
-    <string name="menu_premium">Premium</string>
-    <string name="menu_notifications">Notifications</string>
-    <string name="menu_language">Language</string>
-    <string name="menu_about">About Habits</string>
-
     <!-- About -->
     <string name="about">About</string>
     <string name="about_title">About Ticksy</string>
@@ -219,7 +141,6 @@
     <string name="about_description">Ticksy is your personal task manager. Organize your tasks by categories, set reminders, and stay on top of your day.</string>
     <string name="about_developer">Developer</string>
     <string name="about_developer_name">Sid Maier</string>
-    <string name="about_contact">Contact</string>
     <string name="about_features_title">Features</string>
     <string name="about_feature_categories">Category-based organization</string>
     <string name="about_feature_subtasks">Subtasks with auto-completion</string>
@@ -231,10 +152,7 @@
     <!-- Quick Reminder -->
     <string name="set_reminder">Set reminder</string>
     <string name="edit_reminder">Edit reminder</string>
-    <string name="reminder_for_task">Reminder for: %s</string>
     <string name="delete_reminder">Delete reminder</string>
-    <string name="reminder_set_confirmation">Reminder set</string>
-    <string name="reminder_deleted_confirmation">Reminder deleted</string>
 
     <!-- Backup -->
     <string name="backup">Backup</string>
@@ -273,30 +191,9 @@
     <string name="notification_default_content">Don\'t forget to complete: %s</string>
     <string name="notification_task_label">Task: %s</string>
 
-    <!-- Reminder dialog -->
-    <string name="reminder_title_placeholder">E.g.: Review task</string>
-    <string name="reminder_description_placeholder">Optional reminder description</string>
-    <string name="date_label">Date</string>
-    <string name="time_label">Time</string>
-    <string name="add_action">Add</string>
-
     <!-- Save messages -->
     <string name="reminders_saved_success">Reminders saved successfully</string>
     <string name="reminders_disabled">Reminders disabled</string>
-
-    <!-- Task archiving -->
-    <string name="archive_task">Archive task</string>
-    <string name="unarchive_task">Unarchive task</string>
-    <string name="task_archived">Task archived</string>
-    <string name="task_unarchived">Task unarchived</string>
-    <string name="show_archived">Show archived</string>
-    <string name="hide_archived">Hide archived</string>
-    <string name="archived_section">Archived</string>
-    <string name="no_archived_tasks">No archived tasks</string>
-
-    <!-- Task description -->
-    <string name="task_description_label">Notes</string>
-    <string name="task_description_placeholder">Add notes…</string>
 
     <!-- Onboarding -->
     <string name="onboarding_title_1">Organize your tasks</string>
@@ -315,8 +212,6 @@
     <string name="recurrence_daily">Daily</string>
     <string name="recurrence_weekly">Weekly</string>
     <string name="recurrence_monthly">Monthly</string>
-    <string name="recurrence_yearly">Yearly</string>
-    <string name="recurring_task_created">New recurring task created</string>
 
     <!-- Statistics -->
     <string name="stats_title">Statistics</string>
