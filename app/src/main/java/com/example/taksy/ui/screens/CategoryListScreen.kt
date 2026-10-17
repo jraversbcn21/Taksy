@@ -491,6 +491,8 @@ private fun TodayTaskCard(
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 lineHeight = 18.sp,
+                // Siempre 2 líneas: todas las tarjetas de hoy miden lo mismo
+                minLines = 2,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 color = if (done) palette.doneText else palette.ink,
@@ -502,6 +504,8 @@ private fun TodayTaskCard(
                     fontFamily = PlusJakartaSans,
                     fontWeight = FontWeight.Medium,
                     fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     color = palette.muted
                 )
             }
