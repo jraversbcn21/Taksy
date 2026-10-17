@@ -34,6 +34,7 @@ import com.example.taksy.viewmodel.CategoryViewModel
 import com.example.taksy.viewmodel.TaskInput
 import com.example.taksy.viewmodel.TaskViewModel
 import com.example.taksy.viewmodel.ThemeViewModel
+import kotlinx.coroutines.flow.map
 
 private fun NavHostController.popOrHome() {
     if (!popBackStack()) navigate("category_list") { launchSingleTop = true }
@@ -206,24 +207,31 @@ fun AppNavGraph(
         composable("task_detail/{taskId}") { backStackEntry ->
             val taskId = backStackEntry.arguments?.getString("taskId")?.toLongOrNull()
             if (taskId != null) {
-                var task by remember { mutableStateOf<Task?>(null) }
+                // Se observa la tarea en vivo: completar la última subtarea la completa sola
+                val task by remember(taskId) {
+                    taskViewModel.getAllTasks().map { tasks -> tasks.firstOrNull { it.id == taskId } }
+                }.collectAsState(initial = null)
                 val subtasks by taskViewModel.getSubtasksByTaskId(taskId).collectAsState(initial = emptyList())
+                val reminders by taskViewModel.getRemindersByTaskId(taskId).collectAsState(initial = emptyList())
+                var category by remember { mutableStateOf<Category?>(null) }
 
-                LaunchedEffect(taskId) {
-                    task = taskViewModel.getTaskById(taskId)
+                LaunchedEffect(task?.categoriaId) {
+                    category = task?.categoriaId?.let { categoryViewModel.getCategoryById(it) }
                 }
 
                 task?.let { resolvedTask ->
                     TaskDetailScreen(
                         task = resolvedTask,
+                        category = category,
                         subtasks = subtasks,
+                        activeReminder = reminders.firstOrNull { it.activo },
+                        isDarkMode = isDarkMode,
                         onBackClick = { navController.popBackStack() },
                         onAddSubtask = { title -> taskViewModel.addSubtask(taskId, title) },
                         onToggleSubtask = { subtask -> taskViewModel.toggleSubtaskStatus(subtask) },
-                        onUpdateTask = { updatedTask ->
-                            task = updatedTask
-                            taskViewModel.updateTask(updatedTask)
-                        }
+                        onUpdateTask = { updatedTask -> taskViewModel.updateTask(updatedTask) },
+                        onSetReminder = { date -> taskViewModel.setQuickReminder(taskId, resolvedTask.titulo, date) },
+                        onDeleteReminder = { taskViewModel.deleteReminderForTask(taskId) }
                     )
                 }
             }

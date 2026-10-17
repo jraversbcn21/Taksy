@@ -93,7 +93,6 @@
     <string name="delete_task_message">¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer.</string>
     <string name="delete">Eliminar</string>
     <string name="back">Atrás</string>
-    <string name="all_reminders_completed">Todas las tareas completadas</string>
     
     <!-- Toast messages -->
     <string name="task_deleted_toast">Tarea eliminada</string>
@@ -263,4 +262,11 @@
     <string name="tasks_section_pending">Pendientes</string>
     <string name="tasks_section_done">Completadas</string>
     <string name="task_priority">Prioridad</string>
+
+    <!-- Detalle de tarea -->
+    <string name="task_due_date">Fecha</string>
+    <string name="task_no_due_date">Sin fecha</string>
+    <string name="task_no_time">Sin hora</string>
+    <string name="task_reminder">Recordatorio</string>
+    <string name="task_no_reminder">Sin recordatorio</string>
 </resources>

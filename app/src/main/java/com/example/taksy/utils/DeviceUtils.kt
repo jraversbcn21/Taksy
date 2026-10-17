@@ -51,36 +51,6 @@ object DeviceUtils {
     }
     
     /**
-     * Calcula el padding inferior específico para FAB de subtareas
-     * Más ajustado que el FAB principal para mejor posicionamiento
-     */
-    @Composable
-    fun getSubtaskFabBottomPadding(): Dp {
-        val configuration = LocalConfiguration.current
-        val density = LocalDensity.current
-        
-        val screenHeight = configuration.screenHeightDp
-        val densityDpi = density.density
-        
-        // Padding más grande para subtareas (más arriba)
-        val basePadding = when {
-            densityDpi >= 3.5f -> 56.dp  // Dispositivos de alta densidad
-            densityDpi >= 2.5f -> 52.dp  // Dispositivos de densidad alta
-            densityDpi >= 1.5f -> 48.dp  // Dispositivos de densidad media
-            else -> 44.dp                // Dispositivos de densidad baja
-        }
-        
-        // Ajuste basado en el tamaño de pantalla
-        val sizeAdjustment = when {
-            screenHeight >= 800 -> 8.dp   // Pantallas grandes
-            screenHeight >= 600 -> 4.dp   // Pantallas medianas
-            else -> 0.dp                  // Pantallas pequeñas
-        }
-        
-        return basePadding + sizeAdjustment
-    }
-    
-    /**
      * Calcula el padding lateral para FAB
      */
     @Composable

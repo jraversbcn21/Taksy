@@ -3,9 +3,7 @@ package com.example.taksy.ui.components.tasksbycategory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -36,6 +34,8 @@ import androidx.compose.ui.unit.sp
 import com.example.taksy.R
 import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TaskRecurrencia
+import com.example.taksy.ui.components.OptionPills
+import com.example.taksy.ui.components.PillOption
 import com.example.taksy.ui.theme.HomePalette
 import com.example.taksy.ui.theme.PlusJakartaSans
 import com.example.taksy.ui.theme.PriorityHighRed
@@ -121,27 +121,17 @@ fun InlineTaskInput(
             )
         }
 
-        OptionRow(
+        OptionPills(
             label = stringResource(R.string.task_priority),
-            options = listOf(
-                Triple(TaskPrioridad.NINGUNA, R.string.priority_none, palette.muted),
-                Triple(TaskPrioridad.BAJA, R.string.priority_low, PriorityLowGreen),
-                Triple(TaskPrioridad.MEDIA, R.string.priority_medium, PriorityMediumOrange),
-                Triple(TaskPrioridad.ALTA, R.string.priority_high, PriorityHighRed)
-            ),
+            options = priorityOptions(palette),
             selected = selectedPriority,
             onSelect = onPriorityChange,
             palette = palette
         )
 
-        OptionRow(
+        OptionPills(
             label = stringResource(R.string.recurrence),
-            options = listOf(
-                Triple(TaskRecurrencia.NINGUNA, R.string.recurrence_none, palette.muted),
-                Triple(TaskRecurrencia.DIARIA, R.string.recurrence_daily, accent),
-                Triple(TaskRecurrencia.SEMANAL, R.string.recurrence_weekly, accent),
-                Triple(TaskRecurrencia.MENSUAL, R.string.recurrence_monthly, accent)
-            ),
+            options = recurrenceOptions(palette, accent),
             selected = selectedRecurrence,
             onSelect = onRecurrenceChange,
             palette = palette
@@ -180,44 +170,16 @@ fun InlineTaskInput(
     }
 }
 
-@Composable
-private fun <T> OptionRow(
-    label: String,
-    options: List<Triple<T, Int, Color>>,
-    selected: T,
-    onSelect: (T) -> Unit,
-    palette: HomePalette
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = label.uppercase(),
-            fontFamily = PlusJakartaSans,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 11.sp,
-            letterSpacing = 1.sp,
-            color = palette.muted
-        )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.horizontalScroll(rememberScrollState())
-        ) {
-            options.forEach { (value, labelRes, color) ->
-                val isSelected = value == selected
-                val pill = RoundedCornerShape(10.dp)
-                Text(
-                    text = stringResource(labelRes),
-                    fontFamily = PlusJakartaSans,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    color = if (isSelected) color else palette.muted,
-                    modifier = Modifier
-                        .clip(pill)
-                        .background(if (isSelected) color.copy(alpha = if (palette.isDark) 0.2f else 0.12f) else Color.Transparent)
-                        .border(1.dp, if (isSelected) color else palette.border, pill)
-                        .clickable(role = Role.RadioButton) { onSelect(value) }
-                        .padding(horizontal = 12.dp, vertical = 7.dp)
-                )
-            }
-        }
-    }
-}
+fun priorityOptions(palette: HomePalette) = listOf(
+    PillOption(TaskPrioridad.NINGUNA, R.string.priority_none, palette.muted),
+    PillOption(TaskPrioridad.BAJA, R.string.priority_low, PriorityLowGreen),
+    PillOption(TaskPrioridad.MEDIA, R.string.priority_medium, PriorityMediumOrange),
+    PillOption(TaskPrioridad.ALTA, R.string.priority_high, PriorityHighRed)
+)
+
+fun recurrenceOptions(palette: HomePalette, accent: Color) = listOf(
+    PillOption(TaskRecurrencia.NINGUNA, R.string.recurrence_none, palette.muted),
+    PillOption(TaskRecurrencia.DIARIA, R.string.recurrence_daily, accent),
+    PillOption(TaskRecurrencia.SEMANAL, R.string.recurrence_weekly, accent),
+    PillOption(TaskRecurrencia.MENSUAL, R.string.recurrence_monthly, accent)
+)

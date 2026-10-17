@@ -110,8 +110,6 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    suspend fun getTaskById(id: Long): Task? = repository.getTaskById(id)
-
     // ── Subtasks (delegated) ───────────────────────────────────────────────
 
     fun getSubtasksByTaskId(taskId: Long): Flow<List<Subtask>> = subtaskUseCase.observe(taskId)
