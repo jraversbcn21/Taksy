@@ -76,6 +76,8 @@ current through v14.
 
 ## Next-session punch list, in priority order
 
+> **Status 2026-10-17: all items below are done** (device smoke-test, `ReminderReceiver` CAS, `CategoryUtils` icons, push). Kept for history.
+
 1. **Device smoke-test the duplication fix** (see repro steps above). If it
    still reproduces, something in the CAS wiring is wrong — re-check that
    `TaskViewModel.toggleTaskStatus` and `SubtaskUseCase.toggle` both go through

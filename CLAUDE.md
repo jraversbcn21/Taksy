@@ -33,7 +33,8 @@ ViewModels (TaskViewModel, CategoryViewModel, ThemeViewModel,
             BackupViewModel, StatsViewModel)
   ↓ delegates to
 Domain use cases (CompleteTaskUseCase, SubtaskUseCase,
-                  TaskReminderUseCase, RecurrenceCalculator)
+                  TaskReminderUseCase, DeleteCategoryUseCase,
+                  RecurrenceCalculator)
   ↓ calls
 Repositories (TaskRepository, CategoryRepository, PreferencesRepository)
   ↓ delegates to DAOs / SharedPreferences
@@ -46,7 +47,7 @@ Room Database (AppDatabase, v14)
 - **AppDatabase** uses TypeConverters for `Date` and has 14 tracked migrations.
 - **`data/preferences/PreferencesRepository`** — Hilt `@Singleton`. Owns all four SharedPreferences files (`theme_pref`, `language_pref`, `daily_reminder_prefs`, `onboarding_prefs`) behind typed getters/setters. Also constructible manually with a `Context` so `LocaleHelper.attachBaseContext()` can read the saved language before the Hilt graph is built. Holds the `DailyReminderPrefs` data class consumed by `DailyReminderManager` and the `ThemeMode` enum. `getThemeMode()` reads `theme_mode`; if absent it migrates the legacy `is_dark_mode` boolean (explicit choice kept), otherwise defaults to SYSTEM.
 
-Task lists in a category are ordered: pending first, then priority (ALTA→NINGUNA), then due date (no date last), then newest. There is no manual reordering of tasks.
+Task lists in a category (`TaskDao.getTasksByCategory` / `searchTasksByCategory`) hide completed occurrences of recurring tasks — only the next pending occurrence matters there; they stay in the DB for stats and backup. Order: pending first, then priority (ALTA→NINGUNA), then due date (no date last), then newest. There is no manual reordering of tasks. Completed rows show "Completed on <date>" (`fechaCompletada`).
 
 Key business rule: when all subtasks of a task are completed, the parent task auto-completes (logic lives in `SubtaskUseCase`, surfaced via `TaskViewModel`).
 
@@ -58,10 +59,10 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 - **`DeleteCategoryUseCase`** — deletes a category together with all its tasks (incl. archived/completed), their subtasks and reminders in one transaction (`TaskRepository.deleteTasksInCategory`), then cancels the reminders' alarms after commit. Needed because there is no foreign key between `tasks.categoriaId` and `categories`: deleting only the category would leave invisible orphan tasks that still appear in the widget and keep firing alarms.
 
 ### Dependency Injection (Hilt)
-`di/DatabaseModule` provides `AppDatabase`, all DAOs, both repositories, and `ReminderSchedulerContract` as `@Singleton`. Use cases (`CompleteTaskUseCase`, `SubtaskUseCase`, `TaskReminderUseCase`) and `PreferencesRepository` use `@Inject` constructor with `@Singleton` and are auto-provided by Hilt — no module entry needed. ViewModels use `@HiltViewModel`; screens obtain them via `hiltViewModel()`; `MainActivity` uses `by viewModels()`. `BroadcastReceiver`s (`ReminderReceiver`, `DailyReminderService`) are `@AndroidEntryPoint` with `@Inject lateinit var` fields. The widget (`TaskWidgetProvider` and `TaskWidgetRemoteViewsFactory`) uses `WidgetEntryPoint` + `EntryPointAccessors.fromApplication()` because `RemoteViewsFactory` can't be a Hilt entry point.
+`di/DatabaseModule` provides `AppDatabase`, all DAOs, both repositories, and `ReminderSchedulerContract` as `@Singleton`. Use cases (`CompleteTaskUseCase`, `SubtaskUseCase`, `TaskReminderUseCase`, `DeleteCategoryUseCase`) and `PreferencesRepository` use `@Inject` constructor with `@Singleton` and are auto-provided by Hilt — no module entry needed. ViewModels use `@HiltViewModel`; screens obtain them via `hiltViewModel()`; `MainActivity` uses `by viewModels()`. `BroadcastReceiver`s (`ReminderReceiver`, `DailyReminderService`) are `@AndroidEntryPoint` with `@Inject lateinit var` fields. The widget (`TaskWidgetProvider` and `TaskWidgetRemoteViewsFactory`) uses `WidgetEntryPoint` + `EntryPointAccessors.fromApplication()` because `RemoteViewsFactory` can't be a Hilt entry point.
 
 ### Repositories
-- **`TaskRepository`** — task/subtask/reminder DAO facade. Exposes `completeTaskIfPending(taskId): Boolean` (atomic `UPDATE ... WHERE estado = 'PENDIENTE'` via `TaskDao.completeTaskIfPending`, compare-and-swap on the DB row) and `completeRecurringTask(task, clone): Boolean`, which performs the same CAS inside `appDatabase.withTransaction { }` and only inserts the clone if the CAS won — this is what makes concurrent completion attempts safe. `markTaskPending(taskId)` reverts completion and clears `fechaCompletada`. `cancelAllRemindersForTask(taskId)` flips `activo=false` on every reminder of a task via a single `UPDATE`. `advanceRecurringReminder(reminder, nextDate): Reminder?` checks the task is still pending and CAS-advances the reminder date (`ReminderDao.advanceReminderIfUnchanged`, `WHERE fechaRecordatorio = :expected AND activo = 1`) inside a transaction; returns the updated row only if this call won.
+- **`TaskRepository`** — task/subtask/reminder DAO facade. Exposes `completeTaskIfPending(taskId): Boolean` (atomic `UPDATE ... WHERE estado = 'PENDIENTE'` via `TaskDao.completeTaskIfPending`, compare-and-swap on the DB row) and `completeRecurringTask(task, clone, cloneReminders): List<Reminder>?`, which performs the same CAS inside `appDatabase.withTransaction { }` and only inserts the clone (and its inherited reminders) if the CAS won, returning the inserted reminders or `null` if it lost — this is what makes concurrent completion attempts safe. `deleteTasksInCategory(categoryId): List<Long>` deletes a category's tasks/subtasks/reminders in one transaction and returns the reminder ids to cancel. `markTaskPending(taskId)` reverts completion and clears `fechaCompletada`. `cancelAllRemindersForTask(taskId)` flips `activo=false` on every reminder of a task via a single `UPDATE`. `advanceRecurringReminder(reminder, nextDate): Reminder?` checks the task is still pending and CAS-advances the reminder date (`ReminderDao.advanceReminderIfUnchanged`, `WHERE fechaRecordatorio = :expected AND activo = 1`) inside a transaction; returns the updated row only if this call won. Only reachable for legacy/imported recurring reminders.
 - **`CategoryRepository`** — category CRUD + `initializeDefaultCategories(Context)`. The seeded names come from `DefaultCategories.getAll(Context)`, which reads `R.array.default_category_names` so the eight default categories localize correctly.
 - **`PreferencesRepository`** — described in Data Layer above.
 
@@ -95,8 +96,8 @@ Navigation drawer is an Android `DrawerLayout` wrapping a `ComposeView` (not a p
 - **`ReminderSchedulerContract`** — interface with `scheduleReminder()` and `cancelReminder()`. Implemented by `ReminderScheduler` and provided as `@Singleton` via Hilt.
 - **`ReminderScheduler`** — delegates to `AlarmPolicy.scheduleExactOrFallback()` for the SDK check, exact/inexact branching, and `SecurityException` fallback.
 - **`AlarmPolicy`** (`service/AlarmPolicy.kt`) — `object` with `scheduleExactOrFallback(alarmManager, triggerAtMillis, pendingIntent)`. Also `needsExactAlarmPermission(context)` and `exactAlarmSettingsIntent(context)`: on Android 14+ `SCHEDULE_EXACT_ALARM` is denied by default, so without it reminders are inexact (observed up to ~1 h window). `TasksByCategoryScreen` shows `ExactAlarmPermissionDialog` after setting a reminder when the permission is missing. Single source of truth for the SDK 31+ `canScheduleExactAlarms()` check and the `setExactAndAllowWhileIdle` → `setAndAllowWhileIdle` fallback used by both `ReminderScheduler` and `DailyReminderManager`.
-- **`ReminderReceiver`** — `@AndroidEntryPoint` `BroadcastReceiver`. `@Inject lateinit var scheduler: ReminderSchedulerContract` and `@Inject lateinit var database: AppDatabase`. Also injects `TaskRepository`. Handles alarm fires (`NotificationService`, `RecurrenceCalculator.advance` + `TaskRepository.advanceRecurringReminder` for recurring reminders — reschedules only if the CAS won) and reschedules everything on `BOOT_COMPLETED` and on `ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED` (alarms set before the grant stay inexact otherwise) (active task reminders + `DailyReminderManager.rescheduleFromPrefs()`).
-- **`DailyReminderService`** — `@AndroidEntryPoint` `BroadcastReceiver` (in `service/`). `@Inject lateinit var taskRepository: TaskRepository`. Uses `setExactAndAllowWhileIdle()` (via `AlarmPolicy`) and self-reschedules for the next day after firing.
+- **`ReminderReceiver`** — `@AndroidEntryPoint` `BroadcastReceiver`. `@Inject lateinit var scheduler: ReminderSchedulerContract` and `@Inject lateinit var database: AppDatabase`. Also injects `TaskRepository`. Handles alarm fires (`NotificationService`, `RecurrenceCalculator.advance` + `TaskRepository.advanceRecurringReminder` for recurring reminders — reschedules only if the CAS won) and reschedules all active future task reminders + `DailyReminderManager.rescheduleFromPrefs()` on `BOOT_COMPLETED` and on `ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED` (alarms set before the grant would otherwise stay inexact).
+- **`DailyReminderService`** — `@AndroidEntryPoint` `BroadcastReceiver` (in `service/`). `@Inject lateinit var taskRepository: TaskRepository`. Schedules via `AlarmPolicy` (exact only with the permission) and self-reschedules for the next day after firing.
 - **`DailyReminderManager`** — stateless `object` for daily-reminder scheduling. Reads/writes config via `PreferencesRepository(context)`. Exposes `loadPrefs()`, `scheduleDailyReminders()`, `cancelDailyReminders()`, `scheduleExactAlarm()` (delegates to `AlarmPolicy`), `rescheduleFromPrefs()`. Called from `DailyReminderScreen`, `DailyReminderService` (self-reschedule), and `ReminderReceiver` (boot reschedule).
 - Boot receiver (`RECEIVE_BOOT_COMPLETED`) re-schedules both task reminders and daily reminders after device restart.
 - **Notification channels:** `"taksy_reminders"` (task reminders) and `"daily_reminders"` (daily summaries), both IMPORTANCE_HIGH.
@@ -146,8 +147,33 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 - **ViewModel errors reach the user.** Wrap mutations in `launchSafe(R.string.error_…)`; `MainActivity` collects `taskViewModel.errors` + `categoryViewModel.errors` and shows a Toast. Don't swallow exceptions or launch bare `viewModelScope.launch` for writes.
 - **Widget code** accesses DI via `EntryPointAccessors` because `RemoteViewsFactory` isn't an `@AndroidEntryPoint` target.
 
-## Pending / Future Work
+## Verifying on a Device
 
-**Recurring-task duplication bug — root-caused and fixed 2026-07-07 (commit `510876f`).** Root cause was check-then-act in `CompleteTaskUseCase.execute`, not the unguarded subtask route alone; fixed via atomic `completeTaskIfPending` compare-and-swap (see Domain Layer / Repositories above). 109 unit tests pass. **Smoke-tested on a physical device (Moto g35, 2026-10-17): no duplicates** — rapid radio taps and subtask auto-complete each produced exactly one next occurrence (verified in the on-device DB). The perceived "duplicates" were completed occurrences piling up in the category list; `getTasksByCategory`/`searchTasksByCategory` now hide completed recurring occurrences and `TaskListItem` shows "Completed on <date>" (commit `1bdf007`). See `docs/debugging-taksy-duplication.md` for the full incident writeup and remaining punch list (BackupViewModel import transaction is done; `ReminderReceiver` recurring-reminder advance is now CAS-guarded too, and the `CategoryUtils` icon mapping is fixed).
+Unit tests can't reproduce concurrency or alarm timing; verify on a real device (a Moto g35, Android 16, was used). The debug build allows `run-as`:
 
-- Optional: `MainActivity` bulk is the `DrawerLayout` AndroidView block; moving it into its own file is fine but offers little incremental value.
+```bash
+ADB="$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe"
+# Pull the Room DB (copy all three files, the data is often still in the WAL)
+for f in ticksy_database ticksy_database-wal ticksy_database-shm; do
+  "$ADB" exec-out run-as com.example.taksy cat databases/$f > "$f"
+done
+# Scheduled alarms: window=0 + exactAllowReason=permission means exact
+"$ADB" shell dumpsys alarm | grep -A2 ReminderReceiver
+"$ADB" shell appops get com.example.taksy SCHEDULE_EXACT_ALARM
+"$ADB" exec-out screencap -p > screen.png
+```
+
+## History / Status
+
+**Recurring-task duplication bug — root-caused and fixed 2026-07-07 (commit `510876f`).** Root cause was check-then-act in `CompleteTaskUseCase.execute`; fixed via the atomic `completeTaskIfPending` compare-and-swap. **Device-verified 2026-10-17: no duplicates** (rapid taps and subtask auto-complete each produced exactly one next occurrence in the on-device DB). The user-perceived "duplicates" were completed occurrences piling up in the category list, fixed in `1bdf007`. Full writeup: `docs/debugging-taksy-duplication.md`.
+
+**2026-10-17 session** (all pushed, through `eb96419`):
+- Fixes: `ReminderReceiver` recurring-reminder advance made atomic (`26fad90`); category icon mapping unified in `CategoryUtils` (`d425b7e`); category names shown from `nombre` instead of derived from the icon (`e277ae6`).
+- Simplification after a feature audit: category management wired into the drawer + `DeleteCategoryUseCase`, ~1,600 lines of unreachable code removed (`d937d8e`); recurring tasks carry their reminder to the next occurrence, reminder recurrence no longer creatable (`c6af391`); dead Compose splash and the archive feature removed (`346c786`); task drag-reorder removed (`033d980`); single Settings screen with system theme (`3f5d435`).
+- ViewModel errors shown to the user (`d527367`); 98 unused strings removed (`b5857cd`); exact-alarm permission prompt — on Android 14+ reminders were firing 20–60 min late (`eb96419`).
+- 109 unit tests pass. Kotlin in `src/main` went from ~10,900 to ~8,500 lines.
+
+## Possible Future Work
+
+- `MainActivity` bulk is the `DrawerLayout` AndroidView block; moving it into its own file is fine but offers little incremental value.
+- `Task.archivada`, `Task.orden` and `TipoRecordatorio` DIARIO/SEMANAL/MENSUAL are legacy (kept for schema/backup compatibility). A future migration could drop them.
