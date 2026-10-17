@@ -1,496 +1,332 @@
 package com.example.taksy.ui.screens
 
-import android.app.TimePickerDialog
-import android.content.Context
-import androidx.compose.foundation.BorderStroke
+import android.text.format.DateFormat
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.taksy.R
-import com.example.taksy.ui.theme.SplashLightTeal
-import com.example.taksy.ui.theme.SplashLightGreen
-import com.example.taksy.ui.theme.DarkCardBg
-import com.example.taksy.ui.theme.GoldAccent
-import com.example.taksy.ui.theme.IconTeal40
-import com.example.taksy.ui.theme.IconTeal80
+import com.example.taksy.data.preferences.PreferencesRepository
+import com.example.taksy.service.AlarmPolicy
 import com.example.taksy.service.DailyReminderManager
-import java.util.Calendar
+import com.example.taksy.ui.components.ExactAlarmPermissionDialog
+import com.example.taksy.ui.theme.HomePalette
+import com.example.taksy.ui.theme.PlusJakartaSans
+import java.util.Locale
 
 /**
- * Pantalla de configuración de recordatorios diarios
+ * Recordatorios diarios: un resumen de tareas pendientes por la mañana y otro por la tarde.
+ * Cada cambio se guarda y reprograma al momento (sin botón de guardar), igual que en Configuración.
+ * Mismo lenguaje visual que la pantalla de inicio (HomePalette + Plus Jakarta Sans).
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DailyReminderScreen(
     onBackClick: () -> Unit,
-    isDarkMode: Boolean = false,
-    activity: androidx.activity.ComponentActivity? = null
+    isDarkMode: Boolean = false
 ) {
+    val palette = if (isDarkMode) HomePalette.Dark else HomePalette.Light
     val context = LocalContext.current
+    var prefs by remember { mutableStateOf(DailyReminderManager.loadPrefs(context)) }
+    var editingMorning by remember { mutableStateOf<Boolean?>(null) }
+    var showExactAlarmDialog by remember { mutableStateOf(false) }
 
-    // Cargar preferencias guardadas
-    val savedPrefs = remember { DailyReminderManager.loadPrefs(context) }
-    var isDailyReminderEnabled by remember { mutableStateOf(savedPrefs.enabled) }
-    var reminderTime1 by remember {
-        mutableStateOf(String.format("%02d:%02d", savedPrefs.morningHour, savedPrefs.morningMinute))
-    }
-    var reminderTime2 by remember {
-        mutableStateOf(String.format("%02d:%02d", savedPrefs.eveningHour, savedPrefs.eveningMinute))
-    }
-    var showSaveSuccess by remember { mutableStateOf(false) }
-    var timePickerKey1 by remember { mutableStateOf(0) }
-    var timePickerKey2 by remember { mutableStateOf(0) }
-
-    LaunchedEffect(timePickerKey1) {
-        if (timePickerKey1 > 0) {
-            val activityToUse = activity ?: (context as? androidx.activity.ComponentActivity)
-
-            if (activityToUse != null && !activityToUse.isFinishing && !activityToUse.isDestroyed) {
-                val hour = reminderTime1.split(":")[0].toInt()
-                val minute = reminderTime1.split(":")[1].toInt()
-
-                TimePickerDialog(
-                    activityToUse,
-                    { _, selectedHour, selectedMinute ->
-                        reminderTime1 = String.format("%02d:%02d", selectedHour, selectedMinute)
-                    },
-                    hour,
-                    minute,
-                    true
-                ).show()
-            }
-        }
+    // Guarda las preferencias y reprograma (o cancela) las dos alarmas
+    fun apply(newPrefs: PreferencesRepository.DailyReminderPrefs) {
+        prefs = newPrefs
+        DailyReminderManager.scheduleDailyReminders(
+            context = context,
+            morningHour = newPrefs.morningHour,
+            morningMinute = newPrefs.morningMinute,
+            eveningHour = newPrefs.eveningHour,
+            eveningMinute = newPrefs.eveningMinute,
+            enabled = newPrefs.enabled
+        )
     }
 
-    LaunchedEffect(timePickerKey2) {
-        if (timePickerKey2 > 0) {
-            val activityToUse = activity ?: (context as? androidx.activity.ComponentActivity)
-
-            if (activityToUse != null && !activityToUse.isFinishing && !activityToUse.isDestroyed) {
-                val hour = reminderTime2.split(":")[0].toInt()
-                val minute = reminderTime2.split(":")[1].toInt()
-
-                TimePickerDialog(
-                    activityToUse,
-                    { _, selectedHour, selectedMinute ->
-                        reminderTime2 = String.format("%02d:%02d", selectedHour, selectedMinute)
-                    },
-                    hour,
-                    minute,
-                    true
-                ).show()
-            }
-        }
+    val summary = if (prefs.enabled) {
+        stringResource(
+            R.string.settings_reminders_on,
+            formatTime(prefs.morningHour, prefs.morningMinute),
+            formatTime(prefs.eveningHour, prefs.eveningMinute)
+        )
+    } else {
+        stringResource(R.string.settings_reminders_off)
     }
-    
-    // Función para guardar recordatorios
-    fun saveReminders() {
-        if (isDailyReminderEnabled) {
-            val time1 = reminderTime1.split(":")
-            val time2 = reminderTime2.split(":")
-            
-            DailyReminderManager.scheduleDailyReminders(
-                context = context,
-                morningHour = time1[0].toInt(),
-                morningMinute = time1[1].toInt(),
-                eveningHour = time2[0].toInt(),
-                eveningMinute = time2[1].toInt(),
-                enabled = isDailyReminderEnabled
-            )
-        } else {
-            DailyReminderManager.cancelDailyReminders(context)
-        }
-        showSaveSuccess = true
-    }
-    
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.reminders_settings),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
-            )
-        }
-    ) { paddingValues ->
+
+    Scaffold(containerColor = palette.background) { paddingValues ->
         Column(
+            verticalArrangement = Arrangement.spacedBy(24.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 20.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(start = 22.dp, end = 22.dp, top = 8.dp, bottom = 32.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Tarjeta principal con gradiente púrpura
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    SplashLightTeal,    // Verde-azul suave
-                                    SplashLightGreen    // Verde suave
-                                )
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        // Icono de campana dorado
-                        Card(
-                            modifier = Modifier.size(60.dp),
-                            shape = RoundedCornerShape(30.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = GoldAccent
-                            )
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.Notifications,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(30.dp)
-                                )
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        Text(
-                            text = stringResource(R.string.notifications_title),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = IconTeal40,
-                            fontSize = 24.sp
-                        )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        Text(
-                            text = stringResource(R.string.notifications_subtitle),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = IconTeal40.copy(alpha = 0.8f),
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                    }
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                IconButton(onClick = onBackClick, modifier = Modifier.offset(x = (-12).dp)) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.back),
+                        tint = palette.ink
+                    )
                 }
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Sección de recordatorios diarios
-            Text(
-                text = stringResource(R.string.daily_reminders),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = IconTeal40
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Tarjeta de configuración de recordatorios
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isDarkMode) DarkCardBg else Color.White
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    // Título y toggle de recordatorios diarios
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                Icons.Default.Notifications,
-                                contentDescription = null,
-                                tint = IconTeal40,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.daily_reminders),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = IconTeal40
-                                )
-                                Text(
-                                    text = stringResource(R.string.daily_reminders_description),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(end = 8.dp)
-                                )
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.width(8.dp))
-                        
-                        Switch(
-                            checked = isDailyReminderEnabled,
-                            onCheckedChange = { isDailyReminderEnabled = it },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = IconTeal40,
-                                uncheckedThumbColor = Color.White,
-                                uncheckedTrackColor = Color.Gray
-                            )
-                        )
-                    }
-                    
-                    if (isDailyReminderEnabled) {
-                        Spacer(modifier = Modifier.height(20.dp))
-                        
-                        // Configuración de horarios
-                        Text(
-                            text = stringResource(R.string.reminder_times),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        // Primer horario
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(
-                                    Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = IconTeal40,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = stringResource(R.string.reminder_time_1),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.padding(end = 8.dp)
-                                )
-                            }
-                            
-                            Spacer(modifier = Modifier.width(8.dp))
-                            
-                            OutlinedButton(
-                                onClick = { timePickerKey1++ },
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = IconTeal40
-                                ),
-                                border = BorderStroke(1.dp, IconTeal40),
-                                modifier = Modifier.widthIn(min = 80.dp)
-                            ) {
-                                Text(
-                                    text = reminderTime1,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        // Segundo horario
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(
-                                    Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = IconTeal40,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = stringResource(R.string.reminder_time_2),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.padding(end = 8.dp)
-                                )
-                            }
-                            
-                            Spacer(modifier = Modifier.width(8.dp))
-                            
-                            OutlinedButton(
-                                onClick = { timePickerKey2++ },
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = IconTeal40
-                                ),
-                                border = BorderStroke(1.dp, IconTeal40),
-                                modifier = Modifier.widthIn(min = 80.dp)
-                            ) {
-                                Text(
-                                    text = reminderTime2,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // Botón de guardar
-                        Button(
-                            onClick = { saveReminders() },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = IconTeal40
-                            ),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.save_reminders),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Información adicional
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = SplashLightTeal.copy(alpha = 0.3f)
+                Text(
+                    text = stringResource(R.string.reminders_settings),
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 34.sp,
+                    lineHeight = 37.sp,
+                    letterSpacing = (-1).sp,
+                    color = palette.ink
                 )
-            ) {
+                Text(
+                    text = stringResource(R.string.daily_reminders_description),
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp,
+                    color = palette.muted
+                )
+            }
+
+            // ── Activar ──
+            ReminderCard(palette) {
                 Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(role = Role.Switch) {
+                            val enabling = !prefs.enabled
+                            apply(prefs.copy(enabled = enabling))
+                            if (enabling) showExactAlarmDialog = AlarmPolicy.needsExactAlarmPermission(context)
+                        }
+                        .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 14.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Info,
-                        contentDescription = null,
-                        tint = IconTeal40,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = stringResource(R.string.reminders_info),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(end = 8.dp)
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xFF00897B))
+                    ) {
+                        Icon(Icons.Default.Notifications, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.daily_reminders),
+                            fontFamily = PlusJakartaSans,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = palette.ink
+                        )
+                        Text(
+                            text = summary,
+                            fontFamily = PlusJakartaSans,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 12.sp,
+                            color = palette.muted
+                        )
+                    }
+                    // El cambio lo gestiona la fila entera (clickable) para que toda ella sea táctil
+                    Switch(
+                        checked = prefs.enabled,
+                        onCheckedChange = null,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = palette.brand,
+                            checkedBorderColor = palette.brand,
+                            uncheckedThumbColor = palette.muted,
+                            uncheckedTrackColor = palette.track,
+                            uncheckedBorderColor = palette.border
+                        )
                     )
                 }
             }
+
+            // ── Horarios ──
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SectionLabel(stringResource(R.string.reminder_times), palette)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .height(IntrinsicSize.Min)
+                        .alpha(if (prefs.enabled) 1f else 0.45f)
+                ) {
+                    TimeTile(
+                        label = stringResource(R.string.reminder_time_1),
+                        time = formatTime(prefs.morningHour, prefs.morningMinute),
+                        accent = Color(0xFFF9A825),
+                        palette = palette,
+                        enabled = prefs.enabled,
+                        onClick = { editingMorning = true },
+                        modifier = Modifier.weight(1f).fillMaxHeight()
+                    )
+                    TimeTile(
+                        label = stringResource(R.string.reminder_time_2),
+                        time = formatTime(prefs.eveningHour, prefs.eveningMinute),
+                        accent = Color(0xFF5C6BC0),
+                        palette = palette,
+                        enabled = prefs.enabled,
+                        onClick = { editingMorning = false },
+                        modifier = Modifier.weight(1f).fillMaxHeight()
+                    )
+                }
+            }
+
+            // ── Información ──
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(horizontal = 4.dp)
+            ) {
+                Icon(Icons.Default.Info, contentDescription = null, tint = palette.muted, modifier = Modifier.size(18.dp))
+                Text(
+                    text = stringResource(R.string.reminders_info),
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                    color = palette.muted
+                )
+            }
         }
     }
-    
-    // Mostrar mensaje de éxito
-    if (showSaveSuccess) {
-        LaunchedEffect(showSaveSuccess) {
-            kotlinx.coroutines.delay(2000)
-            showSaveSuccess = false
-        }
-        
+
+    editingMorning?.let { morning ->
+        ReminderTimePickerDialog(
+            initialHour = if (morning) prefs.morningHour else prefs.eveningHour,
+            initialMinute = if (morning) prefs.morningMinute else prefs.eveningMinute,
+            onConfirm = { hour, minute ->
+                apply(
+                    if (morning) prefs.copy(morningHour = hour, morningMinute = minute)
+                    else prefs.copy(eveningHour = hour, eveningMinute = minute)
+                )
+                editingMorning = null
+            },
+            onDismiss = { editingMorning = null }
+        )
+    }
+
+    if (showExactAlarmDialog) {
+        ExactAlarmPermissionDialog(onDismiss = { showExactAlarmDialog = false })
+    }
+}
+
+private fun formatTime(hour: Int, minute: Int) = String.format(Locale.ROOT, "%02d:%02d", hour, minute)
+
+@Composable
+private fun SectionLabel(text: String, palette: HomePalette) {
+    Text(
+        text = text.uppercase(),
+        fontFamily = PlusJakartaSans,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 13.sp,
+        letterSpacing = 1.sp,
+        color = palette.muted
+    )
+}
+
+@Composable
+private fun ReminderCard(palette: HomePalette, content: @Composable ColumnScope.() -> Unit) {
+    val shape = RoundedCornerShape(20.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(palette.surface)
+            .border(1.dp, palette.border, shape),
+        content = content
+    )
+}
+
+@Composable
+private fun TimeTile(
+    label: String,
+    time: String,
+    accent: Color,
+    palette: HomePalette,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(20.dp)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = modifier
+            .clip(shape)
+            .background(palette.surface)
+            .border(1.dp, palette.border, shape)
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(16.dp)
+    ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 80.dp),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = SplashLightGreen
-                ),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = IconTeal40,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = if (isDailyReminderEnabled) {
-                            stringResource(R.string.reminders_saved_success)
-                        } else {
-                            stringResource(R.string.reminders_disabled)
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = IconTeal40,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
+            Modifier
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(accent)
+        )
+        Text(
+            text = label,
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            color = palette.muted,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = time,
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 32.sp,
+            letterSpacing = (-1).sp,
+            color = palette.ink
+        )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReminderTimePickerDialog(
+    initialHour: Int,
+    initialMinute: Int,
+    onConfirm: (hour: Int, minute: Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val state = rememberTimePickerState(
+        initialHour = initialHour,
+        initialMinute = initialMinute,
+        is24Hour = DateFormat.is24HourFormat(context)
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = { TimePicker(state = state) },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(state.hour, state.minute) }) { Text(stringResource(R.string.ok)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        }
+    )
 }

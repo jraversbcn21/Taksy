@@ -2,7 +2,6 @@ package com.example.taksy.ui.navigation
 
 import android.content.Context
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -49,7 +48,6 @@ fun AppNavGraph(
     isDarkMode: Boolean,
     currentLanguage: String,
     context: Context,
-    activity: ComponentActivity,
     onMenuClick: () -> Unit,
     onShowLanguageChangeDialog: (String) -> Unit
 ) {
@@ -143,8 +141,7 @@ fun AppNavGraph(
         composable("daily_reminders") {
             DailyReminderScreen(
                 onBackClick = { navController.popOrHome() },
-                isDarkMode = isDarkMode,
-                activity = activity
+                isDarkMode = isDarkMode
             )
         }
 

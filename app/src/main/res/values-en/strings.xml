@@ -106,14 +106,11 @@
     <string name="confirm_delete_category">Delete this category?</string>
     
     <!-- Daily reminders -->
-    <string name="notifications_title">Notifications</string>
-    <string name="notifications_subtitle">Configure your reminders and alerts to keep your tasks active</string>
     <string name="daily_reminders">Daily Reminders</string>
     <string name="daily_reminders_description">Receive daily notifications to remind you of your tasks</string>
     <string name="reminder_times">Reminder Times</string>
     <string name="reminder_time_1">Morning Reminder</string>
     <string name="reminder_time_2">Evening Reminder</string>
-    <string name="save_reminders">Save Reminders</string>
     <string name="reminders_info">Reminders will help you maintain your tasks and review your pending tasks</string>
     
     <!-- Notification messages -->
@@ -188,8 +185,6 @@
     <string name="notification_task_label">Task: %s</string>
 
     <!-- Save messages -->
-    <string name="reminders_saved_success">Reminders saved successfully</string>
-    <string name="reminders_disabled">Reminders disabled</string>
 
     <!-- Onboarding -->
     <string name="onboarding_title_1">Organize your tasks</string>

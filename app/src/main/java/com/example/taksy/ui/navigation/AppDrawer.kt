@@ -1,7 +1,6 @@
 package com.example.taksy.ui.navigation
 
 import android.content.Context
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.AlertDialog
@@ -41,8 +40,7 @@ fun DrawerScreen(
     isDarkMode: Boolean,
     currentLanguage: String,
     themeViewModel: ThemeViewModel,
-    context: Context,
-    activity: ComponentActivity
+    context: Context
 ) {
     var drawerLayout by remember { mutableStateOf<DrawerLayout?>(null) }
     var showLanguageChangeDialog by remember { mutableStateOf(false) }
@@ -78,7 +76,6 @@ fun DrawerScreen(
                                     isDarkMode = innerIsDarkMode,
                                     currentLanguage = innerCurrentLanguage,
                                     context = context,
-                                    activity = activity,
                                     onMenuClick = { drawerLayout?.openDrawer(GravityCompat.START) },
                                     onShowLanguageChangeDialog = { language ->
                                         selectedLanguage = language

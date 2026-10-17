@@ -48,5 +48,3 @@ val SwipeDeleteBg = Color(0xFFE53935)
 val SwipeDeleteBgLight = Color(0xFFE57373)
 
 val SuccessGreen = Color(0xFF4CAF50)
-val GoldAccent = Color(0xFFFFD700)
-val DarkCardBg = Color(0xFF2D2D2D)

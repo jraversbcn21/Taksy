@@ -83,7 +83,7 @@ Start destination: `"onboarding"` (first launch) or `"category_list"` (subsequen
 - `task_detail/{taskId}` → `TaskDetailScreen`
 - `category_management` → `CategoryManagementScreen` (create via FAB, edit by tapping a category, delete via trash icon with a warning showing how many tasks go with it)
 - `settings` → `SettingsScreen` — same visual language as the home screen (`HomePalette` + Plus Jakarta Sans). Theme tiles: system/light/dark; language rows, which go through MainActivity's confirm dialog because it recreates the activity; a row to `daily_reminders` showing on/off and the two times (read via `DailyReminderManager.loadPrefs`).
-- `daily_reminders` → `DailyReminderScreen` (reached from Settings)
+- `daily_reminders` → `DailyReminderScreen` (reached from Settings) — same visual language as Settings. Every change (on/off switch, morning/evening time via a Material3 `TimePicker` dialog) is saved and rescheduled immediately through `DailyReminderManager.scheduleDailyReminders`, which also persists `enabled=false` so a disabled reminder is not revived on boot. Turning it on shows `ExactAlarmPermissionDialog` if the exact-alarm permission is missing.
 - `about` → `AboutScreen`
 - `backup` → `BackupScreen`
 - `stats` → `StatsScreen`

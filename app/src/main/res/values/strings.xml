@@ -109,14 +109,11 @@
     <string name="confirm_delete_category">¿Eliminar esta categoría?</string>
     
     <!-- Recordatorios diarios -->
-    <string name="notifications_title">Notificaciones</string>
-    <string name="notifications_subtitle">Configura tus recordatorios y alertas para mantener tus tareas activas</string>
     <string name="daily_reminders">Recordatorios Diarios</string>
     <string name="daily_reminders_description">Recibe notificaciones diarias para recordarte tus tareas</string>
     <string name="reminder_times">Horarios de Recordatorio</string>
     <string name="reminder_time_1">Recordatorio Matutino</string>
     <string name="reminder_time_2">Recordatorio Vespertino</string>
-    <string name="save_reminders">Guardar Recordatorios</string>
     <string name="reminders_info">Los recordatorios te ayudarán a mantener tus tareas y revisar tus tareas pendientes</string>
     
     <!-- Mensajes de notificaciones -->
@@ -191,8 +188,6 @@
     <string name="notification_task_label">Tarea: %s</string>
 
     <!-- Mensajes de guardado -->
-    <string name="reminders_saved_success">Recordatorios guardados correctamente</string>
-    <string name="reminders_disabled">Recordatorios desactivados</string>
 
     <!-- Onboarding -->
     <string name="onboarding_title_1">Organiza tus tareas</string>

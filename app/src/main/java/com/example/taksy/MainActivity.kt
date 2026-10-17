@@ -109,8 +109,7 @@ private fun MainScreen(activity: ComponentActivity) {
                 isDarkMode = isDarkMode,
                 currentLanguage = currentLanguage,
                 themeViewModel = themeViewModel,
-                context = LocalContext.current,
-                activity = activity
+                context = LocalContext.current
             )
         }
     }
