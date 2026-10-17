@@ -112,3 +112,20 @@ and — the part that actually closes the original incident — confirming on a
 real device that the race is gone, since JVM unit tests can assert the CAS
 logic but can't reproduce the exact Main-dispatcher coroutine interleaving
 that caused the original bug report.
+
+## Device smoke-test — 2026-10-17 (Moto g35 5G)
+
+Result: **no duplication.** Verified by pulling the Room DB via `adb exec-out run-as`:
+the "test 2" daily chain (ids 17→53) advanced one day per completion, never more
+than one PENDIENTE row, no repeated `fechaVencimiento`. Covered subtask
+auto-complete (task 17, 5 subtasks) and rapid radio taps (~1/s, two in the same
+second). Logcat showed no crashes or SQLite errors.
+
+The user-reported "duplicates" (screen recording `duplicado.mp4`) were completed
+occurrences left in the category list with no date or recurrence icon, so they
+looked identical to the pending one. Fixed in `1bdf007`: category list/search
+queries exclude `estado = 'COMPLETADA' AND recurrencia != 'NINGUNA'`, and
+completed rows show their completion date.
+
+Still not exercised on device: a DIARIO reminder firing and advancing
+(`advanceRecurringReminder`); only UNA_VEZ reminders were tested.
