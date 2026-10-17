@@ -24,6 +24,7 @@
     <!-- States -->
     <string name="task_pending">Pending</string>
     <string name="task_completed">Completed</string>
+    <string name="completed_on">Completed on %1$s</string>
     
     <!-- Messages -->
     <string name="no_tasks">No tasks</string>

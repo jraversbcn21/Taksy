@@ -73,9 +73,12 @@ interface TaskDao {
     suspend fun deleteCompletedTasks()
     
     /**
-     * Obtiene tareas por categoría
+     * Obtiene tareas por categoría.
+     * Oculta las ocurrencias ya completadas de tareas recurrentes: al completarlas se crea
+     * la siguiente ocurrencia, así que solo esa es relevante en la lista. Siguen en la base
+     * de datos (estadísticas, backup).
      */
-    @Query("SELECT * FROM tasks WHERE categoriaId = :categoryId AND archivada = 0 ORDER BY CASE WHEN estado = 'PENDIENTE' THEN 0 ELSE 1 END, orden ASC, CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
+    @Query("SELECT * FROM tasks WHERE categoriaId = :categoryId AND archivada = 0 AND NOT (estado = 'COMPLETADA' AND recurrencia != 'NINGUNA') ORDER BY CASE WHEN estado = 'PENDIENTE' THEN 0 ELSE 1 END, orden ASC, CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
     fun getTasksByCategory(categoryId: Long): Flow<List<Task>>
     
     /**
@@ -132,7 +135,7 @@ interface TaskDao {
     /**
      * Busca tareas por título dentro de una categoría
      */
-    @Query("SELECT * FROM tasks WHERE categoriaId = :categoryId AND archivada = 0 AND titulo LIKE '%' || :query || '%' ORDER BY CASE WHEN estado = 'PENDIENTE' THEN 0 ELSE 1 END, CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
+    @Query("SELECT * FROM tasks WHERE categoriaId = :categoryId AND archivada = 0 AND NOT (estado = 'COMPLETADA' AND recurrencia != 'NINGUNA') AND titulo LIKE '%' || :query || '%' ORDER BY CASE WHEN estado = 'PENDIENTE' THEN 0 ELSE 1 END, CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
     fun searchTasksByCategory(categoryId: Long, query: String): Flow<List<Task>>
 
     /**

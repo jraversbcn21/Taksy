@@ -30,6 +30,7 @@
     <!-- Estados -->
     <string name="task_pending">Pendiente</string>
     <string name="task_completed">Completada</string>
+    <string name="completed_on">Completada el %1$s</string>
     
     <!-- Mensajes -->
     <string name="no_tasks">No hay tareas</string>

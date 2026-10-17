@@ -229,6 +229,17 @@ fun TaskListItem(
                             }
                         }
 
+                        // Fecha de completado: sin ella, varias tareas completadas con el mismo título son indistinguibles
+                        if (isCompleted) {
+                            (task.fechaCompletada ?: task.fechaVencimiento)?.let { fecha ->
+                                Text(
+                                    text = stringResource(R.string.completed_on, DateUtils.formatDate(fecha)),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                            }
+                        }
+
                         if (!isCompleted && task.fechaVencimiento == null && task.recurrencia != TaskRecurrencia.NINGUNA) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
