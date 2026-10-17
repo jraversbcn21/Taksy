@@ -75,9 +75,6 @@ class BackupViewModelTest {
         override suspend fun getAllTasksSync(): List<Task> = tasks.toList()
         override fun getPendingTasksSync(): List<Task> = emptyList()
         override suspend fun deleteAllTasks() { tasks.clear() }
-        override fun getArchivedTasksByCategory(categoryId: Long): Flow<List<Task>> = flowOf(emptyList())
-        override suspend fun archiveTask(taskId: Long) {}
-        override suspend fun unarchiveTask(taskId: Long) {}
         override suspend fun updateTasks(tasks: List<Task>) {}
     }
 

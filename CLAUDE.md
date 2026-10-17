@@ -30,7 +30,7 @@ On Windows, use `gradlew.bat` if `./gradlew` doesn't work.
 UI (Compose screens, ui/components/*)
   ↓ observes StateFlow
 ViewModels (TaskViewModel, CategoryViewModel, ThemeViewModel,
-            SplashViewModel, BackupViewModel, StatsViewModel)
+            BackupViewModel, StatsViewModel)
   ↓ delegates to
 Domain use cases (CompleteTaskUseCase, SubtaskUseCase,
                   TaskReminderUseCase, RecurrenceCalculator)
@@ -41,7 +41,7 @@ Room Database (AppDatabase, v14)
 ```
 
 ### Data Layer
-- **Entities:** `Task` (`TaskPrioridad`: NINGUNA/BAJA/MEDIA/ALTA, `TaskRecurrencia`: NINGUNA/DIARIA/SEMANAL/MENSUAL/ANUAL, `descripcion: String?`, `archivada: Boolean`, `orden: Int`, `fechaCompletada: Date?`), `Subtask`, `Category`, `Reminder`.
+- **Entities:** `Task` (`TaskPrioridad`: NINGUNA/BAJA/MEDIA/ALTA, `TaskRecurrencia`: NINGUNA/DIARIA/SEMANAL/MENSUAL/ANUAL, `descripcion: String?`, `archivada: Boolean` (legacy: no UI sets it and no query filters on it since the archive feature was removed — kept only for schema/backup compatibility), `orden: Int`, `fechaCompletada: Date?`), `Subtask`, `Category`, `Reminder`.
 - **DAOs:** `TaskDao`, `SubtaskDao`, `CategoryDao`, `ReminderDao` — each exposes `getAllXxxSync()` and `deleteAllXxx()` for backup operations.
 - **AppDatabase** uses TypeConverters for `Date` and has 14 tracked migrations.
 - **`data/preferences/PreferencesRepository`** — Hilt `@Singleton`. Owns all four SharedPreferences files (`theme_pref`, `language_pref`, `daily_reminder_prefs`, `onboarding_prefs`) behind typed getters/setters. Also constructible manually with a `Context` so `LocaleHelper.attachBaseContext()` can read the saved language before the Hilt graph is built. Holds the `DailyReminderPrefs` data class consumed by `DailyReminderManager`.
@@ -67,7 +67,6 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 - **`TaskViewModel`** — thin facade (extends `AndroidViewModel`). Owns task CRUD, the `togglingTaskIds` guard, and the `searchAllTasks` flow. Delegates subtask operations to `SubtaskUseCase`, reminder operations to `TaskReminderUseCase`, and task completion to `CompleteTaskUseCase`. `addTask(input: TaskInput)` is the single entry point — the four legacy overloads are collapsed. Calls `TaskWidgetProvider.refreshAll(context)` after mutations.
 - **`CategoryViewModel`** — category CRUD (delete goes through `DeleteCategoryUseCase` + widget refresh); injects `@ApplicationContext` so `initializeDefaultCategories` can read the localized array.
 - **`ThemeViewModel`** — dark mode + language. Injects `PreferencesRepository`; calls `AppCompatDelegate.setApplicationLocales()` on language change to trigger activity recreation.
-- **`SplashViewModel`** — splash animation state.
 - **`BackupViewModel`** — export/import via `BackupManager`. Injects `@ApplicationContext`, `AppDatabase` (for `withTransaction`), DAOs directly (not repositories), and `ReminderSchedulerContract` to reschedule reminders after import.
 - **`StatsViewModel`** — combines `TaskRepository.getAllTasks()` and `CategoryRepository.getAllCategories()` into a `StatsUiState` via `stateIn`. Derives totals, completion rate, streak, last-7-days bucket counts (using `fechaCompletada`), and top 5 categories by task count.
 
@@ -112,7 +111,7 @@ Navigation drawer is an Android `DrawerLayout` wrapping a `ComposeView` (not a p
 
 ### Splash Screen
 - Native Android splash (`Theme.SplashScreen`) uses `splash_icon.xml` — an `InsetDrawable` wrapping `ticksy_icon.png` with 24 dp inset.
-- After the native splash, the Compose `SplashScreen` shows the animated icon (150 dp, scale + pulse + alpha) with app name and subtitle.
+- There is no Compose splash: the native one is the only splash.
 
 ## Key Tech Details
 

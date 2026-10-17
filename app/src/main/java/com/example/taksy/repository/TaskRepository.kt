@@ -39,10 +39,6 @@ class TaskRepository @Inject constructor(
     suspend fun updateTask(task: Task) = taskDao.updateTask(task)
     suspend fun deleteTask(task: Task) = taskDao.deleteTask(task)
 
-    fun getArchivedTasksByCategory(categoryId: Long): Flow<List<Task>> =
-        taskDao.getArchivedTasksByCategory(categoryId)
-    suspend fun archiveTask(taskId: Long) = taskDao.archiveTask(taskId)
-    suspend fun unarchiveTask(taskId: Long) = taskDao.unarchiveTask(taskId)
     suspend fun reorderTasks(tasks: List<Task>) = taskDao.updateTasks(tasks)
 
     /**

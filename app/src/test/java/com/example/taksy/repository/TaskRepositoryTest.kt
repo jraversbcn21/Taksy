@@ -75,16 +75,6 @@ class TaskRepositoryTest {
         override suspend fun deleteAllTasks() { tasks.clear() }
         override fun searchAllTasks(query: String): Flow<List<Task>> =
             flowOf(tasks.filter { it.titulo.contains(query, ignoreCase = true) })
-        override fun getArchivedTasksByCategory(categoryId: Long): Flow<List<Task>> =
-            flowOf(tasks.filter { it.categoriaId == categoryId && it.archivada })
-        override suspend fun archiveTask(taskId: Long) {
-            val idx = tasks.indexOfFirst { it.id == taskId }
-            if (idx >= 0) tasks[idx] = tasks[idx].copy(archivada = true)
-        }
-        override suspend fun unarchiveTask(taskId: Long) {
-            val idx = tasks.indexOfFirst { it.id == taskId }
-            if (idx >= 0) tasks[idx] = tasks[idx].copy(archivada = false)
-        }
         override suspend fun updateTasks(tasks: List<Task>) {
             tasks.forEach { updateTask(it) }
         }

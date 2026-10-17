@@ -89,19 +89,6 @@ class TaskViewModel @Inject constructor(
         TaskWidgetProvider.refreshAll(context)
     }
 
-    fun archiveTask(task: Task) = launchSafe {
-        repository.archiveTask(task.id)
-        TaskWidgetProvider.refreshAll(context)
-    }
-
-    fun unarchiveTask(task: Task) = launchSafe {
-        repository.unarchiveTask(task.id)
-        TaskWidgetProvider.refreshAll(context)
-    }
-
-    fun getArchivedTasksByCategory(categoryId: Long): Flow<List<Task>> =
-        repository.getArchivedTasksByCategory(categoryId)
-
     fun reorderTasks(tasks: List<Task>) {
         viewModelScope.launch { repository.reorderTasks(tasks) }
     }

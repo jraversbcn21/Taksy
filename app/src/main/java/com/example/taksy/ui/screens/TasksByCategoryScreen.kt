@@ -67,7 +67,6 @@ fun TasksByCategoryScreen(
     var selectedRecurrence by remember { mutableStateOf(TaskRecurrencia.NINGUNA) }
     var searchQuery by remember { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
-    var showArchived by remember { mutableStateOf(false) }
     var taskForReminder by remember { mutableStateOf<Task?>(null) }
     val focusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -95,8 +94,6 @@ fun TasksByCategoryScreen(
         taskViewModel.reorderTasks(reordered)
     }
 
-    val archivedTasks by taskViewModel.getArchivedTasksByCategory(category.id).collectAsState(initial = emptyList())
-
     val displayedTasks = if (searchQuery.isNotBlank()) {
         taskViewModel.searchTasksByCategory(category.id, searchQuery).collectAsState(initial = emptyList()).value
     } else {
@@ -104,8 +101,6 @@ fun TasksByCategoryScreen(
     }
 
     val undoDeleteMessage = stringResource(R.string.task_deleted_toast)
-    val taskArchivedMessage = stringResource(R.string.task_archived)
-    val taskUnarchivedMessage = stringResource(R.string.task_unarchived)
     val undoActionLabel = stringResource(R.string.undo)
 
     val handleDeleteWithUndo: (Task) -> Unit = { deletedTask ->
@@ -118,27 +113,6 @@ fun TasksByCategoryScreen(
             )
             if (result == SnackbarResult.ActionPerformed) {
                 taskViewModel.restoreTask(deletedTask)
-            }
-        }
-    }
-
-    val handleArchiveWithUndo: (Task) -> Unit = { task ->
-        if (task.archivada) {
-            taskViewModel.unarchiveTask(task)
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar(taskUnarchivedMessage, duration = SnackbarDuration.Short)
-            }
-        } else {
-            taskViewModel.archiveTask(task)
-            coroutineScope.launch {
-                val result = snackbarHostState.showSnackbar(
-                    message = taskArchivedMessage,
-                    actionLabel = undoActionLabel,
-                    duration = SnackbarDuration.Short
-                )
-                if (result == SnackbarResult.ActionPerformed) {
-                    taskViewModel.unarchiveTask(task)
-                }
             }
         }
     }
@@ -201,18 +175,6 @@ fun TasksByCategoryScreen(
                         }
                     },
                     actions = {
-                        if (archivedTasks.isNotEmpty()) {
-                            IconButton(onClick = { showArchived = !showArchived }) {
-                                Icon(
-                                    Icons.Default.KeyboardArrowDown,
-                                    contentDescription = stringResource(
-                                        if (showArchived) R.string.hide_archived else R.string.show_archived
-                                    ),
-                                    tint = if (showArchived) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                )
-                            }
-                        }
                         IconButton(onClick = { showSearch = true }) {
                             Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search_tasks))
                         }
@@ -351,7 +313,6 @@ fun TasksByCategoryScreen(
                                 onTaskClick = onTaskClick,
                                 onTaskToggle = onTaskToggle,
                                 onTaskDelete = handleDeleteWithUndo,
-                                onArchiveTask = handleArchiveWithUndo,
                                 onShowToast = { message -> showSnackbar(message) },
                                 onReminderClick = { taskForReminder = it },
                                 onEditTask = { taskViewModel.updateTask(it) },
@@ -359,27 +320,6 @@ fun TasksByCategoryScreen(
                             )
                         }
 
-                        if (showArchived && archivedTasks.isNotEmpty()) {
-                            item(key = "archived_header") {
-                                Text(
-                                    text = stringResource(R.string.archived_section),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-                                )
-                            }
-                            items(archivedTasks, key = { "archived_${it.id}" }) { task ->
-                                TaskListItem(
-                                    task = task,
-                                    category = category,
-                                    onTaskClick = onTaskClick,
-                                    onTaskToggle = {},
-                                    onTaskDelete = handleDeleteWithUndo,
-                                    onArchiveTask = handleArchiveWithUndo,
-                                    onShowToast = { message -> showSnackbar(message) }
-                                )
-                            }
-                        }
                     }
                 }
                 

@@ -44,7 +44,6 @@ val DueTomorrowOrange = Color(0xFFF57C00)
 
 val RecurrencePurple = Color(0xFF7E57C2)
 
-val SwipeArchiveBg = Color(0xFF607D8B)
 val SwipeDeleteBg = Color(0xFFE53935)
 val SwipeDeleteBgLight = Color(0xFFE57373)
 

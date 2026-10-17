@@ -34,7 +34,6 @@ import com.example.taksy.ui.theme.PriorityHighRed
 import com.example.taksy.ui.theme.PriorityLowGreen
 import com.example.taksy.ui.theme.PriorityMediumOrange
 import com.example.taksy.ui.theme.RecurrencePurple
-import com.example.taksy.ui.theme.SwipeArchiveBg
 import com.example.taksy.ui.theme.SwipeDeleteBg
 import com.example.taksy.utils.DateUtils
 import com.example.taksy.utils.DueDateStatus
@@ -50,7 +49,6 @@ fun TaskListItem(
     onTaskClick: (Task) -> Unit,
     onTaskToggle: (Task) -> Unit,
     onTaskDelete: (Task) -> Unit,
-    onArchiveTask: (Task) -> Unit = {},
     onShowToast: (String) -> Unit = {},
     onReminderClick: (Task) -> Unit = {},
     onEditTask: (Task) -> Unit = {},
@@ -78,10 +76,6 @@ fun TaskListItem(
                     showDeleteDialog = true
                     false
                 }
-                SwipeToDismissBoxValue.StartToEnd -> {
-                    onArchiveTask(task)
-                    true
-                }
                 else -> false
             }
         }
@@ -90,34 +84,19 @@ fun TaskListItem(
     SwipeToDismissBox(
         state = dismissState,
         modifier = modifier,
-        enableDismissFromStartToEnd = true,
+        enableDismissFromStartToEnd = false,
         enableDismissFromEndToStart = true,
         backgroundContent = {
-            val direction = dismissState.dismissDirection
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        if (direction == SwipeToDismissBoxValue.StartToEnd)
-                            SwipeArchiveBg
-                        else
-                            SwipeDeleteBg
-                    )
+                    .background(SwipeDeleteBg)
                     .padding(horizontal = 24.dp),
-                contentAlignment = if (direction == SwipeToDismissBoxValue.StartToEnd)
-                    Alignment.CenterStart
-                else
-                    Alignment.CenterEnd
+                contentAlignment = Alignment.CenterEnd
             ) {
                 Icon(
-                    imageVector = if (direction == SwipeToDismissBoxValue.StartToEnd)
-                        if (task.archivada) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown
-                    else
-                        Icons.Default.Delete,
-                    contentDescription = if (direction == SwipeToDismissBoxValue.StartToEnd)
-                        stringResource(R.string.archive_task)
-                    else
-                        stringResource(R.string.delete_task),
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.delete_task),
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
                 )
