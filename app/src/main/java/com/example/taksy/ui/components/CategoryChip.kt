@@ -29,7 +29,7 @@ fun CategoryChip(
         )
     ) {
         Text(
-            text = CategoryUtils.getCategoryName(category.icono),
+            text = CategoryUtils.getCategoryName(category),
             style = MaterialTheme.typography.labelSmall,
             color = Color(android.graphics.Color.parseColor(category.color)),
             fontWeight = FontWeight.Medium,

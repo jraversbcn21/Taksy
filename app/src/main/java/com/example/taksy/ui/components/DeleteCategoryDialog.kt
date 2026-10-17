@@ -108,7 +108,7 @@ fun DeleteCategoryDialog(
 
                         Column {
                             Text(
-                                text = CategoryUtils.getCategoryName(category.icono),
+                                text = CategoryUtils.getCategoryName(category),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Medium
                             )

@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import com.example.taksy.utils.CategoryUtils
 import com.example.taksy.R
 import com.example.taksy.data.Category
 import com.example.taksy.data.Task
@@ -374,7 +375,7 @@ private fun SearchResultItem(
                 // Nombre de la categoria
                 if (category != null) {
                     Text(
-                        text = category.nombre,
+                        text = CategoryUtils.getCategoryName(category),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                     )

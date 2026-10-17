@@ -62,6 +62,8 @@
     <string name="category_study">Estudios</string>
     <string name="category_exercise">Ejercicio</string>
     <string name="category_others">Otros</string>
+    <!-- Nombre que MIGRATION_4_5 guardó para la categoría Estudio; solo se usa para reconocerla -->
+    <string name="category_study_legacy" translatable="false">Estudio</string>
     
     <!-- Diálogo de categorías -->
     <string name="add_category">Añadir Categoría</string>

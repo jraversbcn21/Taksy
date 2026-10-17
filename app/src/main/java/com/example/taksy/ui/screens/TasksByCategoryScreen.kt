@@ -189,7 +189,7 @@ fun TasksByCategoryScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = CategoryUtils.getCategoryName(category.icono),
+                            text = CategoryUtils.getCategoryName(category),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -273,7 +273,7 @@ fun TasksByCategoryScreen(
                                 text = if (searchQuery.isNotBlank())
                                     stringResource(R.string.no_search_results)
                                 else
-                                    stringResource(R.string.no_tasks_in_category, CategoryUtils.getCategoryName(category.icono)),
+                                    stringResource(R.string.no_tasks_in_category, CategoryUtils.getCategoryName(category)),
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

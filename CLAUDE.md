@@ -136,6 +136,7 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 - **No SharedPreferences access outside `PreferencesRepository`.** If you need a new key, add it there.
 - **No alarm scheduling outside `AlarmPolicy`.** New alarm sites call `AlarmPolicy.scheduleExactOrFallback()`.
 - **Category icons live in `CategoryUtils`.** `selectableIcons` is the single map for both the picker and rendering; don't redefine icon lists in UI code.
+- **Display category names via `CategoryUtils.getCategoryName(category)`**, never `category.nombre` directly. It shows `nombre` as-is, except an un-renamed default category (name matches a seeded/`category_*`/legacy name for its icon, in any supported locale) is shown translated to the current language.
 - **No category names hardcoded in Kotlin.** Default category names live in the `default_category_names` string-array; only metadata (color, icon) stays inline.
 - **Receivers and services that need DI** are `@AndroidEntryPoint` with `@Inject lateinit var` fields. Don't construct `TaskRepository(...)` or `ReminderScheduler(context)` manually.
 - **Widget code** accesses DI via `EntryPointAccessors` because `RemoteViewsFactory` isn't an `@AndroidEntryPoint` target.

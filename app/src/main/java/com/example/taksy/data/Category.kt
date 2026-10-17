@@ -30,6 +30,9 @@ object DefaultCategories {
         Metadata(color = "#795548", icono = "more_horiz")
     )
 
+    /** Iconos de las categorías por defecto, en el mismo orden que `default_category_names`. */
+    val icons: List<String> get() = metadata.map { it.icono }
+
     fun getAll(context: Context): List<Category> {
         val names = context.resources.getStringArray(R.array.default_category_names)
         check(names.size == metadata.size) {

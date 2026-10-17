@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.taksy.utils.CategoryUtils
 import com.example.taksy.R
 import com.example.taksy.ui.theme.DueTodayOrange
 import com.example.taksy.ui.theme.SuccessGreen
@@ -287,7 +288,7 @@ private fun CategoryRow(catStats: CategoryStats) {
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = catStats.category.nombre,
+                    text = CategoryUtils.getCategoryName(catStats.category),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,

@@ -98,7 +98,7 @@ fun CategoryItem(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = CategoryUtils.getCategoryName(category.icono),
+                    text = CategoryUtils.getCategoryName(category),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
