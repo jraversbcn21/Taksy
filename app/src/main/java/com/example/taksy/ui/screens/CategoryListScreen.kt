@@ -202,6 +202,7 @@ fun CategoryListScreen(
                 }
                 if (todayTasks.isNotEmpty()) {
                     item(key = "today") {
+                        val now by rememberNow()
                         LazyRow(
                             modifier = Modifier.padding(top = 20.dp),
                             contentPadding = PaddingValues(horizontal = 22.dp),
@@ -212,6 +213,7 @@ fun CategoryListScreen(
                                     task = task,
                                     category = task.categoriaId?.let { categoryMap[it] },
                                     palette = palette,
+                                    now = now,
                                     onClick = { onTaskClick(task) },
                                     onToggle = { onToggleTask(task) },
                                     modifier = Modifier.animateItem()
@@ -396,6 +398,7 @@ private fun TodayTaskCard(
     task: Task,
     category: Category?,
     palette: HomePalette,
+    now: Calendar,
     onClick: () -> Unit,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier
@@ -411,18 +414,26 @@ private fun TodayTaskCard(
         palette.isDark -> color.copy(alpha = 0.12f)
         else -> color.copy(alpha = 0.08f)
     }
+    // Hora de vencimiento; las 00:00 se toman como "sin hora"
+    val dueTime = task.fechaVencimiento?.let { due ->
+        Calendar.getInstance().apply { time = due }
+            .takeUnless { it.get(Calendar.HOUR_OF_DAY) == 0 && it.get(Calendar.MINUTE) == 0 }
+    }
+    // Vencida: pendiente y con la hora ya pasada (se vuelve a comprobar cada minuto)
+    val overdue = !done && dueTime != null && dueTime.timeInMillis < now.timeInMillis
+    val overdueColor = if (palette.isDark) lerp(DueOverdueRed, Color.White, 0.25f) else DueOverdueRed
     val borderColor = when {
         done -> palette.border
+        overdue -> overdueColor.copy(alpha = 0.5f)
         palette.isDark -> color.copy(alpha = 0.25f)
         else -> color.copy(alpha = 0.2f)
     }
     val timeLabel = when {
         done -> stringResource(R.string.home_task_done)
-        else -> task.fechaVencimiento?.let { due ->
-            val cal = Calendar.getInstance().apply { time = due }
-            if (cal.get(Calendar.HOUR_OF_DAY) == 0 && cal.get(Calendar.MINUTE) == 0) null
-            else String.format(Locale.ROOT, "%02d:%02d", cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
-        } ?: stringResource(R.string.home_today_label)
+        dueTime != null -> String.format(
+            Locale.ROOT, "%02d:%02d", dueTime.get(Calendar.HOUR_OF_DAY), dueTime.get(Calendar.MINUTE)
+        )
+        else -> stringResource(R.string.home_today_label)
     }
 
     Column(
@@ -441,7 +452,7 @@ private fun TodayTaskCard(
                 fontFamily = PlusJakartaSans,
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp,
-                color = accentText,
+                color = if (overdue) overdueColor else accentText,
                 modifier = Modifier.weight(1f)
             )
             Box(

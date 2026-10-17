@@ -78,7 +78,7 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 
 Start destination: `"onboarding"` (first launch) or `"category_list"` (subsequent). Routes:
 - `onboarding` → `OnboardingScreen`
-- `category_list` → `CategoryListScreen` — home screen: time-of-day greeting (`GreetingUtils`), a row of tasks due today, and the category lists with done/total progress (drag-reorder kept). Own palette and font in `ui/theme/HomeTheme.kt` (`HomePalette.Light`/`Dark`, Plus Jakarta Sans in `res/font/`). A completed recurring occurrence in the today row can't be un-ticked: its next occurrence already exists, so reopening it would leave two pending.
+- `category_list` → `CategoryListScreen` — home screen: time-of-day greeting (`GreetingUtils`), a row of tasks due today, and the category lists with done/total progress (drag-reorder kept). Own palette and font in `ui/theme/HomeTheme.kt` (`HomePalette.Light`/`Dark`, Plus Jakarta Sans in `res/font/`). Today cards whose due time has passed show the time and border in red (re-checked every minute; tasks without a time never do). A completed recurring occurrence in the today row can't be un-ticked: its next occurrence already exists, so reopening it would leave two pending.
 - `tasks_by_category/{categoryId}` → `TasksByCategoryScreen`
 - `task_detail/{taskId}` → `TaskDetailScreen`
 - `category_management` → `CategoryManagementScreen` (create via FAB, edit by tapping a category, delete via trash icon with a warning showing how many tasks go with it)
