@@ -255,4 +255,9 @@
     <string name="home_today_label">Today</string>
     <string name="home_task_done">Done</string>
     <string name="home_mark_done">Mark as done</string>
+
+    <!-- Settings -->
+    <string name="settings_section_notifications">Notifications</string>
+    <string name="settings_reminders_on">On · %1$s and %2$s</string>
+    <string name="settings_reminders_off">Off</string>
 </resources>

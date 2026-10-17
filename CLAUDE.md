@@ -82,7 +82,7 @@ Start destination: `"onboarding"` (first launch) or `"category_list"` (subsequen
 - `tasks_by_category/{categoryId}` → `TasksByCategoryScreen`
 - `task_detail/{taskId}` → `TaskDetailScreen`
 - `category_management` → `CategoryManagementScreen` (create via FAB, edit by tapping a category, delete via trash icon with a warning showing how many tasks go with it)
-- `settings` → `SettingsScreen` (theme radio: system/light/dark; language radio, which goes through MainActivity's confirm dialog because it recreates the activity; link to `daily_reminders`)
+- `settings` → `SettingsScreen` — same visual language as the home screen (`HomePalette` + Plus Jakarta Sans). Theme tiles: system/light/dark; language rows, which go through MainActivity's confirm dialog because it recreates the activity; a row to `daily_reminders` showing on/off and the two times (read via `DailyReminderManager.loadPrefs`).
 - `daily_reminders` → `DailyReminderScreen` (reached from Settings)
 - `about` → `AboutScreen`
 - `backup` → `BackupScreen`

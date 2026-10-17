@@ -258,4 +258,9 @@
     <string name="home_today_label">Hoy</string>
     <string name="home_task_done">Hecho</string>
     <string name="home_mark_done">Marcar como hecha</string>
+
+    <!-- Configuración -->
+    <string name="settings_section_notifications">Notificaciones</string>
+    <string name="settings_reminders_on">Activados · %1$s y %2$s</string>
+    <string name="settings_reminders_off">Desactivados</string>
 </resources>

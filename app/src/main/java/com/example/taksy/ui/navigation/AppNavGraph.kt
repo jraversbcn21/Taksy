@@ -186,7 +186,8 @@ fun AppNavGraph(
                     if (language != currentLanguage) onShowLanguageChangeDialog(language)
                 },
                 onDailyRemindersClick = { navController.navigate("daily_reminders") },
-                onBackClick = { navController.popOrHome() }
+                onBackClick = { navController.popOrHome() },
+                isDarkMode = isDarkMode
             )
         }
 
