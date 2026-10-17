@@ -11,6 +11,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.example.taksy.data.preferences.ThemeMode
 
 private val DarkColorScheme = darkColorScheme(
     primary = IconGreen80,           // Verde medio claro del icono
@@ -68,4 +69,11 @@ fun TicksyTheme(
         typography = Typography,
         content = content
     )
+}
+
+@Composable
+fun ThemeMode.isDark(): Boolean = when (this) {
+    ThemeMode.LIGHT -> false
+    ThemeMode.DARK -> true
+    ThemeMode.SYSTEM -> isSystemInDarkTheme()
 }

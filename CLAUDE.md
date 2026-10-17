@@ -74,7 +74,7 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 - **`StatsViewModel`** — combines `TaskRepository.getAllTasks()` and `CategoryRepository.getAllCategories()` into a `StatsUiState` via `stateIn`. Derives totals, completion rate, streak, last-7-days bucket counts (using `fechaCompletada`), and top 5 categories by task count.
 
 ### Navigation
-`ui/navigation/AppNavGraph.kt` owns the `NavHost` and every `composable(...)` route. `MainActivity` only wires the `DrawerLayout` + `ComposeView` hybrid and the activity lifecycle.
+`ui/navigation/AppNavGraph.kt` owns the `NavHost` and every `composable(...)` route. `ui/navigation/AppDrawer.kt` (`DrawerScreen`) holds the `DrawerLayout` + `ComposeView` hybrid, the `NavigationView` menu and the language-change confirm dialog. `MainActivity` only handles the activity lifecycle, theme/system bars and the error Toasts. `ThemeMode.isDark()` lives in `ui/theme/Theme.kt`.
 
 Start destination: `"onboarding"` (first launch) or `"category_list"` (subsequent). Routes:
 - `onboarding` → `OnboardingScreen`
@@ -173,7 +173,3 @@ done
 - ViewModel errors shown to the user (`d527367`); 98 unused strings removed (`b5857cd`); exact-alarm permission prompt — on Android 14+ reminders were firing 20–60 min late (`eb96419`).
 - 109 unit tests pass. Kotlin in `src/main` went from ~10,900 to ~8,500 lines.
 - DB v15 migration drops the legacy columns (`archivada`, task `orden`, `tipoRecordatorio`) and the recurring-reminder advance path; device-verified on the Moto g35 (32 tasks / 8 reminders kept). Old backups still import (legacy fields ignored; a DIARIO/SEMANAL/MENSUAL reminder becomes one-shot). 96 unit tests pass.
-
-## Possible Future Work
-
-- `MainActivity` bulk is the `DrawerLayout` AndroidView block; moving it into its own file is fine but offers little incremental value.
