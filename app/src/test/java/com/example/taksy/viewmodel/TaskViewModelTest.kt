@@ -2,6 +2,7 @@ package com.example.taksy.viewmodel
 
 import android.app.Application
 import android.content.Context
+import com.example.taksy.R
 import com.example.taksy.data.Reminder
 import com.example.taksy.data.ReminderDao
 import com.example.taksy.data.Subtask
@@ -204,9 +205,26 @@ class TaskViewModelTest {
     // ── Error handling ────────────────────────────────────────────────────
 
     @Test
-    fun `clearError resets error state`() {
-        viewModel.clearError()
-        assertEquals(null, viewModel.uiState.value.error)
+    fun `failed operation emits its localized error message`() = runTest {
+        fakeTaskDao.failOnWrite = true
+
+        viewModel.addTask(TaskInput(titulo = "Falla"))
+
+        assertEquals(R.string.error_add_task, viewModel.errors.first())
+    }
+
+    @Test
+    fun `failed toggle releases the guard so the task can be toggled again`() = runTest {
+        fakeTaskDao.tasks.add(Task(id = 1, titulo = "T", estado = TaskEstado.COMPLETADA))
+        fakeTaskDao.failOnWrite = true
+        viewModel.toggleTaskStatus(fakeTaskDao.tasks[0])
+        assertEquals(R.string.error_toggle_task, viewModel.errors.first())
+
+        fakeTaskDao.failOnWrite = false
+        viewModel.toggleTaskStatus(fakeTaskDao.tasks[0])
+        advanceUntilIdle()
+
+        assertEquals(TaskEstado.PENDIENTE, fakeTaskDao.tasks[0].estado)
     }
 
     // ── Fakes ─────────────────────────────────────────────────────────────
@@ -227,7 +245,11 @@ class TaskViewModelTest {
         override fun searchTasksByCategory(categoryId: Long, query: String): Flow<List<Task>> =
             flowOf(tasks.filter { it.categoriaId == categoryId && it.titulo.contains(query, ignoreCase = true) })
         override suspend fun getTaskById(id: Long): Task? = tasks.find { it.id == id }
-        override suspend fun insertTask(task: Task): Long { tasks.add(task); emit(); return task.id }
+        var failOnWrite = false
+        override suspend fun insertTask(task: Task): Long {
+            if (failOnWrite) error("simulated DB failure")
+            tasks.add(task); emit(); return task.id
+        }
         override suspend fun updateTask(task: Task) {
             val idx = tasks.indexOfFirst { it.id == task.id }
             if (idx >= 0) tasks[idx] = task
@@ -242,6 +264,7 @@ class TaskViewModelTest {
             return 1
         }
         override suspend fun markTaskAsPending(id: Long) {
+            if (failOnWrite) error("simulated DB failure")
             val idx = tasks.indexOfFirst { it.id == id }
             if (idx >= 0) {
                 tasks[idx] = tasks[idx].copy(estado = TaskEstado.PENDIENTE, fechaCompletada = null)

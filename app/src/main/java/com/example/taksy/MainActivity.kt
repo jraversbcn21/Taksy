@@ -3,6 +3,7 @@ package com.example.taksy
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -20,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +49,7 @@ import com.example.taksy.viewmodel.TaskViewModel
 import com.example.taksy.viewmodel.ThemeViewModel
 import com.google.android.material.navigation.NavigationView
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.merge
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -89,6 +92,14 @@ private fun MainScreen(activity: ComponentActivity) {
     val navController = rememberNavController()
 
     val themeMode by themeViewModel.themeMode.collectAsStateWithLifecycle()
+
+    // Los ViewModels no pueden mostrar UI: sus errores llegan aquí como eventos y se muestran como Toast
+    val context = LocalContext.current
+    LaunchedEffect(taskViewModel, categoryViewModel) {
+        merge(taskViewModel.errors, categoryViewModel.errors).collect { message ->
+            Toast.makeText(context, context.getString(message), Toast.LENGTH_SHORT).show()
+        }
+    }
     val isDarkMode = themeMode.isDark()
 
     // Las barras del sistema siguen el tema de la app, no el del sistema: si no, con la app

@@ -2,8 +2,11 @@ package com.example.taksy.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
+import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.taksy.R
 import com.example.taksy.data.Reminder
 import com.example.taksy.data.Subtask
 import com.example.taksy.data.Task
@@ -16,10 +19,10 @@ import com.example.taksy.domain.TaskReminderUseCase
 import com.example.taksy.repository.TaskRepository
 import com.example.taksy.widget.TaskWidgetProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.util.Date
 import javax.inject.Inject
@@ -43,8 +46,10 @@ class TaskViewModel @Inject constructor(
 
     private val context: Context get() = getApplication<Application>().applicationContext
 
-    private val _uiState = MutableStateFlow(TaskUiState())
-    val uiState: StateFlow<TaskUiState> = _uiState.asStateFlow()
+    private val _errors = Channel<Int>(Channel.BUFFERED)
+
+    /** Errores de operaciones, como id de string. Evento de un solo uso: lo muestra MainActivity. */
+    val errors: Flow<Int> = _errors.receiveAsFlow()
 
     private val togglingTaskIds = mutableSetOf<Long>()
 
@@ -63,7 +68,7 @@ class TaskViewModel @Inject constructor(
 
     fun addTask(input: TaskInput) {
         if (input.titulo.isBlank()) return
-        launchSafe {
+        launchSafe(R.string.error_add_task) {
             repository.insertTask(
                 Task(
                     titulo = input.titulo.trim(),
@@ -77,74 +82,74 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    fun updateTask(task: Task) = launchSafe { repository.updateTask(task) }
+    fun updateTask(task: Task) = launchSafe(R.string.error_update_task) { repository.updateTask(task) }
 
-    fun deleteTask(task: Task) = launchSafe {
+    fun deleteTask(task: Task) = launchSafe(R.string.error_delete_task) {
         repository.deleteTask(task)
         TaskWidgetProvider.refreshAll(context)
     }
 
-    fun restoreTask(task: Task) = launchSafe {
+    fun restoreTask(task: Task) = launchSafe(R.string.error_add_task) {
         repository.insertTask(task)
         TaskWidgetProvider.refreshAll(context)
     }
 
     fun toggleTaskStatus(task: Task) {
         if (!togglingTaskIds.add(task.id)) return
-        viewModelScope.launch {
-            runCatching {
+        launchSafe(R.string.error_toggle_task) {
+            try {
                 if (task.estado == TaskEstado.PENDIENTE) {
                     completeTaskUseCase.execute(task)
                 } else {
                     repository.markTaskPending(task.id)
                 }
                 TaskWidgetProvider.refreshAll(context)
-            }.onFailure { setError(it.message) }
-            togglingTaskIds.remove(task.id)
+            } finally {
+                togglingTaskIds.remove(task.id)
+            }
         }
     }
 
     suspend fun getTaskById(id: Long): Task? = repository.getTaskById(id)
 
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
-    }
-
     // ── Subtasks (delegated) ───────────────────────────────────────────────
 
     fun getSubtasksByTaskId(taskId: Long): Flow<List<Subtask>> = subtaskUseCase.observe(taskId)
 
-    fun addSubtask(taskId: Long, titulo: String) = launchSafe { subtaskUseCase.add(taskId, titulo) }
+    fun addSubtask(taskId: Long, titulo: String) = launchSafe(R.string.error_add_subtask) { subtaskUseCase.add(taskId, titulo) }
 
-    fun toggleSubtaskStatus(subtask: Subtask) = launchSafe {
+    fun toggleSubtaskStatus(subtask: Subtask) = launchSafe(R.string.error_update_subtask) {
         val parentAutoCompleted = subtaskUseCase.toggle(subtask)
         if (parentAutoCompleted) TaskWidgetProvider.refreshAll(context)
     }
 
-    fun deleteSubtask(subtask: Subtask) = launchSafe { subtaskUseCase.delete(subtask) }
+    fun deleteSubtask(subtask: Subtask) = launchSafe(R.string.error_delete_subtask) { subtaskUseCase.delete(subtask) }
 
     // ── Reminders (delegated) ──────────────────────────────────────────────
 
     fun getRemindersByTaskId(taskId: Long): Flow<List<Reminder>> = reminderUseCase.observe(taskId)
 
     fun setQuickReminder(taskId: Long, taskTitle: String, fecha: Date) =
-        launchSafe { reminderUseCase.setQuick(taskId, taskTitle, fecha) }
+        launchSafe(R.string.error_add_reminder) { reminderUseCase.setQuick(taskId, taskTitle, fecha) }
 
-    fun deleteReminderForTask(taskId: Long) = launchSafe { reminderUseCase.deleteAllForTask(taskId) }
+    fun deleteReminderForTask(taskId: Long) = launchSafe(R.string.error_delete_reminder) { reminderUseCase.deleteAllForTask(taskId) }
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
-    private fun launchSafe(block: suspend () -> Unit) {
+    private fun launchSafe(@StringRes errorMessage: Int, block: suspend () -> Unit) {
         viewModelScope.launch {
-            runCatching { block() }.onFailure { setError(it.message) }
+            try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Task operation failed", e)
+                _errors.trySend(errorMessage)
+            }
         }
     }
 
-    private fun setError(message: String?) {
-        _uiState.value = _uiState.value.copy(error = message ?: "Error desconocido")
+    private companion object {
+        const val TAG = "TaskViewModel"
     }
 }
-
-data class TaskUiState(
-    val error: String? = null
-)
