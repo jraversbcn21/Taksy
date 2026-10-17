@@ -10,7 +10,6 @@ import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TaskRecurrencia
-import com.example.taksy.data.TipoRecordatorio
 import com.example.taksy.domain.CompleteTaskUseCase
 import com.example.taksy.domain.SubtaskUseCase
 import com.example.taksy.domain.TaskReminderUseCase
@@ -144,22 +143,6 @@ class TaskViewModel @Inject constructor(
     // ── Reminders (delegated) ──────────────────────────────────────────────
 
     fun getRemindersByTaskId(taskId: Long): Flow<List<Reminder>> = reminderUseCase.observe(taskId)
-
-    fun getAllActiveReminders(): Flow<List<Reminder>> = reminderUseCase.observeAllActive()
-
-    fun addReminder(
-        taskId: Long,
-        titulo: String,
-        descripcion: String?,
-        fechaRecordatorio: Date,
-        tipoRecordatorio: TipoRecordatorio
-    ) = launchSafe { reminderUseCase.add(taskId, titulo, descripcion, fechaRecordatorio, tipoRecordatorio) }
-
-    fun updateReminder(reminder: Reminder) = launchSafe { reminderUseCase.update(reminder) }
-
-    fun deleteReminder(reminder: Reminder) = launchSafe { reminderUseCase.delete(reminder) }
-
-    fun updateReminderStatus(id: Long, activo: Boolean) = launchSafe { reminderUseCase.setActive(id, activo) }
 
     fun setQuickReminder(taskId: Long, taskTitle: String, fecha: Date) =
         launchSafe { reminderUseCase.setQuick(taskId, taskTitle, fecha) }

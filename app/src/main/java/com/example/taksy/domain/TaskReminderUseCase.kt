@@ -8,37 +8,18 @@ import kotlinx.coroutines.flow.Flow
 import java.util.Date
 import javax.inject.Inject
 
+/**
+ * Recordatorios de una tarea. Desde la UI solo existe el recordatorio rápido: uno por
+ * tarea y de una sola vez. Los recordatorios con repetición propia (DIARIO/SEMANAL/MENSUAL)
+ * ya no se pueden crear; ReminderReceiver los sigue atendiendo por compatibilidad con
+ * datos antiguos o importados. Una tarea recurrente pasa su recordatorio a la siguiente
+ * ocurrencia en CompleteTaskUseCase.
+ */
 class TaskReminderUseCase @Inject constructor(
     private val repository: TaskRepository,
     private val scheduler: ReminderSchedulerContract
 ) {
     fun observe(taskId: Long): Flow<List<Reminder>> = repository.getRemindersByTaskId(taskId)
-
-    fun observeAllActive(): Flow<List<Reminder>> = repository.getAllActiveReminders()
-
-    suspend fun add(
-        taskId: Long,
-        titulo: String,
-        descripcion: String?,
-        fechaRecordatorio: Date,
-        tipoRecordatorio: TipoRecordatorio
-    ) {
-        val reminder = Reminder(
-            taskId = taskId,
-            titulo = titulo,
-            descripcion = descripcion,
-            fechaRecordatorio = fechaRecordatorio,
-            tipoRecordatorio = tipoRecordatorio
-        )
-        val id = repository.insertReminder(reminder)
-        scheduler.scheduleReminder(reminder.copy(id = id))
-    }
-
-    suspend fun update(reminder: Reminder) = repository.updateReminder(reminder)
-
-    suspend fun delete(reminder: Reminder) = repository.deleteReminder(reminder)
-
-    suspend fun setActive(id: Long, activo: Boolean) = repository.updateReminderStatus(id, activo)
 
     suspend fun setQuick(taskId: Long, taskTitle: String, fecha: Date) {
         repository.getRemindersByTaskIdSync(taskId).forEach {

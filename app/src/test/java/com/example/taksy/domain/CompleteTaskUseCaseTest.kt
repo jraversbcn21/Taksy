@@ -102,7 +102,12 @@ class CompleteTaskUseCaseTest {
         override fun getAllActiveReminders(): Flow<List<Reminder>> = flowOf(reminders.filter { it.activo })
         override suspend fun getAllActiveRemindersSync(): List<Reminder> = reminders.filter { it.activo }
         override suspend fun getReminderById(id: Long): Reminder? = reminders.find { it.id == id }
-        override suspend fun insertReminder(reminder: Reminder): Long = reminder.id
+        private var nextReminderId = 100L
+        override suspend fun insertReminder(reminder: Reminder): Long {
+            val id = if (reminder.id == 0L) nextReminderId++ else reminder.id
+            reminders.add(reminder.copy(id = id))
+            return id
+        }
         override suspend fun updateReminder(reminder: Reminder) {
             val idx = reminders.indexOfFirst { it.id == reminder.id }
             if (idx >= 0) reminders[idx] = reminder
@@ -129,7 +134,8 @@ class CompleteTaskUseCaseTest {
 
     private class FakeScheduler : ReminderSchedulerContract {
         val cancelledIds = mutableListOf<Long>()
-        override fun scheduleReminder(reminder: Reminder) {}
+        val scheduled = mutableListOf<Reminder>()
+        override fun scheduleReminder(reminder: Reminder) { scheduled.add(reminder) }
         override fun cancelReminder(reminderId: Long) { cancelledIds.add(reminderId) }
     }
 
@@ -150,7 +156,7 @@ class CompleteTaskUseCaseTest {
         // para que ejecute el bloque directamente sobre los fakes.
         mockkStatic("androidx.room.RoomDatabaseKt")
         val db = mockk<AppDatabase>(relaxed = true)
-        val blockSlot = slot<suspend () -> Boolean>()
+        val blockSlot = slot<suspend () -> Any?>()
         coEvery { db.withTransaction(capture(blockSlot)) } coAnswers { blockSlot.captured.invoke() }
 
         val repository = TaskRepository(db, taskDao, FakeSubtaskDao(), reminderDao)
@@ -226,6 +232,61 @@ class CompleteTaskUseCaseTest {
         useCase.execute(staleSnapshot)
 
         assertTrue(scheduler.cancelledIds.contains(7L))
-        assertTrue(reminderDao.reminders.none { it.activo })
+        assertFalse(reminderDao.reminders.single { it.id == 7L }.activo)
+        // El segundo execute perdió la carrera: no hereda un segundo recordatorio
+        assertEquals(1, reminderDao.reminders.count { it.taskId != 1L })
+    }
+
+    // ── Herencia de recordatorios ─────────────────────────────────────────
+
+    @Test
+    fun `clone inherits the reminder advanced by the task recurrence and it is scheduled`() = runTest {
+        val due = Date(System.currentTimeMillis() + HOUR)
+        taskDao.tasks.add(recurringTask().copy(fechaVencimiento = due))
+        reminderDao.reminders.add(
+            Reminder(id = 7L, taskId = 1L, titulo = "R", fechaRecordatorio = due, fechaCreacion = Date())
+        )
+
+        assertTrue(useCase.execute(taskDao.tasks[0]))
+
+        val clone = taskDao.tasks.single { it.estado == TaskEstado.PENDIENTE }
+        val inherited = reminderDao.reminders.single { it.taskId == clone.id }
+        assertEquals(clone.fechaVencimiento, inherited.fechaRecordatorio)
+        assertTrue(inherited.activo)
+        assertEquals(listOf(inherited.id), scheduler.scheduled.map { it.id })
+    }
+
+    @Test
+    fun `inherited reminder still in the past is stored but not scheduled`() = runTest {
+        // Tarea diaria completada con 3 días de retraso: un día más sigue en el pasado
+        val overdue = Date(System.currentTimeMillis() - 3 * DAY)
+        taskDao.tasks.add(recurringTask().copy(fechaVencimiento = overdue))
+        reminderDao.reminders.add(
+            Reminder(id = 7L, taskId = 1L, titulo = "R", fechaRecordatorio = overdue, fechaCreacion = Date())
+        )
+
+        assertTrue(useCase.execute(taskDao.tasks[0]))
+
+        val clone = taskDao.tasks.single { it.estado == TaskEstado.PENDIENTE }
+        assertEquals(1, reminderDao.reminders.count { it.taskId == clone.id })
+        assertTrue(scheduler.scheduled.isEmpty())
+    }
+
+    @Test
+    fun `non-recurring task does not create reminders`() = runTest {
+        taskDao.tasks.add(Task(id = 1L, titulo = "Simple", estado = TaskEstado.PENDIENTE))
+        reminderDao.reminders.add(
+            Reminder(id = 7L, taskId = 1L, titulo = "R", fechaRecordatorio = Date(), fechaCreacion = Date())
+        )
+
+        useCase.execute(taskDao.tasks[0])
+
+        assertEquals(listOf(7L), reminderDao.reminders.map { it.id })
+        assertTrue(scheduler.scheduled.isEmpty())
+    }
+
+    private companion object {
+        const val HOUR = 60 * 60 * 1000L
+        const val DAY = 24 * HOUR
     }
 }

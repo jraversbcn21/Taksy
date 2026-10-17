@@ -58,13 +58,22 @@ class TaskRepository @Inject constructor(
      * Completa una tarea recurrente e inserta su siguiente ocurrencia de forma atómica.
      * El compare-and-swap dentro de la transacción garantiza que solo el primer caller
      * inserta el clon: cualquier ejecución concurrente ve estado != PENDIENTE y no escribe.
-     * Devuelve true si esta llamada completó la tarea e insertó el clon.
+     * Los [cloneReminders] se insertan asociados al clon en la misma transacción.
+     * Devuelve los recordatorios insertados (con su id) si esta llamada completó la tarea,
+     * o null si otro caller ya la había completado.
      */
-    suspend fun completeRecurringTask(task: Task, clone: Task): Boolean =
+    suspend fun completeRecurringTask(
+        task: Task,
+        clone: Task,
+        cloneReminders: List<Reminder> = emptyList()
+    ): List<Reminder>? =
         appDatabase.withTransaction {
-            val won = taskDao.completeTaskIfPending(task.id, Date()) == 1
-            if (won) taskDao.insertTask(clone)
-            won
+            if (taskDao.completeTaskIfPending(task.id, Date()) != 1) return@withTransaction null
+            val cloneId = taskDao.insertTask(clone)
+            cloneReminders.map { template ->
+                val reminder = template.copy(id = 0, taskId = cloneId, activo = true)
+                reminder.copy(id = reminderDao.insertReminder(reminder))
+            }
         }
 
     /**
