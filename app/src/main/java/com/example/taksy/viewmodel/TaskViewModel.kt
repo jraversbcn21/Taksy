@@ -89,10 +89,6 @@ class TaskViewModel @Inject constructor(
         TaskWidgetProvider.refreshAll(context)
     }
 
-    fun reorderTasks(tasks: List<Task>) {
-        viewModelScope.launch { repository.reorderTasks(tasks) }
-    }
-
     fun toggleTaskStatus(task: Task) {
         if (!togglingTaskIds.add(task.id)) return
         viewModelScope.launch {

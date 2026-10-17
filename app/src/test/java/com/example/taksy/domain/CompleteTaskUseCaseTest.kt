@@ -78,7 +78,6 @@ class CompleteTaskUseCaseTest {
         override suspend fun getAllTasksSync(): List<Task> = tasks.toList()
         override fun getPendingTasksSync(): List<Task> = tasks.filter { it.estado == TaskEstado.PENDIENTE }
         override suspend fun deleteAllTasks() { tasks.clear() }
-        override suspend fun updateTasks(tasks: List<Task>) { tasks.forEach { updateTask(it) } }
     }
 
     private class FakeSubtaskDao : SubtaskDao {

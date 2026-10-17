@@ -41,10 +41,12 @@ Room Database (AppDatabase, v14)
 ```
 
 ### Data Layer
-- **Entities:** `Task` (`TaskPrioridad`: NINGUNA/BAJA/MEDIA/ALTA, `TaskRecurrencia`: NINGUNA/DIARIA/SEMANAL/MENSUAL/ANUAL, `descripcion: String?`, `archivada: Boolean` (legacy: no UI sets it and no query filters on it since the archive feature was removed — kept only for schema/backup compatibility), `orden: Int`, `fechaCompletada: Date?`), `Subtask`, `Category`, `Reminder`.
+- **Entities:** `Task` (`TaskPrioridad`: NINGUNA/BAJA/MEDIA/ALTA, `TaskRecurrencia`: NINGUNA/DIARIA/SEMANAL/MENSUAL/ANUAL, `descripcion: String?`, `archivada: Boolean` (legacy: no UI sets it and no query filters on it since the archive feature was removed — kept only for schema/backup compatibility), `orden: Int` (legacy for tasks: task drag-reorder was removed and task queries no longer sort by it; categories still use their own `orden` for drag-reorder), `fechaCompletada: Date?`), `Subtask`, `Category`, `Reminder`.
 - **DAOs:** `TaskDao`, `SubtaskDao`, `CategoryDao`, `ReminderDao` — each exposes `getAllXxxSync()` and `deleteAllXxx()` for backup operations.
 - **AppDatabase** uses TypeConverters for `Date` and has 14 tracked migrations.
 - **`data/preferences/PreferencesRepository`** — Hilt `@Singleton`. Owns all four SharedPreferences files (`theme_pref`, `language_pref`, `daily_reminder_prefs`, `onboarding_prefs`) behind typed getters/setters. Also constructible manually with a `Context` so `LocaleHelper.attachBaseContext()` can read the saved language before the Hilt graph is built. Holds the `DailyReminderPrefs` data class consumed by `DailyReminderManager`.
+
+Task lists in a category are ordered: pending first, then priority (ALTA→NINGUNA), then due date (no date last), then newest. There is no manual reordering of tasks.
 
 Key business rule: when all subtasks of a task are completed, the parent task auto-completes (logic lives in `SubtaskUseCase`, surfaced via `TaskViewModel`).
 
@@ -146,5 +148,4 @@ When modifying Room entities, always add a migration in `AppDatabase.kt` and inc
 
 **Recurring-task duplication bug — root-caused and fixed 2026-07-07 (commit `510876f`).** Root cause was check-then-act in `CompleteTaskUseCase.execute`, not the unguarded subtask route alone; fixed via atomic `completeTaskIfPending` compare-and-swap (see Domain Layer / Repositories above). 108 unit tests pass. **Smoke-tested on a physical device (Moto g35, 2026-10-17): no duplicates** — rapid radio taps and subtask auto-complete each produced exactly one next occurrence (verified in the on-device DB). The perceived "duplicates" were completed occurrences piling up in the category list; `getTasksByCategory`/`searchTasksByCategory` now hide completed recurring occurrences and `TaskListItem` shows "Completed on <date>" (commit `1bdf007`). See `docs/debugging-taksy-duplication.md` for the full incident writeup and remaining punch list (BackupViewModel import transaction is done; `ReminderReceiver` recurring-reminder advance is now CAS-guarded too, and the `CategoryUtils` icon mapping is fixed).
 
-- Optional: shrink `TasksByCategoryScreen` further. The drag-and-drop block is the main remaining inline section; it shares state heavily with the LazyColumn, so extraction is non-trivial.
 - Optional: `MainActivity` bulk is the `DrawerLayout` AndroidView block; moving it into its own file is fine but offers little incremental value.

@@ -75,9 +75,6 @@ class TaskRepositoryTest {
         override suspend fun deleteAllTasks() { tasks.clear() }
         override fun searchAllTasks(query: String): Flow<List<Task>> =
             flowOf(tasks.filter { it.titulo.contains(query, ignoreCase = true) })
-        override suspend fun updateTasks(tasks: List<Task>) {
-            tasks.forEach { updateTask(it) }
-        }
     }
 
     private class FakeSubtaskDao : SubtaskDao {

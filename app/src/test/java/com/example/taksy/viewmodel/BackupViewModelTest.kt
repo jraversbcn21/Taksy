@@ -75,7 +75,6 @@ class BackupViewModelTest {
         override suspend fun getAllTasksSync(): List<Task> = tasks.toList()
         override fun getPendingTasksSync(): List<Task> = emptyList()
         override suspend fun deleteAllTasks() { tasks.clear() }
-        override suspend fun updateTasks(tasks: List<Task>) {}
     }
 
     private class FakeSubtaskDao : SubtaskDao {

@@ -2,12 +2,9 @@ package com.example.taksy.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
@@ -71,28 +68,6 @@ fun TasksByCategoryScreen(
     val focusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-
-    // Drag & drop state
-    var tasksState by remember { mutableStateOf(tasks) }
-    val listState = rememberLazyListState()
-    var draggingIndex by remember { mutableStateOf(-1) }
-    var accumulatedDelta by remember { mutableStateOf(0f) }
-
-    LaunchedEffect(tasks) {
-        tasksState = tasks
-    }
-
-    fun moveTask(fromIndex: Int, toIndex: Int) {
-        if (fromIndex == toIndex) return
-        val newTasks = tasksState.toMutableList()
-        val item = newTasks.removeAt(fromIndex)
-        newTasks.add(toIndex, item)
-        val reordered = newTasks.mapIndexed { index, task ->
-            task.copy(orden = index + 1)
-        }
-        tasksState = reordered
-        taskViewModel.reorderTasks(reordered)
-    }
 
     val displayedTasks = if (searchQuery.isNotBlank()) {
         taskViewModel.searchTasksByCategory(category.id, searchQuery).collectAsState(initial = emptyList()).value
@@ -254,55 +229,17 @@ fun TasksByCategoryScreen(
                         }
                     }
                 } else {
-                    // Lista de tareas
-                    val isDraggable = searchQuery.isBlank()
+                    // Lista de tareas: orden fijo por estado, prioridad y fecha (ver TaskDao)
                     LazyColumn(
-                        state = listState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(
-                            items = if (isDraggable) tasksState else displayedTasks,
-                            key = { it.id }
-                        ) { task ->
-                            val index = tasksState.indexOf(task)
+                        items(displayedTasks, key = { it.id }) { task ->
                             val subtasks by taskViewModel.getSubtasksByTaskId(task.id).collectAsState(initial = emptyList())
                             val pendingSubtasksCount = subtasks.count { it.estado == TaskEstado.PENDIENTE }
                             val reminders by taskViewModel.getRemindersByTaskId(task.id).collectAsState(initial = emptyList())
                             val hasActiveReminder = reminders.any { it.activo }
-
-                            val dragModifier = if (isDraggable) {
-                                Modifier
-                                    .animateItem()
-                                    .draggable(
-                                        state = rememberDraggableState { delta ->
-                                            accumulatedDelta += delta
-                                            val minThreshold = 50f
-                                            if (kotlin.math.abs(accumulatedDelta) < minThreshold) return@rememberDraggableState
-                                            val thresholdUp = 300f
-                                            val thresholdDown = 350f
-                                            val threshold = if (accumulatedDelta < 0) thresholdUp else thresholdDown
-                                            val positionChange = (accumulatedDelta / threshold).toInt().coerceIn(-1, 1)
-                                            if (positionChange != 0) {
-                                                val newIndex = (index + positionChange).coerceIn(0, tasksState.size - 1)
-                                                if (newIndex != index) {
-                                                    coroutineScope.launch { moveTask(index, newIndex) }
-                                                    accumulatedDelta = 0f
-                                                }
-                                            }
-                                        },
-                                        orientation = androidx.compose.foundation.gestures.Orientation.Vertical,
-                                        onDragStarted = {
-                                            draggingIndex = index
-                                            accumulatedDelta = 0f
-                                        },
-                                        onDragStopped = {
-                                            draggingIndex = -1
-                                            accumulatedDelta = 0f
-                                        }
-                                    )
-                            } else Modifier
 
                             TaskListItem(
                                 task = task,
@@ -316,7 +253,7 @@ fun TasksByCategoryScreen(
                                 onShowToast = { message -> showSnackbar(message) },
                                 onReminderClick = { taskForReminder = it },
                                 onEditTask = { taskViewModel.updateTask(it) },
-                                modifier = dragModifier
+                                modifier = Modifier.animateItem()
                             )
                         }
 

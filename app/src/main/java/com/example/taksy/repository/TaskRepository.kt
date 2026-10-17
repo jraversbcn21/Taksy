@@ -39,7 +39,6 @@ class TaskRepository @Inject constructor(
     suspend fun updateTask(task: Task) = taskDao.updateTask(task)
     suspend fun deleteTask(task: Task) = taskDao.deleteTask(task)
 
-    suspend fun reorderTasks(tasks: List<Task>) = taskDao.updateTasks(tasks)
 
     /**
      * Completa la tarea solo si sigue PENDIENTE en la base de datos (compare-and-swap).
