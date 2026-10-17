@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import com.example.taksy.data.AppDatabase
 import com.example.taksy.data.Reminder
+import com.example.taksy.repository.TaskRepository
 import com.example.taksy.service.DailyReminderManager
 import com.example.taksy.service.NotificationService
 import com.example.taksy.service.ReminderSchedulerContract
@@ -19,6 +20,7 @@ class ReminderReceiver : BroadcastReceiver() {
 
     @Inject lateinit var scheduler: ReminderSchedulerContract
     @Inject lateinit var database: AppDatabase
+    @Inject lateinit var taskRepository: TaskRepository
 
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
@@ -63,16 +65,14 @@ class ReminderReceiver : BroadcastReceiver() {
     }
 
     private suspend fun scheduleNextRecurringReminder(reminder: Reminder) {
-        val task = database.taskDao().getTaskById(reminder.taskId)
+        val nextDate = com.example.taksy.domain.RecurrenceCalculator.advance(
+            reminder.fechaRecordatorio,
+            reminder.tipoRecordatorio
+        ) ?: return
 
-        if (task?.estado != com.example.taksy.data.TaskEstado.COMPLETADA) {
-            val nextDate = com.example.taksy.domain.RecurrenceCalculator.advance(
-                reminder.fechaRecordatorio,
-                reminder.tipoRecordatorio
-            ) ?: return
-
-            val updatedReminder = reminder.copy(fechaRecordatorio = nextDate)
-            database.reminderDao().updateReminder(updatedReminder)
+        // Solo reprograma si esta llamada ganó el compare-and-swap: una alarma duplicada,
+        // una tarea completada o un recordatorio editado/desactivado entre medias no escriben.
+        taskRepository.advanceRecurringReminder(reminder, nextDate)?.let { updatedReminder ->
             scheduler.scheduleReminder(updatedReminder)
         }
     }

@@ -341,6 +341,15 @@ class TaskViewModelTest {
             val idx = reminders.indexOfFirst { it.id == id }
             if (idx >= 0) reminders[idx] = reminders[idx].copy(activo = activo)
         }
+        override suspend fun deactivateRemindersByTaskId(taskId: Long) {
+            reminders.replaceAll { if (it.taskId == taskId) it.copy(activo = false) else it }
+        }
+        override suspend fun advanceReminderIfUnchanged(id: Long, expectedDate: Date, nextDate: Date): Int {
+            val idx = reminders.indexOfFirst { it.id == id && it.fechaRecordatorio == expectedDate && it.activo }
+            if (idx < 0) return 0
+            reminders[idx] = reminders[idx].copy(fechaRecordatorio = nextDate)
+            return 1
+        }
         override suspend fun getRemindersByTaskIdSync(taskId: Long): List<Reminder> =
             reminders.filter { it.taskId == taskId }
         override suspend fun getAllRemindersSync(): List<Reminder> = reminders.toList()

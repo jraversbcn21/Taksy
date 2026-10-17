@@ -62,7 +62,7 @@ radio button alone.
 |---|----------|----------|---------|--------|
 | 1 | Critical | `CompleteTaskUseCase.kt`, `SubtaskUseCase.kt`, `TaskRepository.kt` | Recurring task duplication (above) | **Fixed**, commit `510876f` |
 | 2 | High | `BackupViewModel.kt` import | Wipe (4 deletes) + reinsert (N inserts) with no `withTransaction` — mid-import crash could leave DB empty or partial | **Fixed**, commit `510876f` (wrapped in `appDatabase.withTransaction`, `BackupViewModelTest` added) |
-| 3 | Medium | `ReminderReceiver.kt:65-78`, `scheduleNextRecurringReminder` | Read-check-write on reminder recurrence without a transaction. Same pattern as #1 but lower risk — AlarmManager doesn't naturally double-fire a single alarm | **Open** — next priority |
+| 3 | Medium | `ReminderReceiver.kt:65-78`, `scheduleNextRecurringReminder` | Read-check-write on reminder recurrence without a transaction. Same pattern as #1 but lower risk — AlarmManager doesn't naturally double-fire a single alarm | **Fixed** — `TaskRepository.advanceRecurringReminder` (transaction + `ReminderDao.advanceReminderIfUnchanged` CAS on `fechaRecordatorio`/`activo`); `cancelAllRemindersForTask` now a single targeted `UPDATE` |
 | 4 | Low | `CategoryUtils.kt:22` | `"school" -> Icons.Default.Settings` is the wrong icon (cosmetic); `favorite`/`health` icon names collide | **Open** |
 | 5 | Info | `AppDatabase.kt:103-108` | Hardcoded category names in `MIGRATION_4_5` SQL — this is frozen migration SQL, not a live-code violation of the "no hardcoded category names" rule. No action needed. | Not a bug — documented for completeness |
 
