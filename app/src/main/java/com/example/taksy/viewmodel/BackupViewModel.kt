@@ -1,6 +1,7 @@
 package com.example.taksy.viewmodel
 
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.withTransaction
@@ -9,10 +10,12 @@ import com.example.taksy.service.ReminderSchedulerContract
 import com.example.taksy.utils.BackupManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Date
 import javax.inject.Inject
 
@@ -30,7 +33,8 @@ class BackupViewModel @Inject constructor(
     private val _backupState = MutableStateFlow<BackupState>(BackupState.Idle)
     val backupState: StateFlow<BackupState> = _backupState.asStateFlow()
 
-    fun generateBackupJson(onResult: (String) -> Unit) {
+    /** Escribe la copia en el fichero elegido con SAF; el éxito se marca solo tras escribirlo. */
+    fun exportBackup(uri: Uri) {
         viewModelScope.launch {
             _backupState.value = BackupState.Loading
             try {
@@ -41,11 +45,31 @@ class BackupViewModel @Inject constructor(
                     reminders = reminderDao.getAllRemindersSync()
                 )
                 val json = BackupManager.exportToJson(data)
+                withContext(Dispatchers.IO) {
+                    val output = requireNotNull(context.contentResolver.openOutputStream(uri)) { "Cannot open $uri" }
+                    output.use { it.write(json.toByteArray(Charsets.UTF_8)) }
+                }
                 _backupState.value = BackupState.ExportSuccess
-                onResult(json)
             } catch (e: Exception) {
                 _backupState.value = BackupState.Error(e.message ?: "Export error")
             }
+        }
+    }
+
+    /** Lee el fichero elegido con SAF fuera del hilo principal e importa su contenido. */
+    fun importBackup(uri: Uri) {
+        viewModelScope.launch {
+            _backupState.value = BackupState.Loading
+            val json = try {
+                withContext(Dispatchers.IO) {
+                    val input = requireNotNull(context.contentResolver.openInputStream(uri)) { "Cannot open $uri" }
+                    input.use { it.bufferedReader().readText() }
+                }
+            } catch (e: Exception) {
+                _backupState.value = BackupState.Error(e.message ?: "Import error")
+                return@launch
+            }
+            importBackupJson(json)
         }
     }
 

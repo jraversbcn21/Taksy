@@ -168,7 +168,6 @@
     <string name="backup_error_invalid_subtask">Error in subtask %s: incomplete or invalid data</string>
     <string name="backup_error_invalid_reminder">Error in reminder %s: incomplete or invalid data</string>
     <string name="backup_error_invalid_date">Invalid date format: %s</string>
-    <string name="confirm">Confirm</string>
 
     <!-- Notification channels -->
     <string name="notification_channel_name">Taksy Reminders</string>

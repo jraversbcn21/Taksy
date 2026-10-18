@@ -171,7 +171,6 @@
     <string name="backup_error_invalid_subtask">Error en la subtarea %s: datos incompletos o inválidos</string>
     <string name="backup_error_invalid_reminder">Error en el recordatorio %s: datos incompletos o inválidos</string>
     <string name="backup_error_invalid_date">Formato de fecha inválido: %s</string>
-    <string name="confirm">Confirmar</string>
 
     <!-- Canales de notificación -->
     <string name="notification_channel_name">Recordatorios de Taksy</string>

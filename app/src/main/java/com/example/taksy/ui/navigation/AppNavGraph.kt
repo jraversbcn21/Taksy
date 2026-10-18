@@ -201,7 +201,8 @@ fun AppNavGraph(
             val backupViewModel: BackupViewModel = hiltViewModel()
             BackupScreen(
                 backupViewModel = backupViewModel,
-                onBackClick = { navController.popOrHome() }
+                onBackClick = { navController.popOrHome() },
+                isDarkMode = isDarkMode
             )
         }
 

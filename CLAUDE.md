@@ -87,7 +87,7 @@ Start destination: `"onboarding"` (first launch) or `"category_list"` (subsequen
 - `settings` → `SettingsScreen` — same visual language as the home screen (`HomePalette` + Plus Jakarta Sans). Theme tiles: system/light/dark; language rows, which go through MainActivity's confirm dialog because it recreates the activity; a row to `daily_reminders` showing on/off and the two times (read via `DailyReminderManager.loadPrefs`).
 - `daily_reminders` → `DailyReminderScreen` (reached from Settings) — same visual language as Settings. Every change (on/off switch, morning/evening time via a Material3 `TimePicker` dialog) is saved and rescheduled immediately through `DailyReminderManager.scheduleDailyReminders`, which also persists `enabled=false` so a disabled reminder is not revived on boot. Turning it on shows `ExactAlarmPermissionDialog` if the exact-alarm permission is missing.
 - `about` → `AboutScreen`
-- `backup` → `BackupScreen`
+- `backup` → `BackupScreen` — same visual language as Settings. Export / import rows; import asks for confirmation (shared dialog helpers) because it replaces everything.
 - `stats` → `StatsScreen` — same visual language as Settings. Completion-rate ring + streak, pending / active-category counters, last-7-days bars (today highlighted; day initials localized in the UI from `DayCompletion.day`), top 5 categories with icon tile and progress.
 
 `AppNavGraph` defines a private `NavHostController.popOrHome()` extension that collapses the repeated "popBackStack or fall back to category_list" pattern used by every drawer screen.
@@ -106,7 +106,7 @@ Navigation drawer is an Android `DrawerLayout` wrapping a `ComposeView` (not a p
 
 ### Backup System
 - **`BackupManager`** (`utils/`) — stateless utility that serializes/deserializes all entities to/from JSON using `org.json`. Includes `backupVersion`, `exportDate`, and arrays for categories, tasks, subtasks, reminders. `BackupImportException` + `ImportErrorType` enum (INVALID_JSON, MISSING_SECTION, INVALID_CATEGORY/TASK/SUBTASK/REMINDER, INVALID_DATE) report the exact failing record index.
-- **`BackupScreen`** — export via SAF `CreateDocument`; import via SAF `OpenDocument` with a "this will replace all data" confirmation dialog. Errors localized through `BackupState.ImportError`.
+- **`BackupScreen`** — export via SAF `CreateDocument`; import via SAF `OpenDocument` with a "this will replace all data" confirmation dialog. Errors localized through `BackupState.ImportError`. File I/O lives in `BackupViewModel.exportBackup(uri)` / `importBackup(uri)` on `Dispatchers.IO` (an unreadable file reports an error instead of crashing; export success is set only after the write). `importBackupJson(json)` stays as the testable core.
 - Import clears all tables (reminders → subtasks → tasks → categories) then inserts from the JSON preserving original IDs, all inside a single `appDatabase.withTransaction { }` (a mid-import failure rolls back instead of leaving the DB empty/partial). After the transaction commits, active future reminders are rescheduled via `ReminderSchedulerContract`.
 
 ### Widget
