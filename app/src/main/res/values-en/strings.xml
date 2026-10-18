@@ -129,7 +129,6 @@
 
     <!-- About -->
     <string name="about">About</string>
-    <string name="about_title">About Ticksy</string>
     <string name="about_version">Version %s</string>
     <string name="about_description">Ticksy is your personal task manager. Organize your tasks by categories, set reminders, and stay on top of your day.</string>
     <string name="about_developer">Developer</string>
@@ -137,7 +136,9 @@
     <string name="about_features_title">Features</string>
     <string name="about_feature_categories">Category-based organization</string>
     <string name="about_feature_subtasks">Subtasks with auto-completion</string>
+    <string name="about_feature_recurring">Recurring tasks</string>
     <string name="about_feature_reminders">Customizable reminders</string>
+    <string name="about_feature_backup">Backup and statistics</string>
     <string name="about_feature_themes">Light and dark theme</string>
     <string name="about_feature_languages">Multilingual support</string>
     <string name="about_made_with">Made with ❤️</string>

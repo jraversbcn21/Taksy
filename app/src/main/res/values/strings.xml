@@ -132,7 +132,6 @@
 
     <!-- Acerca de -->
     <string name="about">Acerca de</string>
-    <string name="about_title">Acerca de Ticksy</string>
     <string name="about_version">Versión %s</string>
     <string name="about_description">Ticksy es tu gestor de tareas personal. Organiza tus tareas por categorías, establece recordatorios y mantén el control de tu día a día.</string>
     <string name="about_developer">Desarrollador</string>
@@ -140,7 +139,9 @@
     <string name="about_features_title">Características</string>
     <string name="about_feature_categories">Organización por categorías</string>
     <string name="about_feature_subtasks">Subtareas con auto-completado</string>
+    <string name="about_feature_recurring">Tareas recurrentes</string>
     <string name="about_feature_reminders">Recordatorios personalizables</string>
+    <string name="about_feature_backup">Copia de seguridad y estadísticas</string>
     <string name="about_feature_themes">Tema claro y oscuro</string>
     <string name="about_feature_languages">Soporte multilingüe</string>
     <string name="about_made_with">Hecho con ❤️</string>

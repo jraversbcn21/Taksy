@@ -1,221 +1,202 @@
 package com.example.taksy.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.taksy.R
+import com.example.taksy.ui.theme.HomePalette
+import com.example.taksy.ui.theme.PlusJakartaSans
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Acerca de: icono, versión (leída del paquete), descripción, características y autor.
+ * Mismo lenguaje visual que la pantalla de inicio (HomePalette + Plus Jakarta Sans).
+ */
 @Composable
 fun AboutScreen(
     onBackClick: () -> Unit,
+    isDarkMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.about_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.close)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
-            )
-        }
-    ) { paddingValues ->
+    val palette = if (isDarkMode) HomePalette.Dark else HomePalette.Light
+    val context = LocalContext.current
+    val versionName = remember {
+        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: ""
+    }
+    val features = listOf(
+        Triple(Icons.AutoMirrored.Filled.List, R.string.about_feature_categories, Color(0xFF1E88E5)),
+        Triple(Icons.Default.CheckCircle, R.string.about_feature_subtasks, Color(0xFF43A047)),
+        Triple(Icons.Default.DateRange, R.string.about_feature_recurring, Color(0xFF7E57C2)),
+        Triple(Icons.Default.Notifications, R.string.about_feature_reminders, Color(0xFF00897B)),
+        Triple(Icons.Default.Lock, R.string.about_feature_backup, Color(0xFFFB8C00)),
+        Triple(Icons.Default.Settings, R.string.about_feature_themes, Color(0xFF546E7A)),
+        Triple(Icons.Default.Place, R.string.about_feature_languages, Color(0xFFE91E63))
+    )
+
+    Scaffold(containerColor = palette.background, modifier = modifier) { paddingValues ->
         Column(
-            modifier = modifier
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(start = 22.dp, end = 22.dp, top = 8.dp, bottom = 32.dp)
         ) {
-            // App icon
-            Image(
-                painter = painterResource(id = R.drawable.ticksy_icon),
-                contentDescription = stringResource(R.string.app_name),
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // App name
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            // Version
-            Text(
-                text = stringResource(R.string.about_version, "1.0"),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Description
-            Text(
-                text = stringResource(R.string.about_description),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Features section
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                ),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.about_features_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-
-                    FeatureItem(
-                        icon = Icons.AutoMirrored.Filled.List,
-                        text = stringResource(R.string.about_feature_categories)
-                    )
-                    FeatureItem(
-                        icon = Icons.Default.CheckCircle,
-                        text = stringResource(R.string.about_feature_subtasks)
-                    )
-                    FeatureItem(
-                        icon = Icons.Default.Notifications,
-                        text = stringResource(R.string.about_feature_reminders)
-                    )
-                    FeatureItem(
-                        icon = Icons.Default.Settings,
-                        text = stringResource(R.string.about_feature_themes)
-                    )
-                    FeatureItem(
-                        icon = Icons.Default.Place,
-                        text = stringResource(R.string.about_feature_languages)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                IconButton(onClick = onBackClick, modifier = Modifier.offset(x = (-12).dp)) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.back),
+                        tint = palette.ink
                     )
                 }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ticksy_icon),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            fontFamily = PlusJakartaSans,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 34.sp,
+                            lineHeight = 37.sp,
+                            letterSpacing = (-1).sp,
+                            color = palette.ink
+                        )
+                        if (versionName.isNotEmpty()) {
+                            Text(
+                                text = stringResource(R.string.about_version, versionName),
+                                fontFamily = PlusJakartaSans,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                color = palette.muted
+                            )
+                        }
+                    }
+                }
+                Text(
+                    text = stringResource(R.string.about_description),
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 15.sp,
+                    lineHeight = 22.sp,
+                    color = palette.muted,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Developer section
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                ),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.about_developer),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = stringResource(R.string.about_developer_name),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                AboutSectionLabel(stringResource(R.string.about_features_title), palette)
+                AboutCard(palette) {
+                    features.forEachIndexed { index, (icon, label, color) ->
+                        if (index > 0) HorizontalDivider(color = palette.border, thickness = 1.dp)
+                        AboutRow(icon, color, stringResource(label), palette)
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                AboutSectionLabel(stringResource(R.string.about_developer), palette)
+                AboutCard(palette) {
+                    AboutRow(Icons.Default.Person, palette.brand, stringResource(R.string.about_developer_name), palette)
+                }
+            }
 
-            // Made with love
             Text(
                 text = stringResource(R.string.about_made_with),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontFamily = PlusJakartaSans,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center,
+                color = palette.muted,
+                modifier = Modifier.fillMaxWidth()
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-private fun FeatureItem(
-    icon: ImageVector,
-    text: String
-) {
+private fun AboutSectionLabel(text: String, palette: HomePalette) {
+    Text(
+        text = text.uppercase(),
+        fontFamily = PlusJakartaSans,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 13.sp,
+        letterSpacing = 1.sp,
+        color = palette.muted
+    )
+}
+
+@Composable
+private fun AboutCard(palette: HomePalette, content: @Composable ColumnScope.() -> Unit) {
+    val shape = RoundedCornerShape(20.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(palette.surface)
+            .border(1.dp, palette.border, shape),
+        content = content
+    )
+}
+
+@Composable
+private fun AboutRow(icon: ImageVector, tileColor: Color, text: String, palette: HomePalette) {
     Row(
-        modifier = Modifier.padding(vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(tileColor)
+        ) {
+            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(19.dp))
+        }
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp,
+            color = palette.ink
         )
     }
 }

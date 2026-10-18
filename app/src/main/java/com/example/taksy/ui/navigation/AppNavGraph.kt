@@ -194,7 +194,7 @@ fun AppNavGraph(
         }
 
         composable("about") {
-            AboutScreen(onBackClick = { navController.popOrHome() })
+            AboutScreen(onBackClick = { navController.popOrHome() }, isDarkMode = isDarkMode)
         }
 
         composable("backup") {
