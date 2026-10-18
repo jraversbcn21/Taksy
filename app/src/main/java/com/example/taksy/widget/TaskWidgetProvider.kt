@@ -11,6 +11,9 @@ import android.widget.RemoteViews
 import com.example.taksy.MainActivity
 import com.example.taksy.R
 import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class TaskWidgetProvider : AppWidgetProvider() {
 
@@ -31,13 +34,33 @@ class TaskWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    /**
+     * Room no deja leer en el hilo principal (lanza IllegalStateException y cierra la app), y
+     * onUpdate se ejecuta en él: el contador se lee en segundo plano con goAsync. Se llama tanto
+     * al añadir el widget como tras cada cambio de tarea (refreshAll).
+     */
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        for (appWidgetId in appWidgetIds) {
-            updateWidget(context, appWidgetManager, appWidgetId)
+        if (appWidgetIds.isEmpty()) return
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val count = EntryPointAccessors.fromApplication(
+                    context.applicationContext,
+                    WidgetEntryPoint::class.java
+                ).taskDao().getPendingTasksSync().size
+                for (appWidgetId in appWidgetIds) {
+                    updateWidget(context, appWidgetManager, appWidgetId, count)
+                }
+                // Recarga las filas de la lista además de la cabecera
+                @Suppress("DEPRECATION")
+                appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_task_list)
+            } finally {
+                pendingResult.finish()
+            }
         }
     }
 
@@ -45,18 +68,15 @@ class TaskWidgetProvider : AppWidgetProvider() {
         super.onReceive(context, intent)
         if (intent.action == ACTION_REFRESH) {
             val mgr = AppWidgetManager.getInstance(context)
-            val ids = mgr.getAppWidgetIds(ComponentName(context, TaskWidgetProvider::class.java))
-            for (id in ids) {
-                mgr.notifyAppWidgetViewDataChanged(id, R.id.widget_task_list)
-            }
-            onUpdate(context, mgr, ids)
+            onUpdate(context, mgr, mgr.getAppWidgetIds(ComponentName(context, TaskWidgetProvider::class.java)))
         }
     }
 
     private fun updateWidget(
         context: Context,
         appWidgetManager: AppWidgetManager,
-        appWidgetId: Int
+        appWidgetId: Int,
+        count: Int
     ) {
         val serviceIntent = Intent(context, TaskWidgetService::class.java).apply {
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
@@ -69,11 +89,6 @@ class TaskWidgetProvider : AppWidgetProvider() {
         views.setRemoteAdapter(R.id.widget_task_list, serviceIntent)
         views.setEmptyView(R.id.widget_task_list, R.id.widget_empty)
 
-        val taskDao = EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            WidgetEntryPoint::class.java
-        ).taskDao()
-        val count = taskDao.getPendingTasksSync().size
         val countText = context.resources.getQuantityString(R.plurals.widget_task_count, count, count)
         views.setTextViewText(R.id.widget_count, countText)
 
