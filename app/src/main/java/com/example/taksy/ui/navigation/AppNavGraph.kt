@@ -135,7 +135,8 @@ fun AppNavGraph(
                 onAddCategory = { nombre, color, icono -> categoryViewModel.addCategory(nombre, color, icono) },
                 onUpdateCategory = { category -> categoryViewModel.updateCategory(category) },
                 onDeleteCategory = { category -> categoryViewModel.deleteCategory(category) },
-                showToast = { message -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show() }
+                showToast = { message -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show() },
+                isDarkMode = isDarkMode
             )
         }
 

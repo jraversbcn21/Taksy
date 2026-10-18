@@ -28,8 +28,6 @@
     <string name="pending_subtasks_message">Tienes tareas pendientes</string>
     
     <!-- Categorías -->
-    <string name="task_count_singular">%d tarea</string>
-    <string name="task_count_plural">%d tareas</string>
     <string name="category_work">Trabajo</string>
     <string name="category_personal">Personal</string>
     <string name="category_shopping">Compras</string>
@@ -45,7 +43,6 @@
     <string name="add_category">Añadir Categoría</string>
     <string name="edit_category">Editar Categoría</string>
     <string name="category_name">Nombre de la categoría</string>
-    <string name="category_name_hint">Nombre de la categoría</string>
     <string name="category_color">Color</string>
     <string name="category_icon">Icono</string>
     <string name="delete_category">Eliminar categoría</string>

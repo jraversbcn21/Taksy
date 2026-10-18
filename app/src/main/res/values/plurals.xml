@@ -8,6 +8,10 @@
         <item quantity="one">Se eliminará también su %d tarea, con sus subtareas y recordatorios.</item>
         <item quantity="other">Se eliminarán también sus %d tareas, con sus subtareas y recordatorios.</item>
     </plurals>
+    <plurals name="categories_count">
+        <item quantity="one">%d categoría</item>
+        <item quantity="other">%d categorías</item>
+    </plurals>
     <plurals name="stats_days">
         <item quantity="one">%d día</item>
         <item quantity="other">%d días</item>

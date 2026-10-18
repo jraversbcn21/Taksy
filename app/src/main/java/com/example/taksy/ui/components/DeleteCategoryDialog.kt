@@ -1,186 +1,102 @@
 package com.example.taksy.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.taksy.R
 import com.example.taksy.data.Category
+import com.example.taksy.ui.theme.DueOverdueRed
+import com.example.taksy.ui.theme.HomePalette
+import com.example.taksy.ui.theme.PlusJakartaSans
+import com.example.taksy.ui.theme.accentColor
 import com.example.taksy.utils.CategoryUtils
 import com.example.taksy.utils.getCategoryIcon
 
-/**
- * Dialog para confirmar la eliminación de una categoría
- */
+/** Confirmación para eliminar una categoría; avisa de cuántas tareas se borran con ella. */
 @Composable
 fun DeleteCategoryDialog(
     category: Category,
+    taskCount: Int,
+    palette: HomePalette,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    taskCount: Int = 0,
-    activity: androidx.activity.ComponentActivity? = null
+    onConfirm: () -> Unit
 ) {
-    val view = LocalView.current
-    val context = view.context
-    
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true,
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .padding(16.dp),
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Title
+    val accent = remember(category.color) { category.accentColor() }
+    val danger = if (palette.isDark) lerp(DueOverdueRed, Color.White, 0.25f) else DueOverdueRed
+
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        HomeDialogSurface(palette) {
+            DialogTitle(stringResource(R.string.confirm_delete_category), palette)
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(accent)
+                ) {
+                    Icon(getCategoryIcon(category.icono), contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                }
                 Text(
-                    text = stringResource(R.string.delete_category),
-                    style = MaterialTheme.typography.headlineSmall,
+                    text = CategoryUtils.getCategoryName(category),
+                    fontFamily = PlusJakartaSans,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
+                    fontSize = 16.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = palette.ink
                 )
-                
-                // Content
-                // Mostrar información de la categoría
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Icono de la categoría
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Card(
-                                modifier = Modifier.fillMaxSize(),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(android.graphics.Color.parseColor(category.color)).copy(alpha = 0.1f)
-                                ),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        getCategoryIcon(category.icono),
-                                        contentDescription = null,
-                                        tint = Color(android.graphics.Color.parseColor(category.color)),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                            }
-                        }
+            }
 
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Column {
-                            Text(
-                                text = CategoryUtils.getCategoryName(category),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-
-                // Mensaje de confirmación
-                Text(
-                    text = stringResource(R.string.confirm_delete_category),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                // Advertencia: también se borran sus tareas
-                if (taskCount > 0) Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = pluralStringResource(R.plurals.delete_category_tasks_warning, taskCount, taskCount),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-                
-                // Botones
+            if (taskCount > 0) {
                 Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(danger.copy(alpha = if (palette.isDark) 0.16f else 0.08f))
+                        .padding(14.dp)
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.cancel))
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = onConfirm,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
-                        )
-                    ) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.delete))
-                    }
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = danger, modifier = Modifier.size(20.dp))
+                    Text(
+                        text = pluralStringResource(R.plurals.delete_category_tasks_warning, taskCount, taskCount),
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
+                        color = danger
+                    )
                 }
             }
+
+            DialogButtons(
+                confirmText = stringResource(R.string.delete),
+                confirmColor = danger,
+                palette = palette,
+                onDismiss = onDismiss,
+                onConfirm = onConfirm
+            )
         }
     }
 }

@@ -1,262 +1,249 @@
 package com.example.taksy.ui.components
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.DialogWindowProvider
-import android.util.Log
 import com.example.taksy.R
 import com.example.taksy.data.Category
+import com.example.taksy.ui.theme.HomePalette
+import com.example.taksy.ui.theme.PlusJakartaSans
 import com.example.taksy.utils.CategoryUtils
 import com.example.taksy.utils.getCategoryIcon
 
+/** Colores que se pueden elegir para una categoría (hex guardado en `Category.color`). */
+private val categoryColors = listOf(
+    "#2196F3", "#4CAF50", "#FF9800", "#F44336", "#9C27B0",
+    "#795548", "#607D8B", "#E91E63", "#00BCD4", "#FFC107"
+)
+
 /**
- * Dialog para añadir o editar una categoría
+ * Diálogo para crear o editar una categoría: nombre, color e icono, con una vista previa
+ * del icono tal como se verá en la lista.
  */
 @Composable
 fun AddCategoryDialog(
-    category: Category? = null,
+    palette: HomePalette,
     onDismiss: () -> Unit,
     onConfirm: (String, String, String) -> Unit,
-    activity: androidx.activity.ComponentActivity? = null
+    category: Category? = null
 ) {
-    val view = LocalView.current
-    val context = view.context
     var categoryName by remember { mutableStateOf(category?.nombre ?: "") }
-    var selectedColor by remember { mutableStateOf(category?.color ?: "#2196F3") }
+    var selectedColor by remember { mutableStateOf(category?.color ?: categoryColors.first()) }
     var selectedIcon by remember { mutableStateOf(category?.icono ?: "work") }
+    val accent = remember(selectedColor) { Color(android.graphics.Color.parseColor(selectedColor)) }
 
-    // Colores predefinidos
-    val colors = listOf(
-        "#2196F3", // Azul
-        "#4CAF50", // Verde
-        "#FF9800", // Naranja
-        "#F44336", // Rojo
-        "#9C27B0", // Morado
-        "#795548", // Marrón
-        "#607D8B", // Azul gris
-        "#E91E63", // Rosa
-        "#00BCD4", // Cian
-        "#FFC107"  // Amarillo
-    )
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        HomeDialogSurface(palette) {
+            DialogTitle(
+                if (category != null) stringResource(R.string.edit_category) else stringResource(R.string.add_category),
+                palette
+            )
 
-    // Iconos predefinidos
-    val icons = CategoryUtils.selectableIcons
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true,
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .padding(16.dp),
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Title
-                Text(
-                    text = if (category != null) stringResource(R.string.edit_category) else stringResource(R.string.add_category),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                
-                // Content
-                // Campo de nombre
-                Column {
-                    Text(
-                        text = stringResource(R.string.category_name),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    // Usar BasicTextField con control total del color
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.small,
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outline
-                        ),
-                        color = MaterialTheme.colorScheme.surface
-                    ) {
-                        BasicTextField(
-                            value = categoryName,
-                            onValueChange = { categoryName = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            textStyle = TextStyle(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = MaterialTheme.typography.bodyLarge.fontSize
-                            ),
-                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                            singleLine = true,
-                            decorationBox = { innerTextField ->
-                                if (categoryName.isEmpty()) {
-                                    Text(
-                                        text = stringResource(R.string.category_name_hint),
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                }
-                                innerTextField()
-                            }
-                        )
-                    }
-                }
-
-                // Selector de color
-                Text(
-                    text = stringResource(R.string.category_color),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium
-                )
-
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(colors) { color ->
-                        val isSelected = selectedColor == color
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .padding(2.dp)
-                        ) {
-                            Card(
-                                modifier = Modifier.fillMaxSize(),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(android.graphics.Color.parseColor(color))
-                                ),
-                                shape = CircleShape,
-                                onClick = { selectedColor = color },
-                                border = if (isSelected) {
-                                    CardDefaults.outlinedCardBorder().copy(
-                                        width = 3.dp
-                                    )
-                                } else null
-                            ) {
-                                if (isSelected) {
-                                    Box(
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Selector de icono
-                Text(
-                    text = stringResource(R.string.category_icon),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium
-                )
-
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(icons) { (iconName, icon) ->
-                        val isSelected = selectedIcon == iconName
-                        Card(
-                            modifier = Modifier.size(48.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isSelected) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceVariant
-                                }
-                            ),
-                            onClick = { selectedIcon = iconName },
-                            border = if (isSelected) {
-                                CardDefaults.outlinedCardBorder().copy(
-                                    width = 2.dp
-                                )
-                            } else null
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    icon,
-                                    contentDescription = null,
-                                    tint = if (isSelected) {
-                                        MaterialTheme.colorScheme.onPrimary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                // Botones
-                Row(
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(17.dp))
+                        .background(accent)
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.cancel))
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            if (categoryName.isNotBlank()) {
-                                onConfirm(categoryName.trim(), selectedColor, selectedIcon)
+                    Icon(getCategoryIcon(selectedIcon), contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
+                }
+                val fieldShape = RoundedCornerShape(16.dp)
+                BasicTextField(
+                    value = categoryName,
+                    onValueChange = { categoryName = it },
+                    singleLine = true,
+                    cursorBrush = SolidColor(accent),
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    textStyle = TextStyle(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = palette.ink),
+                    decorationBox = { inner ->
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (categoryName.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.category_name),
+                                    fontFamily = PlusJakartaSans,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = palette.placeholder
+                                )
                             }
-                        },
-                        enabled = categoryName.isNotBlank()
+                            inner()
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp)
+                        .clip(fieldShape)
+                        .background(palette.background)
+                        .border(1.dp, palette.border, fieldShape)
+                        .padding(horizontal = 16.dp)
+                        .wrapContentHeight(Alignment.CenterVertically)
+                )
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                DialogSectionLabel(stringResource(R.string.category_color), palette)
+                ChoiceGrid(categoryColors) { color ->
+                    val selected = color == selectedColor
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color(android.graphics.Color.parseColor(color)))
+                            .selectable(selected = selected, role = Role.RadioButton, onClick = { selectedColor = color })
                     ) {
-                        Text(stringResource(R.string.save))
+                        if (selected) Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                     }
                 }
             }
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                DialogSectionLabel(stringResource(R.string.category_icon), palette)
+                ChoiceGrid(CategoryUtils.selectableIcons) { (name, icon) ->
+                    val selected = name == selectedIcon
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(if (selected) accent else palette.track)
+                            .selectable(selected = selected, role = Role.RadioButton, onClick = { selectedIcon = name })
+                    ) {
+                        Icon(icon, contentDescription = null, tint = if (selected) Color.White else palette.muted, modifier = Modifier.size(22.dp))
+                    }
+                }
+            }
+
+            DialogButtons(
+                confirmText = stringResource(R.string.save),
+                confirmColor = palette.brand,
+                confirmEnabled = categoryName.isNotBlank(),
+                palette = palette,
+                onDismiss = onDismiss,
+                onConfirm = { onConfirm(categoryName.trim(), selectedColor, selectedIcon) }
+            )
         }
+    }
+}
+
+/** Rejilla de 5 columnas con huecos iguales (colores e iconos: 10 opciones, 2 filas). */
+@Composable
+private fun <T> ChoiceGrid(items: List<T>, cell: @Composable (T) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        items.chunked(5).forEach { row ->
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                row.forEach { cell(it) }
+            }
+        }
+    }
+}
+
+/** Tarjeta de diálogo con el lenguaje visual de la pantalla de inicio. */
+@Composable
+internal fun HomeDialogSurface(palette: HomePalette, content: @Composable ColumnScope.() -> Unit) {
+    val shape = RoundedCornerShape(28.dp)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+        modifier = Modifier
+            .padding(horizontal = 24.dp)
+            .fillMaxWidth()
+            .widthIn(max = 420.dp)
+            .clip(shape)
+            .background(palette.surface)
+            .border(1.dp, palette.border, shape)
+            .padding(22.dp),
+        content = content
+    )
+}
+
+@Composable
+internal fun DialogTitle(text: String, palette: HomePalette) {
+    Text(
+        text = text,
+        fontFamily = PlusJakartaSans,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 22.sp,
+        letterSpacing = (-0.5).sp,
+        color = palette.ink
+    )
+}
+
+@Composable
+private fun DialogSectionLabel(text: String, palette: HomePalette) {
+    Text(
+        text = text.uppercase(),
+        fontFamily = PlusJakartaSans,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 12.sp,
+        letterSpacing = 1.sp,
+        color = palette.muted
+    )
+}
+
+/** Cancelar (texto) + acción principal (píldora del color indicado). */
+@Composable
+internal fun DialogButtons(
+    confirmText: String,
+    confirmColor: Color,
+    palette: HomePalette,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    confirmEnabled: Boolean = true
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = stringResource(R.string.cancel),
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp,
+            color = palette.muted,
+            modifier = Modifier
+                .clip(RoundedCornerShape(14.dp))
+                .clickable(role = Role.Button, onClick = onDismiss)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        )
+        Text(
+            text = confirmText,
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp,
+            color = if (confirmEnabled) Color.White else palette.doneText,
+            modifier = Modifier
+                .clip(RoundedCornerShape(14.dp))
+                .background(if (confirmEnabled) confirmColor else palette.track)
+                .clickable(enabled = confirmEnabled, role = Role.Button, onClick = onConfirm)
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+        )
     }
 }

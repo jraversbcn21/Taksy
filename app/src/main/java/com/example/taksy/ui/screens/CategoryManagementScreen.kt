@@ -1,29 +1,45 @@
 package com.example.taksy.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.taksy.R
 import com.example.taksy.data.Category
 import com.example.taksy.ui.components.AddCategoryDialog
-import com.example.taksy.ui.components.CategoryItem
 import com.example.taksy.ui.components.DeleteCategoryDialog
+import com.example.taksy.ui.theme.HomePalette
+import com.example.taksy.ui.theme.PlusJakartaSans
+import com.example.taksy.ui.theme.accentColor
+import com.example.taksy.utils.CategoryUtils
+import com.example.taksy.utils.getCategoryIcon
 
 /**
- * Pantalla para gestionar categorías
- * Permite ver, añadir, editar (tocando la categoría) y eliminar categorías
+ * Gestión de categorías: crear (botón "Añadir categoría"), editar tocando una fila y
+ * eliminar con la papelera (avisa de cuántas tareas se borran con ella).
+ * Mismo lenguaje visual que la pantalla de inicio (HomePalette + Plus Jakarta Sans).
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryManagementScreen(
     categories: List<Category>,
@@ -32,100 +48,97 @@ fun CategoryManagementScreen(
     onAddCategory: (String, String, String) -> Unit,
     onUpdateCategory: (Category) -> Unit,
     onDeleteCategory: (Category) -> Unit,
-    showToast: (String) -> Unit
+    showToast: (String) -> Unit,
+    isDarkMode: Boolean = false
 ) {
+    val palette = if (isDarkMode) HomePalette.Dark else HomePalette.Light
     var showAddDialog by remember { mutableStateOf(false) }
-    var showEditDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var selectedCategory by remember { mutableStateOf<Category?>(null) }
+    var editingCategory by remember { mutableStateOf<Category?>(null) }
+    var deletingCategory by remember { mutableStateOf<Category?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.manage_categories)) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_category))
-            }
-        }
-    ) { paddingValues ->
+    Scaffold(containerColor = palette.background) { paddingValues ->
         Column(
+            verticalArrangement = Arrangement.spacedBy(24.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(start = 22.dp, end = 22.dp, top = 8.dp, bottom = 32.dp)
         ) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                IconButton(onClick = onBackClick, modifier = Modifier.offset(x = (-12).dp)) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.back),
+                        tint = palette.ink
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.manage_categories),
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 34.sp,
+                    lineHeight = 37.sp,
+                    letterSpacing = (-1).sp,
+                    color = palette.ink
+                )
+                if (categories.isNotEmpty()) {
+                    Text(
+                        text = pluralStringResource(R.plurals.categories_count, categories.size, categories.size),
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp,
+                        color = palette.muted
+                    )
+                }
+            }
+
+            AddCategoryPill(palette, onClick = { showAddDialog = true })
+
             if (categories.isEmpty()) {
-                // Mensaje cuando no hay categorías
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 32.dp)
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Info,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = stringResource(R.string.no_categories),
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = stringResource(R.string.create_first_category),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Button(
-                            onClick = { showAddDialog = true }
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.add_category))
-                        }
-                    }
+                    Text(
+                        text = stringResource(R.string.no_categories),
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 18.sp,
+                        textAlign = TextAlign.Center,
+                        color = palette.ink
+                    )
+                    Text(
+                        text = stringResource(R.string.create_first_category),
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center,
+                        color = palette.muted
+                    )
                 }
             } else {
-                // Lista de categorías
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                val shape = RoundedCornerShape(20.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(shape)
+                        .background(palette.surface)
+                        .border(1.dp, palette.border, shape)
                 ) {
-                    items(categories, key = { it.id }) { category ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            CategoryItem(
+                    categories.forEachIndexed { index, category ->
+                        key(category.id) {
+                            if (index > 0) HorizontalDivider(color = palette.border, thickness = 1.dp)
+                            CategoryRow(
                                 category = category,
                                 taskCount = taskCountByCategory[category.id] ?: 0,
-                                onClick = {
-                                    selectedCategory = category
-                                    showEditDialog = true
-                                },
-                                modifier = Modifier.weight(1f)
+                                palette = palette,
+                                onClick = { editingCategory = category },
+                                onDeleteClick = { deletingCategory = category }
                             )
-                            IconButton(onClick = {
-                                selectedCategory = category
-                                showDeleteDialog = true
-                            }) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = stringResource(R.string.delete_category),
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
                         }
                     }
                 }
@@ -133,14 +146,13 @@ fun CategoryManagementScreen(
         }
     }
 
-    // Obtener strings una sola vez
     val categoryCreatedText = stringResource(R.string.category_created)
     val categoryUpdatedText = stringResource(R.string.category_updated)
     val categoryDeletedText = stringResource(R.string.category_deleted)
 
-    // Dialog para añadir categoría
     if (showAddDialog) {
         AddCategoryDialog(
+            palette = palette,
             onDismiss = { showAddDialog = false },
             onConfirm = { name, color, icon ->
                 onAddCategory(name, color, icon)
@@ -150,38 +162,114 @@ fun CategoryManagementScreen(
         )
     }
 
-    // Dialog para editar categoría
-    selectedCategory?.takeIf { showEditDialog }?.let { editing ->
+    editingCategory?.let { editing ->
         AddCategoryDialog(
             category = editing,
-            onDismiss = {
-                showEditDialog = false
-                selectedCategory = null
-            },
+            palette = palette,
+            onDismiss = { editingCategory = null },
             onConfirm = { name, color, icon ->
                 onUpdateCategory(editing.copy(nombre = name, color = color, icono = icon))
-                showEditDialog = false
-                selectedCategory = null
+                editingCategory = null
                 showToast(categoryUpdatedText)
             }
         )
     }
 
-    // Dialog para eliminar categoría
-    selectedCategory?.takeIf { showDeleteDialog }?.let { deleting ->
+    deletingCategory?.let { deleting ->
         DeleteCategoryDialog(
             category = deleting,
             taskCount = taskCountByCategory[deleting.id] ?: 0,
-            onDismiss = {
-                showDeleteDialog = false
-                selectedCategory = null
-            },
+            palette = palette,
+            onDismiss = { deletingCategory = null },
             onConfirm = {
                 onDeleteCategory(deleting)
-                showDeleteDialog = false
-                selectedCategory = null
+                deletingCategory = null
                 showToast(categoryDeletedText)
             }
         )
+    }
+}
+
+@Composable
+private fun AddCategoryPill(palette: HomePalette, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(18.dp)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clip(shape)
+            .background(palette.surface)
+            .border(1.dp, palette.border, shape)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 16.dp)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(24.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(palette.brand.copy(alpha = if (palette.isDark) 0.22f else 0.14f))
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null, tint = palette.brand, modifier = Modifier.size(18.dp))
+        }
+        Text(
+            text = stringResource(R.string.add_category),
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp,
+            color = palette.placeholder
+        )
+    }
+}
+
+@Composable
+private fun CategoryRow(
+    category: Category,
+    taskCount: Int,
+    palette: HomePalette,
+    onClick: () -> Unit,
+    onDeleteClick: () -> Unit
+) {
+    val accent = remember(category.color) { category.accentColor() }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(accent)
+        ) {
+            Icon(getCategoryIcon(category.icono), contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.weight(1f)) {
+            Text(
+                text = CategoryUtils.getCategoryName(category),
+                fontFamily = PlusJakartaSans,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = palette.ink
+            )
+            Text(
+                text = pluralStringResource(R.plurals.widget_task_count, taskCount, taskCount),
+                fontFamily = PlusJakartaSans,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp,
+                color = palette.muted
+            )
+        }
+        IconButton(onClick = onDeleteClick) {
+            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete_category), tint = palette.muted)
+        }
     }
 }
