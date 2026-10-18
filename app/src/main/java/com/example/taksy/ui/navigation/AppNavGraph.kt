@@ -64,7 +64,8 @@ fun AppNavGraph(
                     navController.navigate("category_list") {
                         popUpTo("onboarding") { inclusive = true }
                     }
-                }
+                },
+                isDarkMode = isDarkMode
             )
         }
 

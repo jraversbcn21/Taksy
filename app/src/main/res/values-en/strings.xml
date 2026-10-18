@@ -184,7 +184,7 @@
 
     <!-- Onboarding -->
     <string name="onboarding_title_1">Organize your tasks</string>
-    <string name="onboarding_desc_1">Create categories and organize your tasks easily. Drag to reorder according to your priority.</string>
+    <string name="onboarding_desc_1">Create categories and organize your tasks easily. Hold a list to move it around.</string>
     <string name="onboarding_title_2">Subtasks and recurrence</string>
     <string name="onboarding_desc_2">Break big tasks into subtasks. Set up recurring tasks that repeat automatically when completed.</string>
     <string name="onboarding_title_3">Smart reminders</string>

@@ -187,7 +187,7 @@
 
     <!-- Onboarding -->
     <string name="onboarding_title_1">Organiza tus tareas</string>
-    <string name="onboarding_desc_1">Crea categorías y organiza tus tareas de forma sencilla. Arrastra para reordenar según tu prioridad.</string>
+    <string name="onboarding_desc_1">Crea categorías y organiza tus tareas de forma sencilla. Mantén pulsada una lista para cambiarla de orden.</string>
     <string name="onboarding_title_2">Subtareas y recurrencia</string>
     <string name="onboarding_desc_2">Divide tareas grandes en subtareas. Configura tareas recurrentes que se repiten automáticamente al completarlas.</string>
     <string name="onboarding_title_3">Recordatorios inteligentes</string>
