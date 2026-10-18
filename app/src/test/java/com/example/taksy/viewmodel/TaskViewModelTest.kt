@@ -281,6 +281,21 @@ class TaskViewModelTest {
         assertTrue(fakeReminderDao.reminders.isEmpty())
     }
 
+    // ── Field edits from the detail screen ────────────────────────────────
+
+    @Test
+    fun `renaming and editing the description together keep both changes`() = runTest {
+        fakeTaskDao.tasks.add(Task(id = 1, titulo = "Old", descripcion = null))
+
+        // Al salir del detalle se guardan los dos campos a la vez
+        viewModel.renameTask(1, "New title")
+        viewModel.updateTaskDescription(1, "Some notes")
+        advanceUntilIdle()
+
+        assertEquals("New title", fakeTaskDao.tasks[0].titulo)
+        assertEquals("Some notes", fakeTaskDao.tasks[0].descripcion)
+    }
+
     // ── Search ────────────────────────────────────────────────────────────
 
     @Test

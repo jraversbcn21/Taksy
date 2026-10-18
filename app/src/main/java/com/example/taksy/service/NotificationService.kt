@@ -58,16 +58,16 @@ class NotificationService(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val contentText = if (reminder.descripcion.isNullOrBlank()) {
-            context.getString(R.string.notification_default_content, task.titulo)
-        } else {
-            reminder.descripcion
-        }
+        // Título y descripción de la tarea actual: reminder.titulo es una copia que no se
+        // actualiza al renombrar la tarea
+        val contentText = task.descripcion?.takeIf { it.isNotBlank() }
+            ?: reminder.descripcion?.takeIf { it.isNotBlank() }
+            ?: context.getString(R.string.notification_default_content, task.titulo)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ticksy_icon)
-            .setContentTitle(reminder.titulo)
-            .setContentText(context.getString(R.string.notification_task_label, task.titulo))
+            .setContentTitle(task.titulo)
+            .setContentText(contentText)
             .setStyle(NotificationCompat.BigTextStyle()
                 .bigText(contentText))
             .setPriority(NotificationCompat.PRIORITY_HIGH)

@@ -177,7 +177,6 @@
 
     <!-- Notification content -->
     <string name="notification_default_content">Don\'t forget to complete: %s</string>
-    <string name="notification_task_label">Task: %s</string>
 
     <!-- Save messages -->
 
@@ -274,4 +273,7 @@
     <string name="reminder_at">Reminder: %s</string>
     <string name="reminder_at_passed">Reminder: %s (already passed)</string>
     <string name="reminder_needs_date">Set a date to get a reminder</string>
+    <string name="due_today">Today</string>
+    <string name="due_tomorrow">Tomorrow</string>
+    <string name="due_pick">Pick a date</string>
 </resources>

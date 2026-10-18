@@ -79,6 +79,7 @@ fun TasksByCategoryScreen(
 
     var showInlineInput by remember { mutableStateOf(false) }
     var newTaskTitle by remember { mutableStateOf("") }
+    var selectedDue by remember { mutableStateOf<Date?>(null) }
     var selectedPriority by remember { mutableStateOf(TaskPrioridad.NINGUNA) }
     var selectedRecurrence by remember { mutableStateOf(TaskRecurrencia.NINGUNA) }
     var searchQuery by remember { mutableStateOf("") }
@@ -126,6 +127,7 @@ fun TasksByCategoryScreen(
 
     fun resetComposer() {
         newTaskTitle = ""
+        selectedDue = null
         selectedPriority = TaskPrioridad.NINGUNA
         selectedRecurrence = TaskRecurrencia.NINGUNA
     }
@@ -155,7 +157,7 @@ fun TasksByCategoryScreen(
             onTaskDelete = handleDeleteWithUndo,
             onShowToast = showSnackbar,
             onReminderClick = { taskForReminder = it },
-            onEditTask = { taskViewModel.updateTask(it) },
+            onEditTask = { taskViewModel.renameTask(it.id, it.titulo) },
             highlighted = task.id == highlightedTaskId,
             modifier = modifier
         )
@@ -235,13 +237,14 @@ fun TasksByCategoryScreen(
                         InlineTaskInput(
                             taskTitle = newTaskTitle,
                             onTaskTitleChange = { newTaskTitle = it },
+                            selectedDue = selectedDue,
+                            onDueChange = { selectedDue = it },
                             selectedPriority = selectedPriority,
                             onPriorityChange = { selectedPriority = it },
                             selectedRecurrence = selectedRecurrence,
                             onRecurrenceChange = { selectedRecurrence = it },
                             onAddTask = { title, keepOpen ->
-                                // Sin fecha: se pone en el detalle o con el recordatorio
-                                onAddTask(title, null, selectedPriority, selectedRecurrence)
+                                onAddTask(title, selectedDue, selectedPriority, selectedRecurrence)
                                 resetComposer()
                                 if (!keepOpen) {
                                     // Se cierra y, cuando la tarea llegue a la lista, se muestra resaltada

@@ -34,16 +34,20 @@ import androidx.compose.ui.unit.sp
 import com.example.taksy.R
 import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TaskRecurrencia
+import com.example.taksy.ui.components.DueDatePickerFlow
 import com.example.taksy.ui.components.OptionPills
+import com.example.taksy.ui.components.formatDueDateTime
 import com.example.taksy.ui.components.PillOption
 import com.example.taksy.ui.theme.HomePalette
 import com.example.taksy.ui.theme.PlusJakartaSans
 import com.example.taksy.ui.theme.PriorityHighRed
 import com.example.taksy.ui.theme.PriorityLowGreen
 import com.example.taksy.ui.theme.PriorityMediumOrange
+import java.util.Calendar
+import java.util.Date
 
 /**
- * Tarjeta para crear una tarea en la lista: título, prioridad y repetición.
+ * Tarjeta para crear una tarea en la lista: título, fecha (hoy, mañana o elegida), prioridad y repetición.
  * El botón "Añadir tarea" guarda y cierra (keepOpen = false); el Enter del teclado guarda
  * y la deja abierta para encadenar otra (keepOpen = true).
  */
@@ -51,6 +55,8 @@ import com.example.taksy.ui.theme.PriorityMediumOrange
 fun InlineTaskInput(
     taskTitle: String,
     onTaskTitleChange: (String) -> Unit,
+    selectedDue: Date?,
+    onDueChange: (Date?) -> Unit,
     selectedPriority: TaskPrioridad,
     onPriorityChange: (TaskPrioridad) -> Unit,
     selectedRecurrence: TaskRecurrencia,
@@ -122,6 +128,8 @@ fun InlineTaskInput(
             )
         }
 
+        DuePills(selectedDue, onDueChange, palette, accent)
+
         OptionPills(
             label = stringResource(R.string.task_priority),
             options = priorityOptions(palette),
@@ -168,6 +176,57 @@ fun InlineTaskInput(
                     .padding(horizontal = 16.dp, vertical = 10.dp)
             )
         }
+    }
+}
+
+private enum class DueOption { NONE, TODAY, TOMORROW, PICK }
+
+/** Inicio del día de hoy + [days], a las 00:00 ("sin hora", como en el resto de la app). */
+private fun dayStart(days: Int): Date = Calendar.getInstance().apply {
+    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+    add(Calendar.DAY_OF_MONTH, days)
+}.time
+
+/** Fecha al crear: sin fecha, hoy, mañana o una elegida en el calendario (la pastilla muestra cuál). */
+@Composable
+private fun DuePills(due: Date?, onDueChange: (Date?) -> Unit, palette: HomePalette, accent: Color) {
+    var picking by remember { mutableStateOf(false) }
+    val selected = when (due) {
+        null -> DueOption.NONE
+        dayStart(0) -> DueOption.TODAY
+        dayStart(1) -> DueOption.TOMORROW
+        else -> DueOption.PICK
+    }
+    OptionPills(
+        label = stringResource(R.string.task_due_date),
+        options = listOf(
+            PillOption(DueOption.NONE, R.string.task_no_due_date, palette.muted),
+            PillOption(DueOption.TODAY, R.string.due_today, accent),
+            PillOption(DueOption.TOMORROW, R.string.due_tomorrow, accent),
+            PillOption(DueOption.PICK, R.string.due_pick, accent, text = if (selected == DueOption.PICK && due != null) formatDueDateTime(due) else null)
+        ),
+        selected = selected,
+        onSelect = {
+            when (it) {
+                DueOption.NONE -> onDueChange(null)
+                DueOption.TODAY -> onDueChange(dayStart(0))
+                DueOption.TOMORROW -> onDueChange(dayStart(1))
+                DueOption.PICK -> picking = true
+            }
+        },
+        palette = palette
+    )
+    if (picking) {
+        DueDatePickerFlow(
+            palette = palette,
+            accent = accent,
+            initial = due,
+            onPicked = {
+                onDueChange(it)
+                picking = false
+            },
+            onDismiss = { picking = false }
+        )
     }
 }
 

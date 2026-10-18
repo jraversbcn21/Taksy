@@ -180,7 +180,6 @@
 
     <!-- Contenido de notificaciones -->
     <string name="notification_default_content">No olvides completar: %s</string>
-    <string name="notification_task_label">Tarea: %s</string>
 
     <!-- Mensajes de guardado -->
 
@@ -277,4 +276,7 @@
     <string name="reminder_at">Aviso: %s</string>
     <string name="reminder_at_passed">Aviso: %s (ya ha pasado)</string>
     <string name="reminder_needs_date">Pon una fecha para poder recibir un aviso</string>
+    <string name="due_today">Hoy</string>
+    <string name="due_tomorrow">Mañana</string>
+    <string name="due_pick">Elegir fecha</string>
 </resources>

@@ -90,6 +90,23 @@ class TaskViewModel @Inject constructor(
 
     fun updateTask(task: Task) = launchSafe(R.string.error_update_task) { repository.updateTask(task) }
 
+    // Título y descripción se guardan solos desde el detalle; al salir pueden guardarse los dos a la
+    // vez. Cada uno cambia solo su campo sobre la tarea leída de la BD, en serie, para no pisarse.
+    private val fieldEditMutex = Mutex()
+
+    private fun editField(taskId: Long, edit: (Task) -> Task) = launchSafe(R.string.error_update_task) {
+        fieldEditMutex.withLock {
+            val current = repository.getTaskById(taskId) ?: return@withLock
+            val edited = edit(current)
+            if (edited != current) repository.updateTask(edited)
+        }
+        TaskWidgetProvider.refreshAll(context)
+    }
+
+    fun renameTask(taskId: Long, title: String) = editField(taskId) { it.copy(titulo = title) }
+
+    fun updateTaskDescription(taskId: Long, description: String?) = editField(taskId) { it.copy(descripcion = description) }
+
     // Lo borrado se guarda hasta que se deshace, para restaurar también subtareas y recordatorios.
     // El mutex hace que un "Deshacer" rápido espere a que termine el borrado.
     private val recentlyDeleted = mutableMapOf<Long, DeletedTask>()

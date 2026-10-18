@@ -23,12 +23,12 @@ import androidx.compose.ui.unit.sp
 import com.example.taksy.ui.theme.HomePalette
 import com.example.taksy.ui.theme.PlusJakartaSans
 
-/** Una opción de [OptionPills]: valor, texto y color cuando está seleccionada. */
-data class PillOption<T>(val value: T, val labelRes: Int, val color: Color)
+/** Una opción de [OptionPills]: valor, texto y color cuando está seleccionada. [text] sustituye a [labelRes] (p. ej. una fecha). */
+data class PillOption<T>(val value: T, val labelRes: Int, val color: Color, val text: String? = null)
 
 /**
  * Selector de una opción entre varias, como fila de pastillas con una etiqueta encima.
- * Se usa para la prioridad y la repetición de una tarea.
+ * Se usa para la prioridad, la repetición, la fecha al crear y el aviso de una tarea.
  */
 @Composable
 fun <T> OptionPills(
@@ -56,7 +56,7 @@ fun <T> OptionPills(
                 val isSelected = option.value == selected
                 val pill = RoundedCornerShape(10.dp)
                 Text(
-                    text = stringResource(option.labelRes),
+                    text = option.text ?: stringResource(option.labelRes),
                     fontFamily = PlusJakartaSans,
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,

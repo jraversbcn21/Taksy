@@ -18,7 +18,11 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -83,6 +87,8 @@ fun TaskDetailScreen(
     onAddSubtask: (String) -> Unit,
     onToggleSubtask: (Subtask) -> Unit,
     onUpdateTask: (Task) -> Unit,
+    onRename: (String) -> Unit,
+    onUpdateDescription: (String?) -> Unit,
     onUpdateDueDate: (Date?) -> Unit,
     onSetReminderLead: (ReminderLead?) -> Unit,
     modifier: Modifier = Modifier
@@ -149,16 +155,8 @@ fun TaskDetailScreen(
                             )
                         }
                     }
-                    Text(
-                        text = task.titulo,
-                        fontFamily = PlusJakartaSans,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 30.sp,
-                        lineHeight = 34.sp,
-                        letterSpacing = (-1).sp,
-                        color = palette.ink
-                    )
-                    DescriptionField(task, onUpdateTask, palette, accent)
+                    TitleField(task, onRename, palette, accent)
+                    DescriptionField(task, onUpdateDescription, palette, accent)
                     if (isCompleted) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
@@ -305,19 +303,63 @@ fun TaskDetailScreen(
 }
 
 /**
- * Descripción de la tarea, de varias líneas, bajo el título. Se guarda sola al dejar de escribir
- * (y al salir de la pantalla), sobre la tarea más reciente para no pisar otros cambios.
+ * Título editable en el sitio, con el estilo del encabezado. Se guarda como la descripción;
+ * un título vacío no se guarda y al salir del campo vuelve el anterior.
  */
 @Composable
-private fun DescriptionField(task: Task, onUpdateTask: (Task) -> Unit, palette: HomePalette, accent: Color) {
+private fun TitleField(task: Task, onRename: (String) -> Unit, palette: HomePalette, accent: Color) {
+    var text by remember(task.id) { mutableStateOf(task.titulo) }
+    val latestTask by rememberUpdatedState(task)
+    val latestText by rememberUpdatedState(text)
+    val latestOnSave by rememberUpdatedState(onRename)
+    val focusManager = LocalFocusManager.current
+
+    fun save() {
+        val value = latestText.trim()
+        if (value.isNotEmpty() && value != latestTask.titulo) latestOnSave(value)
+    }
+
+    LaunchedEffect(text) {
+        delay(600)
+        save()
+    }
+    DisposableEffect(task.id) { onDispose { save() } }
+
+    BasicTextField(
+        // Una línea lógica: un salto de línea pegado se convierte en espacio
+        value = text,
+        onValueChange = { text = it.replace('\n', ' ') },
+        cursorBrush = SolidColor(accent),
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+        textStyle = TextStyle(
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 30.sp,
+            lineHeight = 34.sp,
+            letterSpacing = (-1).sp,
+            color = palette.ink
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { if (!it.isFocused && text.isBlank()) text = latestTask.titulo }
+    )
+}
+
+/**
+ * Descripción de la tarea, de varias líneas, bajo el título. Se guarda sola al dejar de escribir
+ * (y al salir de la pantalla); el ViewModel solo cambia ese campo, así no pisa otros cambios.
+ */
+@Composable
+private fun DescriptionField(task: Task, onSave: (String?) -> Unit, palette: HomePalette, accent: Color) {
     var text by remember(task.id) { mutableStateOf(task.descripcion.orEmpty()) }
     val latestTask by rememberUpdatedState(task)
     val latestText by rememberUpdatedState(text)
-    val latestOnUpdate by rememberUpdatedState(onUpdateTask)
+    val latestOnSave by rememberUpdatedState(onSave)
 
     fun save() {
         val value = latestText.trim().ifEmpty { null }
-        if (value != latestTask.descripcion) latestOnUpdate(latestTask.copy(descripcion = value))
+        if (value != latestTask.descripcion) latestOnSave(value)
     }
 
     LaunchedEffect(text) {
