@@ -1,5 +1,6 @@
 package com.example.taksy.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -172,53 +173,29 @@ fun CategoryListScreen(
         searchQuery = ""
         onSearchQueryChanged("")
     }
+    // Atrás cierra la búsqueda en vez de salir de la app
+    BackHandler(enabled = showSearch, onBack = ::closeSearch)
 
     Scaffold(
         containerColor = palette.background,
-        topBar = {
-            if (showSearch) {
-                val focusRequester = remember { FocusRequester() }
-                LaunchedEffect(Unit) { focusRequester.requestFocus() }
-                TopAppBar(
-                    title = {
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = {
-                                searchQuery = it
-                                onSearchQueryChanged(it)
-                            },
-                            placeholder = { Text(stringResource(R.string.search_tasks)) },
-                            singleLine = true,
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .focusRequester(focusRequester)
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = ::closeSearch) {
-                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-                )
-            }
-        },
         modifier = modifier
     ) { paddingValues ->
-        if (showSearch && searchQuery.isNotBlank()) {
-            SearchResults(
+        if (showSearch) {
+            HomeSearch(
+                query = searchQuery,
+                onQueryChange = {
+                    searchQuery = it
+                    onSearchQueryChanged(it)
+                },
+                onClose = ::closeSearch,
                 results = searchResults,
-                categoryMap = categoryMap,
+                categories = categories,
+                palette = palette,
                 onTaskClick = onTaskClick,
+                onCategoryClick = onCategoryClick,
                 modifier = Modifier.padding(paddingValues)
             )
-        } else if (!showSearch) {
+        } else {
             LazyColumn(
                 state = listState,
                 modifier = Modifier
@@ -644,111 +621,6 @@ private fun CategoryIconTile(category: Category, color: Color, palette: HomePale
             tint = Color.White,
             modifier = Modifier.size((size / 2).dp)
         )
-    }
-}
-
-// ── Búsqueda (sin cambios respecto a la versión anterior) ────────────────
-
-@Composable
-private fun SearchResults(
-    results: List<Task>,
-    categoryMap: Map<Long, Category>,
-    onTaskClick: (Task) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    if (results.isEmpty()) {
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = stringResource(R.string.no_search_results),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-            )
-        }
-    } else {
-        LazyColumn(
-            modifier = modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            items(results, key = { it.id }) { task ->
-                SearchResultItem(
-                    task = task,
-                    category = task.categoriaId?.let { categoryMap[it] },
-                    onClick = { onTaskClick(task) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SearchResultItem(task: Task, category: Category?, onClick: () -> Unit) {
-    val isCompleted = task.estado == TaskEstado.COMPLETADA
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
-        tonalElevation = 1.dp,
-        shape = MaterialTheme.shapes.medium
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (task.prioridad != TaskPrioridad.NINGUNA && !isCompleted) {
-                        val priorityColor = when (task.prioridad) {
-                            TaskPrioridad.ALTA -> PriorityHighRed
-                            TaskPrioridad.MEDIA -> PriorityMediumOrange
-                            TaskPrioridad.BAJA -> PriorityLowGreen
-                            else -> Color.Transparent
-                        }
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .background(priorityColor, CircleShape)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                    }
-                    Text(
-                        text = task.titulo,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = if (isCompleted) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                        else MaterialTheme.colorScheme.onSurface,
-                        textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                    )
-                }
-                if (!isCompleted && task.fechaVencimiento != null) {
-                    val dueColor = when (DateUtils.getDueDateStatus(task.fechaVencimiento)) {
-                        DueDateStatus.OVERDUE -> DueOverdueRed
-                        DueDateStatus.DUE_TODAY -> DueTodayOrange
-                        DueDateStatus.DUE_TOMORROW -> DueTomorrowOrange
-                        DueDateStatus.DUE_SOON -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                        DueDateStatus.NORMAL -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                    }
-                    Text(
-                        text = DateUtils.formatDate(task.fechaVencimiento),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = dueColor
-                    )
-                }
-                if (category != null) {
-                    Text(
-                        text = CategoryUtils.getCategoryName(category),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-                    )
-                }
-            }
-        }
     }
 }
 

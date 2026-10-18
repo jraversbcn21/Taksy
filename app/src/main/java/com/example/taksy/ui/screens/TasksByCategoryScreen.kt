@@ -45,6 +45,7 @@ import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.service.AlarmPolicy
 import com.example.taksy.ui.components.ExactAlarmPermissionDialog
 import com.example.taksy.ui.components.QuickReminderDialog
+import com.example.taksy.ui.components.SearchField
 import com.example.taksy.ui.components.TaskListItem
 import com.example.taksy.ui.components.tasksbycategory.InlineTaskInput
 import com.example.taksy.ui.theme.HomePalette
@@ -413,58 +414,6 @@ private fun AddTaskPill(palette: HomePalette, accent: Color, onClick: () -> Unit
             fontSize = 15.sp,
             color = palette.placeholder
         )
-    }
-}
-
-@Composable
-private fun SearchField(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onClose: () -> Unit,
-    palette: HomePalette,
-    accent: Color
-) {
-    val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
-    val shape = RoundedCornerShape(16.dp)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .height(50.dp)
-            .clip(shape)
-            .background(palette.surface)
-            .border(1.dp, palette.border, shape)
-            .padding(start = 16.dp)
-    ) {
-        Icon(Icons.Default.Search, contentDescription = null, tint = palette.placeholder, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(10.dp))
-        BasicTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            singleLine = true,
-            cursorBrush = SolidColor(accent),
-            textStyle = TextStyle(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Medium, fontSize = 15.sp, color = palette.ink),
-            decorationBox = { inner ->
-                if (query.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.search_tasks),
-                        fontFamily = PlusJakartaSans,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 15.sp,
-                        color = palette.placeholder
-                    )
-                }
-                inner()
-            },
-            modifier = Modifier
-                .weight(1f)
-                .focusRequester(focusRequester)
-        )
-        IconButton(onClick = onClose) {
-            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close), tint = palette.muted)
-        }
     }
 }
 

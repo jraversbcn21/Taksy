@@ -354,14 +354,14 @@ private fun TaskMeta(task: Task, isCompleted: Boolean, palette: HomePalette, acc
     }
 }
 
-private fun priorityColor(prioridad: TaskPrioridad): Color = when (prioridad) {
+internal fun priorityColor(prioridad: TaskPrioridad): Color = when (prioridad) {
     TaskPrioridad.ALTA -> PriorityHighRed
     TaskPrioridad.MEDIA -> PriorityMediumOrange
     TaskPrioridad.BAJA -> PriorityLowGreen
     TaskPrioridad.NINGUNA -> Color.Transparent
 }
 
-private fun dueColor(status: DueDateStatus, palette: HomePalette): Color {
+internal fun dueColor(status: DueDateStatus, palette: HomePalette): Color {
     val base = when (status) {
         DueDateStatus.OVERDUE -> DueOverdueRed
         DueDateStatus.DUE_TODAY -> DueTodayOrange

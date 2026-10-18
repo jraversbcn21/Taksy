@@ -138,9 +138,10 @@ interface TaskDao {
     fun searchTasksByCategory(categoryId: Long, query: String): Flow<List<Task>>
 
     /**
-     * Busca tareas por título en todas las categorías
+     * Busca tareas por título en todas las categorías. Como en la lista de una categoría, las
+     * ocurrencias completadas de tareas recurrentes no salen (parecerían duplicados).
      */
-    @Query("SELECT * FROM tasks WHERE titulo LIKE '%' || :query || '%' ORDER BY CASE WHEN estado = 'PENDIENTE' THEN 0 ELSE 1 END, CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
+    @Query("SELECT * FROM tasks WHERE NOT (estado = 'COMPLETADA' AND recurrencia != 'NINGUNA') AND titulo LIKE '%' || :query || '%' ORDER BY CASE WHEN estado = 'PENDIENTE' THEN 0 ELSE 1 END, CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
     fun searchAllTasks(query: String): Flow<List<Task>>
 
     /**
