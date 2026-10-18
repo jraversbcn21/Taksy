@@ -49,7 +49,6 @@ import com.example.taksy.ui.theme.HomePalette
 import com.example.taksy.ui.theme.PlusJakartaSans
 import com.example.taksy.ui.theme.accentColor
 import com.example.taksy.utils.CategoryUtils
-import com.example.taksy.utils.DeviceUtils
 import com.example.taksy.utils.getCategoryIcon
 import kotlinx.coroutines.launch
 import java.util.Date
@@ -155,28 +154,12 @@ fun TasksByCategoryScreen(
     Scaffold(
         containerColor = palette.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            if (!showInlineInput && !showSearch) {
-                FloatingActionButton(
-                    onClick = ::openComposer,
-                    shape = RoundedCornerShape(18.dp),
-                    containerColor = accent,
-                    contentColor = Color.White,
-                    modifier = Modifier.padding(
-                        end = DeviceUtils.getFabSidePadding() - 16.dp,
-                        bottom = DeviceUtils.getFabBottomPadding() - 16.dp
-                    )
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_task))
-                }
-            }
-        },
         modifier = modifier
     ) { paddingValues ->
         LazyColumn(
             state = listState,
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
