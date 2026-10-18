@@ -165,36 +165,6 @@ private fun <T> ChoiceGrid(items: List<T>, cell: @Composable (T) -> Unit) {
     }
 }
 
-/** Tarjeta de diálogo con el lenguaje visual de la pantalla de inicio. */
-@Composable
-internal fun HomeDialogSurface(palette: HomePalette, content: @Composable ColumnScope.() -> Unit) {
-    val shape = RoundedCornerShape(28.dp)
-    Column(
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-        modifier = Modifier
-            .padding(horizontal = 24.dp)
-            .fillMaxWidth()
-            .widthIn(max = 420.dp)
-            .clip(shape)
-            .background(palette.surface)
-            .border(1.dp, palette.border, shape)
-            .padding(22.dp),
-        content = content
-    )
-}
-
-@Composable
-internal fun DialogTitle(text: String, palette: HomePalette) {
-    Text(
-        text = text,
-        fontFamily = PlusJakartaSans,
-        fontWeight = FontWeight.ExtraBold,
-        fontSize = 22.sp,
-        letterSpacing = (-0.5).sp,
-        color = palette.ink
-    )
-}
-
 @Composable
 private fun DialogSectionLabel(text: String, palette: HomePalette) {
     Text(
@@ -205,45 +175,4 @@ private fun DialogSectionLabel(text: String, palette: HomePalette) {
         letterSpacing = 1.sp,
         color = palette.muted
     )
-}
-
-/** Cancelar (texto) + acción principal (píldora del color indicado). */
-@Composable
-internal fun DialogButtons(
-    confirmText: String,
-    confirmColor: Color,
-    palette: HomePalette,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    confirmEnabled: Boolean = true
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = stringResource(R.string.cancel),
-            fontFamily = PlusJakartaSans,
-            fontWeight = FontWeight.Bold,
-            fontSize = 15.sp,
-            color = palette.muted,
-            modifier = Modifier
-                .clip(RoundedCornerShape(14.dp))
-                .clickable(role = Role.Button, onClick = onDismiss)
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-        )
-        Text(
-            text = confirmText,
-            fontFamily = PlusJakartaSans,
-            fontWeight = FontWeight.Bold,
-            fontSize = 15.sp,
-            color = if (confirmEnabled) Color.White else palette.doneText,
-            modifier = Modifier
-                .clip(RoundedCornerShape(14.dp))
-                .background(if (confirmEnabled) confirmColor else palette.track)
-                .clickable(enabled = confirmEnabled, role = Role.Button, onClick = onConfirm)
-                .padding(horizontal = 20.dp, vertical = 12.dp)
-        )
-    }
 }

@@ -83,7 +83,7 @@
     <string name="change_language_message">Are you sure you want to change the language? The app will restart to apply the change.</string>
     <string name="change">Change</string>
     <string name="delete_task_title">Delete Task</string>
-    <string name="delete_task_message">Are you sure you want to delete this task? This action cannot be undone.</string>
+    <string name="delete_task_message">Delete this task? Its subtasks and reminder are deleted too.</string>
     <string name="delete">Delete</string>
     <string name="back">Back</string>
     
@@ -145,7 +145,6 @@
     <!-- Quick Reminder -->
     <string name="set_reminder">Set reminder</string>
     <string name="edit_reminder">Edit reminder</string>
-    <string name="delete_reminder">Delete reminder</string>
 
     <!-- Backup -->
     <string name="backup">Backup</string>

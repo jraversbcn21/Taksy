@@ -1,6 +1,5 @@
 package com.example.taksy.ui.screens
 
-import android.text.format.DateFormat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -40,6 +39,8 @@ import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.service.AlarmPolicy
 import com.example.taksy.ui.components.ExactAlarmPermissionDialog
+import com.example.taksy.ui.components.HomeDatePickerDialog
+import com.example.taksy.ui.components.HomeTimePickerDialog
 import com.example.taksy.ui.components.OptionPills
 import com.example.taksy.ui.components.QuickReminderDialog
 import com.example.taksy.ui.components.taskdetail.AddSubtaskRow
@@ -58,7 +59,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 
 /**
  * Detalle de una tarea con el lenguaje visual de la pantalla de inicio: fecha y recordatorio,
@@ -269,9 +269,11 @@ fun TaskDetailScreen(
     }
 
     if (pickingDate) {
-        DueDatePickerDialog(
-            initialDate = task.fechaVencimiento,
-            onDateSelected = { utcMillis ->
+        HomeDatePickerDialog(
+            palette = palette,
+            accent = accent,
+            initialUtcMillis = DateUtils.toUtcDay(task.fechaVencimiento ?: Date()),
+            onConfirm = { utcMillis ->
                 pickingDate = false
                 pickedDayUtcMillis = utcMillis
             },
@@ -281,19 +283,22 @@ fun TaskDetailScreen(
 
     pickedDayUtcMillis?.let { dayUtc ->
         val current = task.fechaVencimiento?.let { Calendar.getInstance().apply { time = it } }
-        DueTimePickerDialog(
+        HomeTimePickerDialog(
+            palette = palette,
+            accent = accent,
             initialHour = current?.get(Calendar.HOUR_OF_DAY) ?: 9,
             initialMinute = current?.get(Calendar.MINUTE) ?: 0,
             onConfirm = { hour, minute ->
-                onUpdateTask(task.copy(fechaVencimiento = combine(dayUtc, hour, minute)))
+                onUpdateTask(task.copy(fechaVencimiento = DateUtils.combineUtcDay(dayUtc, hour, minute)))
                 pickedDayUtcMillis = null
             },
+            onDismiss = { pickedDayUtcMillis = null },
             // "Sin hora" se guarda como 00:00, igual que en el resto de la app
-            onNoTime = {
-                onUpdateTask(task.copy(fechaVencimiento = combine(dayUtc, 0, 0)))
+            dismissText = stringResource(R.string.task_no_time),
+            onDismissButton = {
+                onUpdateTask(task.copy(fechaVencimiento = DateUtils.combineUtcDay(dayUtc, 0, 0)))
                 pickedDayUtcMillis = null
-            },
-            onDismiss = { pickedDayUtcMillis = null }
+            }
         )
     }
 
@@ -301,6 +306,8 @@ fun TaskDetailScreen(
         QuickReminderDialog(
             taskTitle = task.titulo,
             existingReminder = activeReminder,
+            palette = palette,
+            accent = accent,
             onSetReminder = { date ->
                 onSetReminder(date)
                 editingReminder = false
@@ -316,26 +323,8 @@ fun TaskDetailScreen(
     }
 
     if (showExactAlarmDialog) {
-        ExactAlarmPermissionDialog(onDismiss = { showExactAlarmDialog = false })
+        ExactAlarmPermissionDialog(palette = palette, onDismiss = { showExactAlarmDialog = false })
     }
-}
-
-/** Fecha del DatePicker (medianoche UTC) + hora local → Date local. */
-private fun combine(dayUtcMillis: Long, hour: Int, minute: Int): Date {
-    val utc = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = dayUtcMillis }
-    return Calendar.getInstance().apply {
-        clear()
-        set(utc.get(Calendar.YEAR), utc.get(Calendar.MONTH), utc.get(Calendar.DAY_OF_MONTH), hour, minute)
-    }.time
-}
-
-/** Día local de [date] como medianoche UTC, que es lo que espera el DatePicker. */
-private fun toUtcDay(date: Date): Long {
-    val local = Calendar.getInstance().apply { time = date }
-    return Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-        clear()
-        set(local.get(Calendar.YEAR), local.get(Calendar.MONTH), local.get(Calendar.DAY_OF_MONTH))
-    }.timeInMillis
 }
 
 /** "sáb, 18 oct · 09:00"; sin hora si es 00:00 y con año si no es el actual. */
@@ -449,41 +438,4 @@ private fun SubtasksHeader(done: Int, total: Int, accent: Color, palette: HomePa
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DueDatePickerDialog(initialDate: Date?, onDateSelected: (Long) -> Unit, onDismiss: () -> Unit) {
-    val state = rememberDatePickerState(initialSelectedDateMillis = toUtcDay(initialDate ?: Date()))
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = { state.selectedDateMillis?.let(onDateSelected) },
-                enabled = state.selectedDateMillis != null
-            ) { Text(stringResource(R.string.ok)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
-    ) {
-        DatePicker(state = state)
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DueTimePickerDialog(
-    initialHour: Int,
-    initialMinute: Int,
-    onConfirm: (hour: Int, minute: Int) -> Unit,
-    onNoTime: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-    val state = rememberTimePickerState(initialHour, initialMinute, DateFormat.is24HourFormat(context))
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        text = { TimePicker(state = state) },
-        confirmButton = { TextButton(onClick = { onConfirm(state.hour, state.minute) }) { Text(stringResource(R.string.ok)) } },
-        dismissButton = { TextButton(onClick = onNoTime) { Text(stringResource(R.string.task_no_time)) } }
-    )
 }

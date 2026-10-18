@@ -86,7 +86,7 @@
     <string name="change_language_message">¿Estás seguro de que quieres cambiar el idioma? La aplicación se reiniciará para aplicar el cambio.</string>
     <string name="change">Cambiar</string>
     <string name="delete_task_title">Eliminar Tarea</string>
-    <string name="delete_task_message">¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer.</string>
+    <string name="delete_task_message">¿Seguro que quieres eliminar esta tarea? Se borrarán también sus subtareas y su recordatorio.</string>
     <string name="delete">Eliminar</string>
     <string name="back">Atrás</string>
     
@@ -148,7 +148,6 @@
     <!-- Quick Reminder -->
     <string name="set_reminder">Establecer recordatorio</string>
     <string name="edit_reminder">Editar recordatorio</string>
-    <string name="delete_reminder">Eliminar recordatorio</string>
 
     <!-- Backup -->
     <string name="backup">Copia de seguridad</string>

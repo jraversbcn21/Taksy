@@ -29,12 +29,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.example.taksy.R
-import com.example.taksy.ui.components.DialogButtons
-import com.example.taksy.ui.components.DialogTitle
-import com.example.taksy.ui.components.HomeDialogSurface
+import com.example.taksy.ui.components.HomeMessageDialog
 import com.example.taksy.ui.theme.DueOverdueRed
 import com.example.taksy.ui.theme.HomePalette
 import com.example.taksy.ui.theme.PlusJakartaSans
@@ -198,29 +194,18 @@ fun BackupScreen(
     }
 
     pendingImportUri?.let { uri ->
-        Dialog(onDismissRequest = { pendingImportUri = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-            HomeDialogSurface(palette) {
-                DialogTitle(stringResource(R.string.backup_confirm_import_title), palette)
-                Text(
-                    text = stringResource(R.string.backup_confirm_import_message),
-                    fontFamily = PlusJakartaSans,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 15.sp,
-                    lineHeight = 21.sp,
-                    color = palette.muted
-                )
-                DialogButtons(
-                    confirmText = stringResource(R.string.backup_import),
-                    confirmColor = danger,
-                    palette = palette,
-                    onDismiss = { pendingImportUri = null },
-                    onConfirm = {
-                        pendingImportUri = null
-                        backupViewModel.importBackup(uri)
-                    }
-                )
-            }
-        }
+        HomeMessageDialog(
+            title = stringResource(R.string.backup_confirm_import_title),
+            message = stringResource(R.string.backup_confirm_import_message),
+            confirmText = stringResource(R.string.backup_import),
+            confirmColor = danger,
+            palette = palette,
+            onConfirm = {
+                pendingImportUri = null
+                backupViewModel.importBackup(uri)
+            },
+            onDismiss = { pendingImportUri = null }
+        )
     }
 }
 

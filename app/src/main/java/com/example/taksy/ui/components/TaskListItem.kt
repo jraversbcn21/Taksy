@@ -28,6 +28,19 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import com.example.taksy.R
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
@@ -213,53 +226,92 @@ fun TaskListItem(
     }
 
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(R.string.delete_task_title)) },
-            text = { Text(stringResource(R.string.delete_task_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    onTaskDelete(task)
-                    showDeleteDialog = false
-                }) {
-                    Text(text = stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
-                }
+        HomeMessageDialog(
+            title = stringResource(R.string.delete_task_title),
+            message = stringResource(R.string.delete_task_message),
+            confirmText = stringResource(R.string.delete),
+            confirmColor = if (palette.isDark) lerp(DueOverdueRed, Color.White, 0.25f) else DueOverdueRed,
+            palette = palette,
+            onConfirm = {
+                onTaskDelete(task)
+                showDeleteDialog = false
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.cancel)) }
-            }
+            onDismiss = { showDeleteDialog = false }
         )
     }
 
     if (showEditDialog) {
-        AlertDialog(
-            onDismissRequest = { showEditDialog = false },
-            title = { Text(stringResource(R.string.edit_task)) },
-            text = {
-                OutlinedTextField(
-                    value = editTitle,
-                    onValueChange = { editTitle = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(stringResource(R.string.task_title_hint)) },
-                    singleLine = true
-                )
+        RenameTaskDialog(
+            initialTitle = editTitle,
+            palette = palette,
+            accent = accent,
+            onConfirm = { title ->
+                onEditTask(task.copy(titulo = title))
+                showEditDialog = false
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val trimmed = editTitle.trim()
-                        if (trimmed.isNotBlank()) {
-                            onEditTask(task.copy(titulo = trimmed))
-                            showEditDialog = false
-                        }
-                    },
-                    enabled = editTitle.isNotBlank()
-                ) { Text(stringResource(R.string.save)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEditDialog = false }) { Text(stringResource(R.string.cancel)) }
-            }
+            onDismiss = { showEditDialog = false }
         )
+    }
+}
+
+@Composable
+private fun RenameTaskDialog(
+    initialTitle: String,
+    palette: HomePalette,
+    accent: Color,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var title by remember { mutableStateOf(TextFieldValue(initialTitle, TextRange(initialTitle.length))) }
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    val trimmed = title.text.trim()
+    val fieldShape = RoundedCornerShape(16.dp)
+
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        HomeDialogSurface(palette) {
+            DialogTitle(stringResource(R.string.edit_task), palette)
+            BasicTextField(
+                value = title,
+                onValueChange = { title = it },
+                singleLine = true,
+                cursorBrush = SolidColor(accent),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { if (trimmed.isNotEmpty()) onConfirm(trimmed) }),
+                textStyle = TextStyle(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = palette.ink),
+                decorationBox = { inner ->
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        if (title.text.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.task_title_hint),
+                                fontFamily = PlusJakartaSans,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = palette.placeholder
+                            )
+                        }
+                        inner()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .clip(fieldShape)
+                    .background(palette.background)
+                    .border(1.dp, palette.border, fieldShape)
+                    .padding(horizontal = 16.dp)
+                    .wrapContentHeight(Alignment.CenterVertically)
+                    .focusRequester(focusRequester)
+            )
+            DialogButtons(
+                confirmText = stringResource(R.string.save),
+                confirmColor = accent,
+                confirmEnabled = trimmed.isNotEmpty(),
+                palette = palette,
+                onDismiss = onDismiss,
+                onConfirm = { onConfirm(trimmed) }
+            )
+        }
     }
 }
 

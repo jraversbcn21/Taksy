@@ -29,16 +29,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.taksy.R
-import com.example.taksy.ui.components.DialogButtons
-import com.example.taksy.ui.components.DialogTitle
-import com.example.taksy.ui.components.HomeDialogSurface
+import com.example.taksy.ui.components.HomeMessageDialog
 import com.example.taksy.ui.theme.HomePalette
 import com.example.taksy.ui.theme.PlusJakartaSans
 import com.example.taksy.ui.theme.TicksyTheme
@@ -145,29 +141,18 @@ fun DrawerScreen(
         )
 
         pendingLanguage?.let { language ->
-            Dialog(onDismissRequest = { pendingLanguage = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-                HomeDialogSurface(palette) {
-                    DialogTitle(stringResource(R.string.change_language), palette)
-                    Text(
-                        text = stringResource(R.string.change_language_message),
-                        fontFamily = PlusJakartaSans,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 15.sp,
-                        lineHeight = 21.sp,
-                        color = palette.muted
-                    )
-                    DialogButtons(
-                        confirmText = stringResource(R.string.change),
-                        confirmColor = palette.brand,
-                        palette = palette,
-                        onDismiss = { pendingLanguage = null },
-                        onConfirm = {
-                            pendingLanguage = null
-                            themeViewModel.setLanguage(language)
-                        }
-                    )
-                }
-            }
+            HomeMessageDialog(
+                title = stringResource(R.string.change_language),
+                message = stringResource(R.string.change_language_message),
+                confirmText = stringResource(R.string.change),
+                confirmColor = palette.brand,
+                palette = palette,
+                onConfirm = {
+                    pendingLanguage = null
+                    themeViewModel.setLanguage(language)
+                },
+                onDismiss = { pendingLanguage = null }
+            )
         }
     }
 }

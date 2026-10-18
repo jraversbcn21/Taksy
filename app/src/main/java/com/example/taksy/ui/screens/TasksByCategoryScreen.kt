@@ -278,6 +278,8 @@ fun TasksByCategoryScreen(
             QuickReminderDialog(
                 taskTitle = reminderTask.titulo,
                 existingReminder = existingReminder,
+                palette = palette,
+                accent = accent,
                 onSetReminder = { date ->
                     taskViewModel.setQuickReminder(reminderTask.id, reminderTask.titulo, date)
                     taskForReminder = null
@@ -293,7 +295,7 @@ fun TasksByCategoryScreen(
         }
 
         if (showExactAlarmDialog) {
-            ExactAlarmPermissionDialog(onDismiss = { showExactAlarmDialog = false })
+            ExactAlarmPermissionDialog(palette = palette, onDismiss = { showExactAlarmDialog = false })
         }
     }
 }

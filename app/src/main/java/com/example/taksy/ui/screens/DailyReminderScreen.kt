@@ -1,6 +1,5 @@
 package com.example.taksy.ui.screens
 
-import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,6 +30,7 @@ import com.example.taksy.data.preferences.PreferencesRepository
 import com.example.taksy.service.AlarmPolicy
 import com.example.taksy.service.DailyReminderManager
 import com.example.taksy.ui.components.ExactAlarmPermissionDialog
+import com.example.taksy.ui.components.HomeTimePickerDialog
 import com.example.taksy.ui.theme.HomePalette
 import com.example.taksy.ui.theme.PlusJakartaSans
 import java.util.Locale
@@ -213,7 +213,9 @@ fun DailyReminderScreen(
     }
 
     editingMorning?.let { morning ->
-        ReminderTimePickerDialog(
+        HomeTimePickerDialog(
+            palette = palette,
+            accent = palette.brand,
             initialHour = if (morning) prefs.morningHour else prefs.eveningHour,
             initialMinute = if (morning) prefs.morningMinute else prefs.eveningMinute,
             onConfirm = { hour, minute ->
@@ -228,7 +230,7 @@ fun DailyReminderScreen(
     }
 
     if (showExactAlarmDialog) {
-        ExactAlarmPermissionDialog(onDismiss = { showExactAlarmDialog = false })
+        ExactAlarmPermissionDialog(palette = palette, onDismiss = { showExactAlarmDialog = false })
     }
 }
 
@@ -303,30 +305,4 @@ private fun TimeTile(
             color = palette.ink
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ReminderTimePickerDialog(
-    initialHour: Int,
-    initialMinute: Int,
-    onConfirm: (hour: Int, minute: Int) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-    val state = rememberTimePickerState(
-        initialHour = initialHour,
-        initialMinute = initialMinute,
-        is24Hour = DateFormat.is24HourFormat(context)
-    )
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        text = { TimePicker(state = state) },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(state.hour, state.minute) }) { Text(stringResource(R.string.ok)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        }
-    )
 }

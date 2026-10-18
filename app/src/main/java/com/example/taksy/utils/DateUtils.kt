@@ -10,7 +10,28 @@ object DateUtils {
     
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     private val shortDateFormat = SimpleDateFormat("dd/MM", Locale.getDefault())
-    
+
+    /**
+     * Día local de [date] como medianoche UTC, que es lo que espera el DatePicker de Material3.
+     * Pasarle la hora local tal cual muestra el día anterior para horas cercanas a medianoche.
+     */
+    fun toUtcDay(date: Date): Long {
+        val local = Calendar.getInstance().apply { time = date }
+        return Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+            clear()
+            set(local.get(Calendar.YEAR), local.get(Calendar.MONTH), local.get(Calendar.DAY_OF_MONTH))
+        }.timeInMillis
+    }
+
+    /** Fecha del DatePicker (medianoche UTC) + hora local → Date local. */
+    fun combineUtcDay(dayUtcMillis: Long, hour: Int, minute: Int): Date {
+        val utc = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = dayUtcMillis }
+        return Calendar.getInstance().apply {
+            clear()
+            set(utc.get(Calendar.YEAR), utc.get(Calendar.MONTH), utc.get(Calendar.DAY_OF_MONTH), hour, minute)
+        }.time
+    }
+
     /**
      * Formatea una fecha para mostrar
      */
