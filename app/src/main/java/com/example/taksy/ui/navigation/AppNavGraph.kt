@@ -233,8 +233,8 @@ fun AppNavGraph(
                         onAddSubtask = { title -> taskViewModel.addSubtask(taskId, title) },
                         onToggleSubtask = { subtask -> taskViewModel.toggleSubtaskStatus(subtask) },
                         onUpdateTask = { updatedTask -> taskViewModel.updateTask(updatedTask) },
-                        onSetReminder = { date -> taskViewModel.setQuickReminder(taskId, resolvedTask.titulo, date) },
-                        onDeleteReminder = { taskViewModel.deleteReminderForTask(taskId) }
+                        onUpdateDueDate = { due -> taskViewModel.updateDueDate(resolvedTask, due) },
+                        onSetReminderLead = { lead -> taskViewModel.setReminderLead(resolvedTask, lead) }
                     )
                 }
             }

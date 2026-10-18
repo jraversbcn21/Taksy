@@ -264,4 +264,17 @@
     <string name="task_no_time">Sin hora</string>
     <string name="task_reminder">Recordatorio</string>
     <string name="task_no_reminder">Sin recordatorio</string>
+    <string name="task_schedule_title">Fecha y aviso</string>
+    <string name="reminder_notify">Avisarme</string>
+    <string name="reminder_none">No</string>
+    <string name="reminder_at_time">A la hora</string>
+    <string name="reminder_10_min">10 min antes</string>
+    <string name="reminder_1_hour">1 h antes</string>
+    <string name="reminder_1_day">1 día antes</string>
+    <string name="reminder_same_day_9">Ese día, 9:00</string>
+    <string name="reminder_day_before_9">El día antes, 9:00</string>
+    <string name="reminder_custom">Personalizado</string>
+    <string name="reminder_at">Aviso: %s</string>
+    <string name="reminder_at_passed">Aviso: %s (ya ha pasado)</string>
+    <string name="reminder_needs_date">Pon una fecha para poder recibir un aviso</string>
 </resources>

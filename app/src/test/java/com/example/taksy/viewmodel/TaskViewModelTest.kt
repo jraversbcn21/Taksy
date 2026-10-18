@@ -13,6 +13,7 @@ import com.example.taksy.data.Task
 import com.example.taksy.data.TaskDao
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskPrioridad
+import com.example.taksy.domain.ReminderLead
 import com.example.taksy.repository.TaskRepository
 import com.example.taksy.service.ReminderSchedulerContract
 import com.example.taksy.widget.TaskWidgetProvider
@@ -202,36 +203,81 @@ class TaskViewModelTest {
         assertEquals(TaskEstado.PENDIENTE, fakeTaskDao.tasks[0].estado)
     }
 
-    // ── Quick reminders ───────────────────────────────────────────────────
+    // ── Reminders (relative to the due date) ──────────────────────────────
+
+    private val hour = 3_600_000L
 
     @Test
-    fun `setQuickReminder deletes existing and creates new`() = runTest {
-        val existing = Reminder(id = 5, taskId = 1, titulo = "Old", fechaRecordatorio = Date(), fechaCreacion = Date())
-        fakeReminderDao.reminders.add(existing)
+    fun `setReminderLead replaces the reminder with one relative to the due date`() = runTest {
+        val due = Date(System.currentTimeMillis() + 5 * hour)
+        val task = Task(id = 1, titulo = "Task Title", fechaVencimiento = due)
+        fakeTaskDao.tasks.add(task)
+        fakeReminderDao.reminders.add(Reminder(id = 5, taskId = 1, titulo = "Old", fechaRecordatorio = Date(), fechaCreacion = Date()))
 
-        val futureDate = Date(System.currentTimeMillis() + 3600000)
-        viewModel.setQuickReminder(1, "Task Title", futureDate)
+        viewModel.setReminderLead(task, ReminderLead.HOUR_1)
         advanceUntilIdle()
 
         assertTrue(fakeScheduler.cancelledIds.contains(5L))
         assertEquals(1, fakeReminderDao.reminders.size)
+        assertEquals(due.time - hour, fakeReminderDao.reminders[0].fechaRecordatorio.time)
         assertEquals("Task Title", fakeReminderDao.reminders[0].titulo)
         assertEquals(1, fakeScheduler.scheduledReminders.size)
     }
 
     @Test
-    fun `deleteReminderForTask cancels and removes all`() = runTest {
-        fakeReminderDao.reminders.add(
-            Reminder(id = 10, taskId = 1, titulo = "R1", fechaRecordatorio = Date(), fechaCreacion = Date())
-        )
-        fakeReminderDao.reminders.add(
-            Reminder(id = 11, taskId = 1, titulo = "R2", fechaRecordatorio = Date(), fechaCreacion = Date())
-        )
+    fun `setReminderLead null cancels and removes all`() = runTest {
+        val task = Task(id = 1, titulo = "T", fechaVencimiento = Date(System.currentTimeMillis() + hour))
+        fakeReminderDao.reminders.add(Reminder(id = 10, taskId = 1, titulo = "R1", fechaRecordatorio = Date(), fechaCreacion = Date()))
+        fakeReminderDao.reminders.add(Reminder(id = 11, taskId = 1, titulo = "R2", fechaRecordatorio = Date(), fechaCreacion = Date()))
 
-        viewModel.deleteReminderForTask(1)
+        viewModel.setReminderLead(task, null)
         advanceUntilIdle()
 
         assertTrue(fakeScheduler.cancelledIds.containsAll(listOf(10L, 11L)))
+        assertTrue(fakeReminderDao.reminders.isEmpty())
+    }
+
+    @Test
+    fun `a reminder time already passed is stored but not scheduled`() = runTest {
+        // Vence dentro de 30 min: "1 h antes" ya ha pasado
+        val task = Task(id = 1, titulo = "T", fechaVencimiento = Date(System.currentTimeMillis() + hour / 2))
+        fakeTaskDao.tasks.add(task)
+
+        viewModel.setReminderLead(task, ReminderLead.HOUR_1)
+        advanceUntilIdle()
+
+        assertEquals(1, fakeReminderDao.reminders.size)
+        assertTrue(fakeScheduler.scheduledReminders.isEmpty())
+    }
+
+    @Test
+    fun `updateDueDate moves the reminder keeping its lead`() = runTest {
+        val due = Date(System.currentTimeMillis() + 5 * hour)
+        val task = Task(id = 1, titulo = "T", fechaVencimiento = due)
+        fakeTaskDao.tasks.add(task)
+        fakeReminderDao.reminders.add(Reminder(id = 5, taskId = 1, titulo = "T", fechaRecordatorio = Date(due.time - 10 * 60_000), fechaCreacion = Date()))
+
+        val newDue = Date(due.time + 24 * hour)
+        viewModel.updateDueDate(task, newDue)
+        advanceUntilIdle()
+
+        assertEquals(newDue, fakeTaskDao.tasks[0].fechaVencimiento)
+        assertEquals(1, fakeReminderDao.reminders.size)
+        assertEquals(newDue.time - 10 * 60_000, fakeReminderDao.reminders[0].fechaRecordatorio.time)
+        assertTrue(fakeScheduler.cancelledIds.contains(5L))
+    }
+
+    @Test
+    fun `removing the due date removes the reminder`() = runTest {
+        val due = Date(System.currentTimeMillis() + 5 * hour)
+        val task = Task(id = 1, titulo = "T", fechaVencimiento = due)
+        fakeTaskDao.tasks.add(task)
+        fakeReminderDao.reminders.add(Reminder(id = 5, taskId = 1, titulo = "T", fechaRecordatorio = due, fechaCreacion = Date()))
+
+        viewModel.updateDueDate(task, null)
+        advanceUntilIdle()
+
+        assertEquals(null, fakeTaskDao.tasks[0].fechaVencimiento)
         assertTrue(fakeReminderDao.reminders.isEmpty())
     }
 

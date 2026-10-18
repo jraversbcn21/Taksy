@@ -261,4 +261,17 @@
     <string name="task_no_time">No time</string>
     <string name="task_reminder">Reminder</string>
     <string name="task_no_reminder">No reminder</string>
+    <string name="task_schedule_title">Date &amp; reminder</string>
+    <string name="reminder_notify">Remind me</string>
+    <string name="reminder_none">No</string>
+    <string name="reminder_at_time">At the time</string>
+    <string name="reminder_10_min">10 min before</string>
+    <string name="reminder_1_hour">1 h before</string>
+    <string name="reminder_1_day">1 day before</string>
+    <string name="reminder_same_day_9">That day, 9:00</string>
+    <string name="reminder_day_before_9">Day before, 9:00</string>
+    <string name="reminder_custom">Custom</string>
+    <string name="reminder_at">Reminder: %s</string>
+    <string name="reminder_at_passed">Reminder: %s (already passed)</string>
+    <string name="reminder_needs_date">Set a date to get a reminder</string>
 </resources>

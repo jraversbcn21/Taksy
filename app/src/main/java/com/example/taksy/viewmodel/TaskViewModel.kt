@@ -16,6 +16,7 @@ import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.domain.CompleteTaskUseCase
 import com.example.taksy.domain.DeleteTaskUseCase
 import com.example.taksy.domain.SubtaskUseCase
+import com.example.taksy.domain.ReminderLead
 import com.example.taksy.domain.TaskReminderUseCase
 import com.example.taksy.repository.DeletedTask
 import com.example.taksy.repository.TaskRepository
@@ -142,10 +143,24 @@ class TaskViewModel @Inject constructor(
 
     fun getRemindersByTaskId(taskId: Long): Flow<List<Reminder>> = reminderUseCase.observe(taskId)
 
-    fun setQuickReminder(taskId: Long, taskTitle: String, fecha: Date) =
-        launchSafe(R.string.error_add_reminder) { reminderUseCase.setQuick(taskId, taskTitle, fecha) }
+    /** Aviso respecto a la fecha de la tarea; null lo quita. */
+    fun setReminderLead(task: Task, lead: ReminderLead?) =
+        launchSafe(if (lead == null) R.string.error_delete_reminder else R.string.error_add_reminder) {
+            reminderUseCase.setLead(task, lead)
+        }
 
-    fun deleteReminderForTask(taskId: Long) = launchSafe(R.string.error_delete_reminder) { reminderUseCase.deleteAllForTask(taskId) }
+    /** Cambia la fecha de vencimiento; el aviso se mueve con ella (TaskReminderUseCase.updateDueDate). */
+    fun updateDueDate(task: Task, newDue: Date?) = launchSafe(R.string.error_update_task) {
+        reminderUseCase.updateDueDate(task, newDue)
+        TaskWidgetProvider.refreshAll(context)
+    }
+
+    /** Fecha y aviso a la vez (diálogo de la campana de la lista). */
+    fun setSchedule(task: Task, newDue: Date?, lead: ReminderLead?) = launchSafe(R.string.error_add_reminder) {
+        reminderUseCase.updateDueDate(task, newDue)
+        reminderUseCase.setLead(task.copy(fechaVencimiento = newDue), lead)
+        TaskWidgetProvider.refreshAll(context)
+    }
 
     // ── Helpers ────────────────────────────────────────────────────────────
 

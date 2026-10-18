@@ -45,10 +45,12 @@ import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.service.AlarmPolicy
 import com.example.taksy.ui.components.ExactAlarmPermissionDialog
-import com.example.taksy.ui.components.HomeDatePickerDialog
-import com.example.taksy.ui.components.HomeTimePickerDialog
 import com.example.taksy.ui.components.OptionPills
-import com.example.taksy.ui.components.QuickReminderDialog
+import com.example.taksy.ui.components.DueDatePickerFlow
+import com.example.taksy.ui.components.LeadChoice
+import com.example.taksy.ui.components.ReminderLeadPicker
+import com.example.taksy.ui.components.formatDueDateTime
+import com.example.taksy.domain.ReminderLead
 import com.example.taksy.ui.components.taskdetail.AddSubtaskRow
 import com.example.taksy.ui.components.taskdetail.SubtaskItem
 import com.example.taksy.ui.components.tasksbycategory.priorityOptions
@@ -81,8 +83,8 @@ fun TaskDetailScreen(
     onAddSubtask: (String) -> Unit,
     onToggleSubtask: (Subtask) -> Unit,
     onUpdateTask: (Task) -> Unit,
-    onSetReminder: (Date) -> Unit,
-    onDeleteReminder: () -> Unit,
+    onUpdateDueDate: (Date?) -> Unit,
+    onSetReminderLead: (ReminderLead?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val palette = if (isDarkMode) HomePalette.Dark else HomePalette.Light
@@ -93,8 +95,6 @@ fun TaskDetailScreen(
     var addingSubtask by remember { mutableStateOf(false) }
     var newSubtaskTitle by remember { mutableStateOf("") }
     var pickingDate by remember { mutableStateOf(false) }
-    var pickedDayUtcMillis by remember { mutableStateOf<Long?>(null) }
-    var editingReminder by remember { mutableStateOf(false) }
     var showExactAlarmDialog by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -184,7 +184,7 @@ fun TaskDetailScreen(
                     DetailRow(
                         icon = Icons.Default.DateRange,
                         label = stringResource(R.string.task_due_date),
-                        value = due?.let { formatDateTime(it) } ?: stringResource(R.string.task_no_due_date),
+                        value = due?.let { formatDueDateTime(it) } ?: stringResource(R.string.task_no_due_date),
                         valueColor = when {
                             due == null -> palette.placeholder
                             overdue -> if (palette.isDark) lerp(DueOverdueRed, Color.White, 0.25f) else DueOverdueRed
@@ -193,24 +193,32 @@ fun TaskDetailScreen(
                         accent = accent,
                         palette = palette,
                         onClick = { pickingDate = true },
-                        onClear = if (due != null) ({ onUpdateTask(task.copy(fechaVencimiento = null)) }) else null
-                    )
-                    HorizontalDivider(color = palette.border, thickness = 1.dp)
-                    DetailRow(
-                        icon = Icons.Default.Notifications,
-                        label = stringResource(R.string.task_reminder),
-                        value = activeReminder?.let { formatDateTime(it.fechaRecordatorio) } ?: stringResource(R.string.task_no_reminder),
-                        valueColor = if (activeReminder != null) palette.ink else palette.placeholder,
-                        accent = accent,
-                        palette = palette,
-                        onClick = { editingReminder = true },
-                        onClear = if (activeReminder != null) onDeleteReminder else null
+                        onClear = if (due != null) ({ onUpdateDueDate(null) }) else null
                     )
                     HorizontalDivider(color = palette.border, thickness = 1.dp)
                     Column(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.padding(16.dp)
                     ) {
+                        // El aviso se elige respecto a la fecha y se mueve con ella
+                        ReminderLeadPicker(
+                            due = due,
+                            choice = LeadChoice.of(due, activeReminder?.fechaRecordatorio),
+                            reminderTime = activeReminder?.fechaRecordatorio,
+                            palette = palette,
+                            accent = accent,
+                            onSelect = { choice ->
+                                when (choice) {
+                                    LeadChoice.None -> onSetReminderLead(null)
+                                    is LeadChoice.Lead -> {
+                                        onSetReminderLead(choice.lead)
+                                        // El aviso se guarda igual; sin el permiso solo puede llegar con retraso
+                                        showExactAlarmDialog = AlarmPolicy.needsExactAlarmPermission(context)
+                                    }
+                                    LeadChoice.Custom -> Unit
+                                }
+                            }
+                        )
                         OptionPills(
                             label = stringResource(R.string.task_priority),
                             options = priorityOptions(palette),
@@ -279,74 +287,20 @@ fun TaskDetailScreen(
     }
 
     if (pickingDate) {
-        HomeDatePickerDialog(
+        DueDatePickerFlow(
             palette = palette,
             accent = accent,
-            initialUtcMillis = DateUtils.toUtcDay(task.fechaVencimiento ?: Date()),
-            onConfirm = { utcMillis ->
+            initial = task.fechaVencimiento,
+            onPicked = {
                 pickingDate = false
-                pickedDayUtcMillis = utcMillis
+                onUpdateDueDate(it)
             },
             onDismiss = { pickingDate = false }
         )
     }
 
-    pickedDayUtcMillis?.let { dayUtc ->
-        val current = task.fechaVencimiento?.let { Calendar.getInstance().apply { time = it } }
-        HomeTimePickerDialog(
-            palette = palette,
-            accent = accent,
-            initialHour = current?.get(Calendar.HOUR_OF_DAY) ?: 9,
-            initialMinute = current?.get(Calendar.MINUTE) ?: 0,
-            onConfirm = { hour, minute ->
-                onUpdateTask(task.copy(fechaVencimiento = DateUtils.combineUtcDay(dayUtc, hour, minute)))
-                pickedDayUtcMillis = null
-            },
-            onDismiss = { pickedDayUtcMillis = null },
-            // "Sin hora" se guarda como 00:00, igual que en el resto de la app
-            dismissText = stringResource(R.string.task_no_time),
-            onDismissButton = {
-                onUpdateTask(task.copy(fechaVencimiento = DateUtils.combineUtcDay(dayUtc, 0, 0)))
-                pickedDayUtcMillis = null
-            }
-        )
-    }
-
-    if (editingReminder) {
-        QuickReminderDialog(
-            taskTitle = task.titulo,
-            existingReminder = activeReminder,
-            palette = palette,
-            accent = accent,
-            onSetReminder = { date ->
-                onSetReminder(date)
-                editingReminder = false
-                // El recordatorio se guarda igual; sin el permiso solo puede llegar con retraso
-                showExactAlarmDialog = AlarmPolicy.needsExactAlarmPermission(context)
-            },
-            onDeleteReminder = {
-                onDeleteReminder()
-                editingReminder = false
-            },
-            onDismiss = { editingReminder = false }
-        )
-    }
-
     if (showExactAlarmDialog) {
         ExactAlarmPermissionDialog(palette = palette, onDismiss = { showExactAlarmDialog = false })
-    }
-}
-
-/** "sáb, 18 oct · 09:00"; sin hora si es 00:00 y con año si no es el actual. */
-@Composable
-private fun formatDateTime(date: Date): String {
-    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
-    return remember(date, locale) {
-        val cal = Calendar.getInstance().apply { time = date }
-        val sameYear = cal.get(Calendar.YEAR) == Calendar.getInstance().get(Calendar.YEAR)
-        val day = SimpleDateFormat(if (sameYear) "EEE, d MMM" else "EEE, d MMM yyyy", locale).format(date)
-        val hasTime = cal.get(Calendar.HOUR_OF_DAY) != 0 || cal.get(Calendar.MINUTE) != 0
-        if (hasTime) "$day · ${String.format(Locale.ROOT, "%02d:%02d", cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))}" else day
     }
 }
 

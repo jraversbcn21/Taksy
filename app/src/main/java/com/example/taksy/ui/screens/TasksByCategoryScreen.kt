@@ -44,7 +44,8 @@ import com.example.taksy.data.TaskPrioridad
 import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.service.AlarmPolicy
 import com.example.taksy.ui.components.ExactAlarmPermissionDialog
-import com.example.taksy.ui.components.QuickReminderDialog
+import com.example.taksy.ui.components.LeadChoice
+import com.example.taksy.ui.components.TaskScheduleDialog
 import com.example.taksy.ui.components.SearchField
 import com.example.taksy.ui.components.TaskListItem
 import com.example.taksy.ui.components.tasksbycategory.InlineTaskInput
@@ -291,26 +292,33 @@ fun TasksByCategoryScreen(
         }
 
         taskForReminder?.let { reminderTask ->
-            val taskReminders by taskViewModel.getRemindersByTaskId(reminderTask.id).collectAsState(initial = emptyList())
-            val existingReminder = taskReminders.firstOrNull { it.activo }
-
-            QuickReminderDialog(
-                taskTitle = reminderTask.titulo,
-                existingReminder = existingReminder,
-                palette = palette,
-                accent = accent,
-                onSetReminder = { date ->
-                    taskViewModel.setQuickReminder(reminderTask.id, reminderTask.titulo, date)
-                    taskForReminder = null
-                    // El recordatorio se guarda igual; sin el permiso solo puede llegar con retraso
-                    showExactAlarmDialog = AlarmPolicy.needsExactAlarmPermission(context)
-                },
-                onDeleteReminder = {
-                    taskViewModel.deleteReminderForTask(reminderTask.id)
-                    taskForReminder = null
-                },
-                onDismiss = { taskForReminder = null }
-            )
+            // null hasta que llega la primera lectura, para no abrir el diálogo sin el aviso existente
+            val taskReminders by taskViewModel.getRemindersByTaskId(reminderTask.id)
+                .collectAsState(initial = null)
+            taskReminders?.let { reminders ->
+                val existing = reminders.firstOrNull { it.activo }?.fechaRecordatorio
+                TaskScheduleDialog(
+                    taskTitle = reminderTask.titulo,
+                    initialDue = reminderTask.fechaVencimiento,
+                    reminder = existing,
+                    palette = palette,
+                    accent = accent,
+                    onSave = { due, choice ->
+                        taskForReminder = null
+                        when (choice) {
+                            // Hora personalizada de un aviso antiguo: solo se mueve con la fecha
+                            LeadChoice.Custom -> if (due != reminderTask.fechaVencimiento) taskViewModel.updateDueDate(reminderTask, due)
+                            LeadChoice.None -> taskViewModel.setSchedule(reminderTask, due, null)
+                            is LeadChoice.Lead -> {
+                                taskViewModel.setSchedule(reminderTask, due, choice.lead)
+                                // El aviso se guarda igual; sin el permiso solo puede llegar con retraso
+                                showExactAlarmDialog = AlarmPolicy.needsExactAlarmPermission(context)
+                            }
+                        }
+                    },
+                    onDismiss = { taskForReminder = null }
+                )
+            }
         }
 
         if (showExactAlarmDialog) {
