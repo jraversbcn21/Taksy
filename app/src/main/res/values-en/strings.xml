@@ -25,6 +25,7 @@
     <string name="all_subtasks_completed">All subtasks completed!</string>
     <string name="subtasks_title">Subtasks</string>
     <string name="add_subtask_description">Add subtask</string>
+    <string name="task_description_hint">Add a description</string>
     
     <!-- Categories -->
     <string name="category_work">Work</string>

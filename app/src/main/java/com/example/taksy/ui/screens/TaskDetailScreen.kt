@@ -17,6 +17,12 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -152,6 +158,7 @@ fun TaskDetailScreen(
                         letterSpacing = (-1).sp,
                         color = palette.ink
                     )
+                    DescriptionField(task, onUpdateTask, palette, accent)
                     if (isCompleted) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
@@ -222,11 +229,14 @@ fun TaskDetailScreen(
                 }
             }
 
-            item(key = "subtasks_label") {
-                SubtasksHeader(doneSubtasks, subtasks.size, accent, palette, modifier = Modifier.padding(top = 10.dp))
+            // Sin subtareas solo queda la fila "+ Añadir subtarea" (y nada si la tarea está completada)
+            if (subtasks.isNotEmpty()) {
+                item(key = "subtasks_label") {
+                    SubtasksHeader(doneSubtasks, subtasks.size, accent, palette, modifier = Modifier.padding(top = 10.dp))
+                }
             }
 
-            item(key = "subtasks") {
+            if (subtasks.isNotEmpty() || !isCompleted) item(key = "subtasks") {
                 DetailCard(palette) {
                     sortedSubtasks.forEach { subtask ->
                         SubtaskItem(
@@ -338,6 +348,53 @@ private fun formatDateTime(date: Date): String {
         val hasTime = cal.get(Calendar.HOUR_OF_DAY) != 0 || cal.get(Calendar.MINUTE) != 0
         if (hasTime) "$day · ${String.format(Locale.ROOT, "%02d:%02d", cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))}" else day
     }
+}
+
+/**
+ * Descripción de la tarea, de varias líneas, bajo el título. Se guarda sola al dejar de escribir
+ * (y al salir de la pantalla), sobre la tarea más reciente para no pisar otros cambios.
+ */
+@Composable
+private fun DescriptionField(task: Task, onUpdateTask: (Task) -> Unit, palette: HomePalette, accent: Color) {
+    var text by remember(task.id) { mutableStateOf(task.descripcion.orEmpty()) }
+    val latestTask by rememberUpdatedState(task)
+    val latestText by rememberUpdatedState(text)
+    val latestOnUpdate by rememberUpdatedState(onUpdateTask)
+
+    fun save() {
+        val value = latestText.trim().ifEmpty { null }
+        if (value != latestTask.descripcion) latestOnUpdate(latestTask.copy(descripcion = value))
+    }
+
+    LaunchedEffect(text) {
+        delay(600)
+        save()
+    }
+    DisposableEffect(task.id) { onDispose { save() } }
+
+    BasicTextField(
+        value = text,
+        onValueChange = { text = it },
+        cursorBrush = SolidColor(accent),
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+        textStyle = TextStyle(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Medium, fontSize = 16.sp, lineHeight = 23.sp, color = palette.muted),
+        decorationBox = { inner ->
+            Box {
+                if (text.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.task_description_hint),
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 16.sp,
+                        lineHeight = 23.sp,
+                        color = palette.placeholder
+                    )
+                }
+                inner()
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 @Composable

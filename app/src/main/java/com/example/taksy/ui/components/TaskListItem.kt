@@ -197,6 +197,17 @@ fun TaskListItem(
                         textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
                     )
                 }
+                task.descripcion?.takeIf { it.isNotBlank() }?.let { description ->
+                    Text(
+                        text = description.lineSequence().first(),
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 13.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = if (isCompleted) palette.doneText else palette.muted
+                    )
+                }
                 TaskMeta(task, isCompleted, palette, accent)
             }
 

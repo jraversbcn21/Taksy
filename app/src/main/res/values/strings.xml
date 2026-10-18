@@ -25,6 +25,7 @@
     <string name="all_subtasks_completed">¡Todas las subtareas completadas!</string>
     <string name="subtasks_title">Subtareas</string>
     <string name="add_subtask_description">Añadir subtarea</string>
+    <string name="task_description_hint">Añadir descripción</string>
     <string name="pending_subtasks_message">Tienes tareas pendientes</string>
     
     <!-- Categorías -->
