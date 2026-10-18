@@ -1,36 +1,57 @@
 package com.example.taksy.ui.navigation
 
 import android.content.Context
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.AlertDialog
+import android.view.View
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.taksy.R
+import com.example.taksy.ui.components.DialogButtons
+import com.example.taksy.ui.components.DialogTitle
+import com.example.taksy.ui.components.HomeDialogSurface
+import com.example.taksy.ui.theme.HomePalette
+import com.example.taksy.ui.theme.PlusJakartaSans
 import com.example.taksy.ui.theme.TicksyTheme
 import com.example.taksy.ui.theme.isDark
 import com.example.taksy.viewmodel.CategoryViewModel
 import com.example.taksy.viewmodel.TaskViewModel
 import com.example.taksy.viewmodel.ThemeViewModel
-import com.google.android.material.navigation.NavigationView
 
 /**
- * Menú lateral: un DrawerLayout de Android (no un drawer de Compose) con el NavHost dentro
- * de un ComposeView y un NavigationView con los destinos del menú. También muestra el
- * diálogo de confirmación del cambio de idioma, que recrea la actividad.
+ * Menú lateral: un DrawerLayout de Android (no un drawer de Compose) con el NavHost en un
+ * ComposeView y el panel del menú en otro ComposeView, dibujado con HomePalette. Bloqueado
+ * durante el onboarding. También muestra el diálogo de confirmación del cambio de idioma,
+ * que recrea la actividad.
  */
 @Composable
 fun DrawerScreen(
@@ -43,8 +64,17 @@ fun DrawerScreen(
     context: Context
 ) {
     var drawerLayout by remember { mutableStateOf<DrawerLayout?>(null) }
-    var showLanguageChangeDialog by remember { mutableStateOf(false) }
-    var selectedLanguage by remember { mutableStateOf("") }
+    var drawerOpen by remember { mutableStateOf(false) }
+    var pendingLanguage by remember { mutableStateOf<String?>(null) }
+    val palette = if (isDarkMode) HomePalette.Dark else HomePalette.Light
+
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    LaunchedEffect(drawerLayout, currentRoute) {
+        drawerLayout?.setDrawerLockMode(
+            if (currentRoute == "onboarding") DrawerLayout.LOCK_MODE_LOCKED_CLOSED else DrawerLayout.LOCK_MODE_UNLOCKED
+        )
+    }
+    BackHandler(enabled = drawerOpen) { drawerLayout?.closeDrawer(GravityCompat.START) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
@@ -57,6 +87,11 @@ fun DrawerScreen(
                         DrawerLayout.LayoutParams.MATCH_PARENT,
                         DrawerLayout.LayoutParams.MATCH_PARENT
                     )
+                    setScrimColor(0x66000000)
+                    addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
+                        override fun onDrawerOpened(drawerView: View) { drawerOpen = true }
+                        override fun onDrawerClosed(drawerView: View) { drawerOpen = false }
+                    })
 
                     val contentView = ComposeView(themedContext).apply {
                         layoutParams = DrawerLayout.LayoutParams(
@@ -77,97 +112,161 @@ fun DrawerScreen(
                                     currentLanguage = innerCurrentLanguage,
                                     context = context,
                                     onMenuClick = { drawerLayout?.openDrawer(GravityCompat.START) },
-                                    onShowLanguageChangeDialog = { language ->
-                                        selectedLanguage = language
-                                        showLanguageChangeDialog = true
-                                    }
+                                    onShowLanguageChangeDialog = { language -> pendingLanguage = language }
                                 )
                             }
                         }
                     }
                     addView(contentView)
-                    addView(buildNavigationView(themedContext, isDarkMode, navController) {
-                        drawerLayout?.closeDrawer(GravityCompat.START)
-                    })
+
+                    val panelView = ComposeView(themedContext).apply {
+                        layoutParams = DrawerLayout.LayoutParams(
+                            (themedContext.resources.displayMetrics.widthPixels * 0.8f).toInt(),
+                            DrawerLayout.LayoutParams.MATCH_PARENT
+                        ).apply { gravity = GravityCompat.START }
+                        setContent {
+                            val panelThemeMode by themeViewModel.themeMode.collectAsState()
+                            DrawerPanel(
+                                palette = if (panelThemeMode.isDark()) HomePalette.Dark else HomePalette.Light,
+                                onNavigate = { route ->
+                                    drawerLayout?.closeDrawer(GravityCompat.START)
+                                    navController.navigate(route) {
+                                        popUpTo("category_list") { inclusive = false }
+                                        launchSingleTop = true
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    addView(panelView)
                 }
             },
-            update = { drawer -> applyDrawerTheme(drawer, isDarkMode) },
             modifier = Modifier.fillMaxSize()
         )
 
-        if (showLanguageChangeDialog) {
-            AlertDialog(
-                onDismissRequest = { showLanguageChangeDialog = false },
-                title = { Text(stringResource(R.string.change_language)) },
-                text = { Text(stringResource(R.string.change_language_message)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        themeViewModel.setLanguage(selectedLanguage)
-                        showLanguageChangeDialog = false
-                    }) { Text(stringResource(R.string.change)) }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showLanguageChangeDialog = false }) { Text(stringResource(R.string.cancel)) }
+        pendingLanguage?.let { language ->
+            Dialog(onDismissRequest = { pendingLanguage = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+                HomeDialogSurface(palette) {
+                    DialogTitle(stringResource(R.string.change_language), palette)
+                    Text(
+                        text = stringResource(R.string.change_language_message),
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 15.sp,
+                        lineHeight = 21.sp,
+                        color = palette.muted
+                    )
+                    DialogButtons(
+                        confirmText = stringResource(R.string.change),
+                        confirmColor = palette.brand,
+                        palette = palette,
+                        onDismiss = { pendingLanguage = null },
+                        onConfirm = {
+                            pendingLanguage = null
+                            themeViewModel.setLanguage(language)
+                        }
+                    )
                 }
-            )
-        }
-    }
-}
-
-private fun buildNavigationView(
-    themedContext: Context,
-    isDarkMode: Boolean,
-    navController: NavHostController,
-    onItemSelected: () -> Unit
-): NavigationView = NavigationView(themedContext).apply {
-    layoutParams = DrawerLayout.LayoutParams(
-        DrawerLayout.LayoutParams.WRAP_CONTENT,
-        DrawerLayout.LayoutParams.MATCH_PARENT
-    ).apply {
-        gravity = GravityCompat.START
-        width = (themedContext.resources.displayMetrics.widthPixels * 0.75f).toInt()
-    }
-
-    applyNavigationViewColors(this, isDarkMode)
-
-    inflateHeaderView(R.layout.drawer_header)
-    inflateMenu(R.menu.drawer_menu)
-
-    setNavigationItemSelectedListener { menuItem ->
-        onItemSelected()
-        val route = when (menuItem.itemId) {
-            R.id.nav_categories -> "category_management"
-            R.id.nav_settings -> "settings"
-            R.id.nav_stats -> "stats"
-            R.id.nav_backup -> "backup"
-            R.id.nav_about -> "about"
-            else -> null
-        }
-        route?.let {
-            navController.navigate(it) {
-                popUpTo("category_list") { inclusive = false }
-                launchSingleTop = true
             }
         }
-        true
     }
 }
 
-private fun applyDrawerTheme(drawer: DrawerLayout, isDarkMode: Boolean) {
-    for (i in 0 until drawer.childCount) {
-        val child = drawer.getChildAt(i)
-        if (child is NavigationView) applyNavigationViewColors(child, isDarkMode)
-    }
+private data class DrawerItem(val route: String, val labelRes: Int, val color: Color)
+
+private val drawerItems = listOf(
+    DrawerItem("category_management", R.string.manage_categories, Color(0xFF1E88E5)),
+    DrawerItem("stats", R.string.stats_title, Color(0xFFFB8C00)),
+    DrawerItem("backup", R.string.backup, Color(0xFF00897B)),
+    DrawerItem("settings", R.string.settings, Color(0xFF546E7A)),
+    DrawerItem("about", R.string.about, Color(0xFFE91E63))
+)
+
+@Composable
+private fun drawerIcon(route: String): Painter = when (route) {
+    "category_management" -> painterResource(R.drawable.ic_category)
+    "stats" -> painterResource(R.drawable.ic_stats)
+    "backup" -> rememberVectorPainter(Icons.Default.Lock)
+    "settings" -> painterResource(R.drawable.ic_settings)
+    else -> painterResource(R.drawable.ic_info)
 }
 
-private fun applyNavigationViewColors(view: NavigationView, isDarkMode: Boolean) {
-    if (isDarkMode) {
-        view.setBackgroundColor(android.graphics.Color.parseColor("#121212"))
-        view.itemTextColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
-        view.itemIconTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
-    } else {
-        view.setBackgroundColor(android.graphics.Color.parseColor("#FFFFFF"))
-        view.itemTextColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.BLACK)
-        view.itemIconTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.BLACK)
+/** Panel del menú lateral: logo, versión y los destinos, con el lenguaje visual de la pantalla de inicio. */
+@Composable
+private fun DrawerPanel(palette: HomePalette, onNavigate: (String) -> Unit) {
+    val context = LocalContext.current
+    val versionName = remember {
+        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: ""
+    }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(palette.background)
+            .windowInsetsPadding(WindowInsets.systemBars)
+            .padding(horizontal = 14.dp, vertical = 20.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(start = 8.dp, bottom = 24.dp)
+        ) {
+            Image(
+                painter = painterResource(R.drawable.ticksy_icon),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+            )
+            Column {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 24.sp,
+                    letterSpacing = (-0.5).sp,
+                    color = palette.ink
+                )
+                if (versionName.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.about_version, versionName),
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp,
+                        color = palette.muted
+                    )
+                }
+            }
+        }
+
+        drawerItems.forEach { item ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable(role = Role.Button) { onNavigate(item.route) }
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(13.dp))
+                        .background(item.color)
+                ) {
+                    Icon(drawerIcon(item.route), contentDescription = null, tint = Color.White, modifier = Modifier.size(21.dp))
+                }
+                Text(
+                    text = stringResource(item.labelRes),
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = palette.ink
+                )
+            }
+        }
     }
 }

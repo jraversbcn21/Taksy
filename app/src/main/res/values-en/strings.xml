@@ -71,7 +71,6 @@
     
     
     <!-- Settings Modal -->
-    <string name="settings_modal_title">Settings</string>
     <string name="reminders_settings">Reminders</string>
     <string name="language_spanish">Spanish</string>
     <string name="language_english">English</string>

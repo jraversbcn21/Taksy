@@ -30,7 +30,6 @@
     <color name="white">#FFFFFFFF</color>
     
     <!-- Color para el drawer - Verde agua suave del splash -->
-    <color name="drawer_header_teal">#FFE0F7FA</color>
 
     <!-- Widget colors -->
     <color name="widget_background">#FFF5F5F5</color>

@@ -76,7 +76,7 @@ Key business rule: when all subtasks of a task are completed, the parent task au
 - **`StatsViewModel`** — combines `TaskRepository.getAllTasks()` and `CategoryRepository.getAllCategories()` into a `StatsUiState` via `stateIn`. Derives totals, completion rate, streak, last-7-days bucket counts (using `fechaCompletada`), and top 5 categories by task count.
 
 ### Navigation
-`ui/navigation/AppNavGraph.kt` owns the `NavHost` and every `composable(...)` route. `ui/navigation/AppDrawer.kt` (`DrawerScreen`) holds the `DrawerLayout` + `ComposeView` hybrid, the `NavigationView` menu and the language-change confirm dialog. `MainActivity` only handles the activity lifecycle, theme/system bars and the error Toasts. `ThemeMode.isDark()` lives in `ui/theme/Theme.kt`.
+`ui/navigation/AppNavGraph.kt` owns the `NavHost` and every `composable(...)` route. `ui/navigation/AppDrawer.kt` (`DrawerScreen`) holds the `DrawerLayout` + `ComposeView` hybrid, the drawer panel and the language-change confirm dialog. `MainActivity` only handles the activity lifecycle, theme/system bars and the error Toasts. `ThemeMode.isDark()` lives in `ui/theme/Theme.kt`.
 
 Start destination: `"onboarding"` (first launch) or `"category_list"` (subsequent). Routes:
 - `onboarding` → `OnboardingScreen` — same visual language as the home screen. Three pager pages, each with its own accent colour (also tints the button and the pill indicator); "Skip" / "Start" call `setOnboardingCompleted(true)`. To see it again on a debug build: `run-as com.example.taksy sed -i 's/value="true"/value="false"/' shared_prefs/onboarding_prefs.xml` and restart.
@@ -92,7 +92,7 @@ Start destination: `"onboarding"` (first launch) or `"category_list"` (subsequen
 
 `AppNavGraph` defines a private `NavHostController.popOrHome()` extension that collapses the repeated "popBackStack or fall back to category_list" pattern used by every drawer screen.
 
-Navigation drawer is an Android `DrawerLayout` wrapping a `ComposeView` (not a pure Compose drawer — kept as a documented architectural choice). Drawer items: Manage Categories, Settings, Stats, Backup, About. Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true`.
+Navigation drawer is an Android `DrawerLayout` wrapping a `ComposeView` (not a pure Compose drawer — kept as a documented architectural choice). The panel is a second `ComposeView` (`DrawerPanel`, `HomePalette` + Plus Jakarta Sans; there is no `NavigationView` or menu XML). Drawer items: Manage Categories, Stats, Backup, Settings, About. Drawer navigation uses `popUpTo("category_list")` + `launchSingleTop = true`. Back closes an open drawer (`BackHandler`), and the drawer is locked closed on the `onboarding` route.
 
 ### Background Work
 - **`ReminderSchedulerContract`** — interface with `scheduleReminder()` and `cancelReminder()`. Implemented by `ReminderScheduler` and provided as `@Singleton` via Hilt.

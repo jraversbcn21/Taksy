@@ -74,7 +74,6 @@
     
     
     <!-- Settings Modal -->
-    <string name="settings_modal_title">Configuración</string>
     <string name="reminders_settings">Recordatorios</string>
     <string name="language_spanish">Español</string>
     <string name="language_english">English</string>

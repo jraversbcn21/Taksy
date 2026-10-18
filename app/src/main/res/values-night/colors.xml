@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Colores para modo oscuro del drawer -->
-    <color name="drawer_header_teal">#FF1E1E1E</color>
     <color name="drawer_background">#FF121212</color>
 
     <!-- Widget colors (dark mode) -->
