@@ -189,7 +189,7 @@ fun AppNavGraph(
         }
 
         composable("stats") {
-            StatsScreen(onBackClick = { navController.popOrHome() })
+            StatsScreen(onBackClick = { navController.popOrHome() }, isDarkMode = isDarkMode)
         }
 
         composable("about") {

@@ -88,7 +88,7 @@ Start destination: `"onboarding"` (first launch) or `"category_list"` (subsequen
 - `daily_reminders` → `DailyReminderScreen` (reached from Settings) — same visual language as Settings. Every change (on/off switch, morning/evening time via a Material3 `TimePicker` dialog) is saved and rescheduled immediately through `DailyReminderManager.scheduleDailyReminders`, which also persists `enabled=false` so a disabled reminder is not revived on boot. Turning it on shows `ExactAlarmPermissionDialog` if the exact-alarm permission is missing.
 - `about` → `AboutScreen`
 - `backup` → `BackupScreen`
-- `stats` → `StatsScreen`
+- `stats` → `StatsScreen` — same visual language as Settings. Completion-rate ring + streak, pending / active-category counters, last-7-days bars (today highlighted; day initials localized in the UI from `DayCompletion.day`), top 5 categories with icon tile and progress.
 
 `AppNavGraph` defines a private `NavHostController.popOrHome()` extension that collapses the repeated "popBackStack or fall back to category_list" pattern used by every drawer screen.
 

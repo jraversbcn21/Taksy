@@ -205,13 +205,12 @@
 
     <!-- Statistics -->
     <string name="stats_title">Statistics</string>
-    <string name="stats_total">Total</string>
+    <string name="stats_subtitle">%1$d of %2$d tasks completed</string>
     <string name="stats_pending">Pending</string>
-    <string name="stats_completed">Completed</string>
     <string name="stats_completion_rate">Completion rate</string>
-    <string name="stats_streak">Streak (days)</string>
+    <string name="stats_streak">Streak</string>
     <string name="stats_active_categories">Active categories</string>
-    <string name="stats_last_7_days">Completed (last 7 days)</string>
+    <string name="stats_last_7_days">Last 7 days</string>
     <string name="stats_top_categories">Top categories</string>
     <string name="stats_empty">No data yet. Create and complete tasks to see your statistics.</string>
 

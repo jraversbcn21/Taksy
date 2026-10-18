@@ -16,7 +16,8 @@ import java.util.Calendar
 import java.util.Date
 import javax.inject.Inject
 
-data class DayCompletion(val label: String, val count: Int)
+/** Tareas completadas en un día; la etiqueta (inicial del día) se localiza en la UI. */
+data class DayCompletion(val day: Date, val count: Int)
 
 data class CategoryStats(
     val category: Category,
@@ -104,17 +105,7 @@ class StatsViewModel @Inject constructor(
                 val d = it.fechaCompletada?.time ?: return@count false
                 d in dayStart until dayEnd
             }
-            val labelCal = Calendar.getInstance().apply { timeInMillis = dayStart }
-            val label = when (labelCal.get(Calendar.DAY_OF_WEEK)) {
-                Calendar.MONDAY -> "L"
-                Calendar.TUESDAY -> "M"
-                Calendar.WEDNESDAY -> "X"
-                Calendar.THURSDAY -> "J"
-                Calendar.FRIDAY -> "V"
-                Calendar.SATURDAY -> "S"
-                else -> "D"
-            }
-            result.add(DayCompletion(label, count))
+            result.add(DayCompletion(Date(dayStart), count))
         }
         return result
     }
