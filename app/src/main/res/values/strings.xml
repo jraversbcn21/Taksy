@@ -2,7 +2,6 @@
     <string name="app_name">Ticksy</string>
     
     <!-- Pantalla principal -->
-    <string name="app_subtitle">Gestiona tus tareas</string>
     <string name="add_task">Añadir tarea</string>
     <string name="task_title_hint">Título de la tarea</string>
     <string name="save">Guardar</string>
@@ -24,7 +23,6 @@
     <string name="add_subtask">Añadir subtarea</string>
     <string name="all_subtasks_completed">¡Todas las subtareas completadas!</string>
     <string name="subtasks_title">Subtareas</string>
-    <string name="add_subtask_description">Añadir subtarea</string>
     <string name="task_description_hint">Añadir descripción</string>
     <string name="pending_subtasks_message">Tienes tareas pendientes</string>
     
@@ -148,7 +146,6 @@
 
     <!-- Quick Reminder -->
     <string name="set_reminder">Establecer recordatorio</string>
-    <string name="edit_reminder">Editar recordatorio</string>
 
     <!-- Backup -->
     <string name="backup">Copia de seguridad</string>
@@ -261,8 +258,6 @@
     <string name="task_due_date">Fecha</string>
     <string name="task_no_due_date">Sin fecha</string>
     <string name="task_no_time">Sin hora</string>
-    <string name="task_reminder">Recordatorio</string>
-    <string name="task_no_reminder">Sin recordatorio</string>
     <string name="task_schedule_title">Fecha y aviso</string>
     <string name="reminder_notify">Avisarme</string>
     <string name="reminder_none">No</string>

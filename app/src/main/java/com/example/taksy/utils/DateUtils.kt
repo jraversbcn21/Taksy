@@ -9,7 +9,6 @@ import java.util.*
 object DateUtils {
     
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    private val shortDateFormat = SimpleDateFormat("dd/MM", Locale.getDefault())
 
     /**
      * Día local de [date] como medianoche UTC, que es lo que espera el DatePicker de Material3.
@@ -37,13 +36,6 @@ object DateUtils {
      */
     fun formatDate(date: Date): String {
         return dateFormat.format(date)
-    }
-    
-    /**
-     * Formatea una fecha de forma corta (solo día y mes)
-     */
-    fun formatShortDate(date: Date): String {
-        return shortDateFormat.format(date)
     }
     
     /**

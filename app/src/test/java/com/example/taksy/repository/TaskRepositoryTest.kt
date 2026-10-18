@@ -20,9 +20,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Test
 import java.util.Date
 
@@ -35,12 +32,8 @@ class TaskRepositoryTest {
         var lastUpdated: Task? = null
 
         override fun getAllTasks(): Flow<List<Task>> = flowOf(tasks)
-        override fun getPendingTasks(): Flow<List<Task>> = flowOf(tasks.filter { it.estado == TaskEstado.PENDIENTE })
-        override fun getCompletedTasks(): Flow<List<Task>> = flowOf(tasks.filter { it.estado == TaskEstado.COMPLETADA })
         override fun getTasksByCategory(categoryId: Long): Flow<List<Task>> = flowOf(tasks.filter { it.categoriaId == categoryId })
-        override fun getTasksWithoutCategory(): Flow<List<Task>> = flowOf(tasks.filter { it.categoriaId == null })
-        override fun getReallyPendingTasks(): Flow<List<Task>> = getPendingTasks()
-        override fun getReallyCompletedTasks(): Flow<List<Task>> = getCompletedTasks()
+        override fun getReallyPendingTasks(): Flow<List<Task>> = flowOf(tasks.filter { it.estado == TaskEstado.PENDIENTE })
         override fun searchTasksByCategory(categoryId: Long, query: String): Flow<List<Task>> =
             flowOf(tasks.filter { it.categoriaId == categoryId && it.titulo.contains(query, ignoreCase = true) })
         override suspend fun getTaskById(id: Long): Task? = tasks.find { it.id == id }
@@ -66,9 +59,6 @@ class TaskRepositoryTest {
             }
         }
         override suspend fun getAllTasksByCategorySync(categoryId: Long): List<Task> = tasks.filter { it.categoriaId == categoryId }
-        override suspend fun getTasksDueToday(startOfDay: Long, endOfDay: Long): List<Task> = emptyList()
-        override suspend fun getTasksDueSoon(now: Long, nextWeek: Long): List<Task> = emptyList()
-        override suspend fun getOverdueTasks(now: Long): List<Task> = emptyList()
         override suspend fun getAllTasksSync(): List<Task> = tasks.toList()
         override fun getPendingTasksSync(): List<Task> = tasks.filter { it.estado == TaskEstado.PENDIENTE }
         override suspend fun deleteAllTasks() { tasks.clear() }
@@ -93,7 +83,6 @@ class TaskRepositoryTest {
         val reminders = mutableListOf<Reminder>()
 
         override fun getRemindersByTaskId(taskId: Long): Flow<List<Reminder>> = flowOf(reminders.filter { it.taskId == taskId })
-        override suspend fun getActiveRemindersDue(now: Long): List<Reminder> = emptyList()
         override fun getAllActiveReminders(): Flow<List<Reminder>> = flowOf(reminders.filter { it.activo })
         override suspend fun getAllActiveRemindersSync(): List<Reminder> = reminders.filter { it.activo }
         override suspend fun getReminderById(id: Long): Reminder? = reminders.find { it.id == id }
@@ -280,38 +269,15 @@ class TaskRepositoryTest {
     }
 
     @Test
-    fun `getTasksByFilter TODAS returns all tasks`() = runTest {
+    fun `getReallyPendingTasks returns only pending`() = runTest {
         val (dao, repo) = makeRepository()
         dao.tasks.add(Task(id = 1L, titulo = "A", estado = TaskEstado.PENDIENTE))
         dao.tasks.add(Task(id = 2L, titulo = "B", estado = TaskEstado.COMPLETADA))
 
-        val result = repo.getTasksByFilter(TaskFilter.TODAS).first()
-
-        assertEquals(2, result.size)
-    }
-
-    @Test
-    fun `getTasksByFilter PENDIENTES returns only pending`() = runTest {
-        val (dao, repo) = makeRepository()
-        dao.tasks.add(Task(id = 1L, titulo = "A", estado = TaskEstado.PENDIENTE))
-        dao.tasks.add(Task(id = 2L, titulo = "B", estado = TaskEstado.COMPLETADA))
-
-        val result = repo.getTasksByFilter(TaskFilter.PENDIENTES).first()
+        val result = repo.getReallyPendingTasks().first()
 
         assertEquals(1, result.size)
         assertEquals(TaskEstado.PENDIENTE, result[0].estado)
-    }
-
-    @Test
-    fun `getTasksByFilter COMPLETADAS returns only completed`() = runTest {
-        val (dao, repo) = makeRepository()
-        dao.tasks.add(Task(id = 1L, titulo = "A", estado = TaskEstado.PENDIENTE))
-        dao.tasks.add(Task(id = 2L, titulo = "B", estado = TaskEstado.COMPLETADA))
-
-        val result = repo.getTasksByFilter(TaskFilter.COMPLETADAS).first()
-
-        assertEquals(1, result.size)
-        assertEquals(TaskEstado.COMPLETADA, result[0].estado)
     }
 
     @Test

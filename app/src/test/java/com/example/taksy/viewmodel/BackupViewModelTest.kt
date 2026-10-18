@@ -11,7 +11,6 @@ import com.example.taksy.data.Subtask
 import com.example.taksy.data.SubtaskDao
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskDao
-import com.example.taksy.data.TaskEstado
 import com.example.taksy.service.ReminderSchedulerContract
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -50,12 +49,8 @@ class BackupViewModelTest {
     private class FakeTaskDao(private val failOnInsert: Boolean = false) : TaskDao {
         val tasks = mutableListOf<Task>()
         override fun getAllTasks(): Flow<List<Task>> = flowOf(tasks.toList())
-        override fun getPendingTasks(): Flow<List<Task>> = flowOf(emptyList())
-        override fun getCompletedTasks(): Flow<List<Task>> = flowOf(emptyList())
         override fun getTasksByCategory(categoryId: Long): Flow<List<Task>> = flowOf(emptyList())
-        override fun getTasksWithoutCategory(): Flow<List<Task>> = flowOf(emptyList())
         override fun getReallyPendingTasks(): Flow<List<Task>> = flowOf(emptyList())
-        override fun getReallyCompletedTasks(): Flow<List<Task>> = flowOf(emptyList())
         override fun searchTasksByCategory(categoryId: Long, query: String): Flow<List<Task>> = flowOf(emptyList())
         override fun searchAllTasks(query: String): Flow<List<Task>> = flowOf(emptyList())
         override suspend fun getTaskById(id: Long): Task? = tasks.find { it.id == id }
@@ -69,9 +64,6 @@ class BackupViewModelTest {
         override suspend fun completeTaskIfPending(id: Long, fechaCompletada: java.util.Date): Int = 0
         override suspend fun markTaskAsPending(id: Long) {}
         override suspend fun getAllTasksByCategorySync(categoryId: Long): List<Task> = emptyList()
-        override suspend fun getTasksDueToday(startOfDay: Long, endOfDay: Long): List<Task> = emptyList()
-        override suspend fun getTasksDueSoon(now: Long, nextWeek: Long): List<Task> = emptyList()
-        override suspend fun getOverdueTasks(now: Long): List<Task> = emptyList()
         override suspend fun getAllTasksSync(): List<Task> = tasks.toList()
         override fun getPendingTasksSync(): List<Task> = emptyList()
         override suspend fun deleteAllTasks() { tasks.clear() }
@@ -100,14 +92,12 @@ class BackupViewModelTest {
         override suspend fun getCategoryCount(): Int = categories.size
         override suspend fun deleteAllCategories() { categories.clear() }
         override suspend fun insertCategories(categories: List<Category>) { this.categories.addAll(categories) }
-        override suspend fun updateCategoryOrder(categoryId: Long, newOrder: Int) {}
         override suspend fun updateCategories(categories: List<Category>) {}
     }
 
     private class FakeReminderDao : ReminderDao {
         val reminders = mutableListOf<Reminder>()
         override fun getRemindersByTaskId(taskId: Long): Flow<List<Reminder>> = flowOf(emptyList())
-        override suspend fun getActiveRemindersDue(now: Long): List<Reminder> = emptyList()
         override fun getAllActiveReminders(): Flow<List<Reminder>> = flowOf(emptyList())
         override suspend fun getAllActiveRemindersSync(): List<Reminder> = emptyList()
         override suspend fun getReminderById(id: Long): Reminder? = reminders.find { it.id == id }

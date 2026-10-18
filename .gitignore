@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Permisos locales de Claude Code (personales, no se versionan)
+.claude/settings.local.json

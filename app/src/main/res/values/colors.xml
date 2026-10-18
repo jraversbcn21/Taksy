@@ -1,35 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Colores del gradiente del icono - Paleta exacta -->
-    <!-- Gradiente: Amarillo-verde → Verde → Azul-verde -->
-    
-    <!-- Colores principales del icono -->
-    <color name="icon_yellow_green">#FF689F38</color>  <!-- Amarillo-verde intenso -->
+    <!-- Colores del icono, usados por el tema XML (barras del sistema, colorPrimary) -->
     <color name="icon_green">#FF388E3C</color>         <!-- Verde intenso -->
     <color name="icon_teal">#FF00695C</color>          <!-- Verde-azul intenso -->
-    
-    <!-- Colores claros del icono -->
-    <color name="icon_yellow_green_light">#FF9CCC65</color>  <!-- Amarillo-verde claro -->
-    <color name="icon_green_light">#FF66BB6A</color>         <!-- Verde claro -->
-    <color name="icon_teal_light">#FF26A69A</color>          <!-- Verde-azul claro -->
-    
-    <!-- Colores adicionales del gradiente -->
-    <color name="icon_light_yellow">#FFC5E1A5</color>  <!-- Amarillo-verde muy claro -->
-    <color name="icon_light_green">#FFA5D6A7</color>   <!-- Verde muy claro -->
-    <color name="icon_light_teal">#FF4DB6AC</color>    <!-- Verde-azul muy claro -->
     <color name="icon_dark_green">#FF1B5E20</color>    <!-- Verde oscuro -->
     <color name="icon_dark_teal">#FF004D40</color>     <!-- Verde-azul oscuro -->
-    
-    <!-- Colores de acento del icono -->
-    <color name="icon_accent">#FF4CAF50</color>        <!-- Verde principal -->
-    <color name="icon_accent_light">#FF81C784</color>  <!-- Verde claro -->
-    <color name="icon_accent_dark">#FF2E7D32</color>   <!-- Verde oscuro -->
-    
-    <!-- Colores básicos -->
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-    
-    <!-- Color para el drawer - Verde agua suave del splash -->
 
     <!-- Widget colors -->
     <color name="widget_background">#FFF5F5F5</color>
@@ -40,6 +15,7 @@
     <color name="widget_priority_high">#FFE53935</color>
     <color name="widget_priority_medium">#FFFB8C00</color>
     <color name="widget_priority_low">#FF43A047</color>
+
     <!-- Fondo del splash: el mismo que el de la app (HomePalette.background) -->
     <color name="splash_background">#FFFBFAF6</color>
 </resources>

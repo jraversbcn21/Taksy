@@ -6,7 +6,6 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.taksy.MainActivity
@@ -30,20 +29,18 @@ class DailyReminderService : BroadcastReceiver() {
         private const val NOTIFICATION_ID_2 = 1002
 
         fun createNotificationChannel(context: Context) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channel = NotificationChannel(
-                    CHANNEL_ID,
-                    context.getString(R.string.daily_notification_channel_name),
-                    NotificationManager.IMPORTANCE_HIGH
-                ).apply {
-                    description = context.getString(R.string.daily_notification_channel_description)
-                    enableLights(true)
-                    enableVibration(true)
-                }
-
-                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                notificationManager.createNotificationChannel(channel)
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                context.getString(R.string.daily_notification_channel_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = context.getString(R.string.daily_notification_channel_description)
+                enableLights(true)
+                enableVibration(true)
             }
+
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
     }
 
@@ -63,9 +60,7 @@ class DailyReminderService : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val pendingTasks = taskRepository
-                    .getTasksByFilter(com.example.taksy.repository.TaskFilter.PENDIENTES)
-                    .first()
+                val pendingTasks = taskRepository.getReallyPendingTasks().first()
                 createNotification(context, pendingTasks, reminderType)
             } catch (_: Exception) {
                 createGenericNotification(context, reminderType)

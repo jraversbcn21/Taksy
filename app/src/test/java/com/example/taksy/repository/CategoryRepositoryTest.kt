@@ -44,10 +44,6 @@ class CategoryRepositoryTest {
             count--
         }
         override suspend fun deleteAllCategories() { categories.clear(); count = 0 }
-        override suspend fun updateCategoryOrder(categoryId: Long, newOrder: Int) {
-            val idx = categories.indexOfFirst { it.id == categoryId }
-            if (idx >= 0) categories[idx] = categories[idx].copy(orden = newOrder)
-        }
     }
 
     private fun makeRepo(initialCount: Int = 0): Pair<FakeCategoryDao, CategoryRepository> {

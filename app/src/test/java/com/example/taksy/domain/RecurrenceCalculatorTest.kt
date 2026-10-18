@@ -2,7 +2,6 @@ package com.example.taksy.domain
 
 import com.example.taksy.data.TaskRecurrencia
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 import java.util.Calendar
 import java.util.Date

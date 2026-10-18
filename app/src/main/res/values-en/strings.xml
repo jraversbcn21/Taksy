@@ -2,7 +2,6 @@
     <string name="app_name">Ticksy</string>
     
     <!-- Main screen -->
-    <string name="app_subtitle">Manage your tasks</string>
     <string name="add_task">Add task</string>
     <string name="task_title_hint">Task title</string>
     <string name="save">Save</string>
@@ -24,7 +23,6 @@
     <string name="add_subtask">Add subtask</string>
     <string name="all_subtasks_completed">All subtasks completed!</string>
     <string name="subtasks_title">Subtasks</string>
-    <string name="add_subtask_description">Add subtask</string>
     <string name="task_description_hint">Add a description</string>
     
     <!-- Categories -->
@@ -145,7 +143,6 @@
 
     <!-- Quick Reminder -->
     <string name="set_reminder">Set reminder</string>
-    <string name="edit_reminder">Edit reminder</string>
 
     <!-- Backup -->
     <string name="backup">Backup</string>
@@ -258,8 +255,6 @@
     <string name="task_due_date">Due date</string>
     <string name="task_no_due_date">No date</string>
     <string name="task_no_time">No time</string>
-    <string name="task_reminder">Reminder</string>
-    <string name="task_no_reminder">No reminder</string>
     <string name="task_schedule_title">Date &amp; reminder</string>
     <string name="reminder_notify">Remind me</string>
     <string name="reminder_none">No</string>

@@ -9,8 +9,8 @@
         <item name="android:navigationBarColor">@color/icon_green</item>
         
         <!-- Colores para modo oscuro -->
-        <item name="android:windowBackground">@color/drawer_background</item>
-        <item name="colorSurface">@color/drawer_background</item>
+        <item name="android:windowBackground">@color/splash_background</item>
+        <item name="colorSurface">@color/splash_background</item>
         <item name="colorOnSurface">@android:color/white</item>
     </style>
 </resources>

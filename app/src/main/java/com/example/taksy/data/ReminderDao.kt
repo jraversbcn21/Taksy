@@ -12,9 +12,6 @@ interface ReminderDao {
     @Query("SELECT * FROM reminders WHERE taskId = :taskId ORDER BY fechaRecordatorio ASC")
     fun getRemindersByTaskId(taskId: Long): Flow<List<Reminder>>
     
-    @Query("SELECT * FROM reminders WHERE activo = 1 AND fechaRecordatorio <= :now ORDER BY fechaRecordatorio ASC")
-    suspend fun getActiveRemindersDue(now: Long): List<Reminder>
-    
     @Query("SELECT * FROM reminders WHERE activo = 1 ORDER BY fechaRecordatorio ASC")
     fun getAllActiveReminders(): Flow<List<Reminder>>
 

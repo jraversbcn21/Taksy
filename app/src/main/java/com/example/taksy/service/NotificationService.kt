@@ -1,13 +1,16 @@
 package com.example.taksy.service
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.example.taksy.MainActivity
 import com.example.taksy.R
 import com.example.taksy.data.Reminder
@@ -28,21 +31,19 @@ class NotificationService(private val context: Context) {
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                context.getString(R.string.notification_channel_name),
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = context.getString(R.string.notification_channel_description)
-                enableVibration(true)
-                vibrationPattern = longArrayOf(0, 300, 200, 300)
-                setShowBadge(true)
-            }
-
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            context.getString(R.string.notification_channel_name),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = context.getString(R.string.notification_channel_description)
+            enableVibration(true)
+            vibrationPattern = longArrayOf(0, 300, 200, 300)
+            setShowBadge(true)
         }
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
     }
 
     fun showReminderNotification(reminder: Reminder, task: Task) {
@@ -78,26 +79,10 @@ class NotificationService(private val context: Context) {
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .build()
 
-        with(NotificationManagerCompat.from(context)) {
-            notify(reminder.id.toInt(), notification)
-        }
-    }
-    
-    /**
-     * Cancela una notificación específica
-     */
-    fun cancelNotification(reminderId: Long) {
-        with(NotificationManagerCompat.from(context)) {
-            cancel(reminderId.toInt())
-        }
-    }
-    
-    /**
-     * Cancela todas las notificaciones
-     */
-    fun cancelAllNotifications() {
-        with(NotificationManagerCompat.from(context)) {
-            cancelAll()
-        }
+        // Sin el permiso (Android 13+) la notificación no se puede mostrar
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
+        NotificationManagerCompat.from(context).notify(reminder.id.toInt(), notification)
     }
 }

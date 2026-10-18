@@ -64,12 +64,6 @@ interface CategoryDao {
     suspend fun insertCategories(categories: List<Category>)
     
     /**
-     * Actualiza el orden de una categoría
-     */
-    @Query("UPDATE categories SET orden = :newOrder WHERE id = :categoryId")
-    suspend fun updateCategoryOrder(categoryId: Long, newOrder: Int)
-    
-    /**
      * Actualiza múltiples categorías (para reordenamiento)
      */
     @Update

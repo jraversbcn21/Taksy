@@ -1,123 +1,87 @@
 # Ticksy - Aplicación de Gestión de Tareas
 
-Una aplicación Android moderna para la gestión de tareas desarrollada con **Kotlin**, **Jetpack Compose** y **MVVM**.
+Aplicación Android de gestión de tareas desarrollada con **Kotlin**, **Jetpack Compose** y **MVVM**.
 
 ## Características
 
-### Funcionalidades principales
-- Gestión completa de tareas: crear, editar, eliminar, completar y archivar
-- Organización por categorías con colores e iconos personalizables
-- Subtareas con auto-completado del padre cuando todas se completan
-- Tareas recurrentes (diaria, semanal, mensual, anual): se regeneran al completarse
-- Drag & drop para reordenar tareas y categorías
-- Búsqueda global y por categoría
-- Recordatorios puntuales por tarea y recordatorios diarios (mañana/tarde)
+### Tareas
+- Listas (categorías) con color e icono propios; mantener pulsada una lista en el inicio permite reordenarla
+- Crear tareas desde la lista con título, fecha (sin fecha, hoy, mañana o elegida), prioridad y repetición
+- Detalle de la tarea: título editable, descripción, fecha y hora, aviso, prioridad, repetición y subtareas; todo se guarda al momento
+- Subtareas: al completarlas todas, la tarea se completa sola
+- Tareas recurrentes (diaria, semanal, mensual): al completarlas se crea la siguiente ocurrencia con su aviso
+- Borrar deslizando, con deshacer; renombrar manteniendo pulsado
+- Búsqueda global (con accesos directos a las listas) y búsqueda dentro de cada lista
+
+### Avisos
+- Un aviso por tarea, elegido respecto a su fecha (a la hora, 10 min, 1 h o 1 día antes; para tareas sin hora, ese día o el anterior a las 9:00) que se mueve con la fecha
+- Recordatorios diarios de mañana y tarde con el resumen de pendientes
+- Alarmas exactas cuando el sistema da el permiso (Android 14+ lo pide aparte)
+
+### Otros
+- Inicio con saludo según la hora y las tareas de hoy
+- Estadísticas: tasa de finalización, racha, últimos 7 días y listas principales
+- Copia de seguridad y restauración en JSON
 - Widget de pantalla de inicio con las tareas pendientes
-- Dashboard de estadísticas: totales, tasa de finalización, racha, completadas de los últimos 7 días y categorías principales
-- Backup y restauración de todos los datos a JSON
-- Onboarding de 3 pantallas en el primer arranque
-- Soporte multilingüe: español e inglés
-- Tema claro y oscuro
+- Presentación de 3 páginas en el primer arranque
+- Español e inglés; tema claro, oscuro o del sistema
 
-### Diseño y UX
-- Material Design 3
-- Splash screen animado (2.5 s)
-- Filtros con chips y navegación por drawer lateral
-- Swipe-to-archive y swipe-to-delete con deshacer
+## Arquitectura
 
-### Arquitectura
-- MVVM con Repository Pattern
-- Jetpack Compose para la UI
-- Room Database con migraciones explícitas (v14)
+- MVVM con repositorios y una capa de dominio de casos de uso (`domain/`)
+- Jetpack Compose para la UI, con su propia paleta (`HomePalette`) y la fuente Plus Jakarta Sans
+- Room con migraciones explícitas (base de datos v16)
 - Hilt para inyección de dependencias
-- StateFlow y Flow para estado reactivo
-- AlarmManager con `setExactAndAllowWhileIdle` para recordatorios
-
-## Tecnologías
-
-- **Kotlin** 2.0.21
-- **Jetpack Compose** (BOM 2024.09.00)
-- **Room** 2.6.1 (con KSP)
-- **Hilt** 2.48
-- **Material Design 3**
-- **AppCompat / DrawerLayout** para el menú lateral
-
-## Estructura del proyecto
+- StateFlow / Flow para el estado reactivo
+- AlarmManager para los avisos (exactos con permiso, inexactos si no)
 
 ```
 app/src/main/java/com/example/taksy/
-├── data/            # Entidades Room, DAOs, AppDatabase, Converters
+├── data/            # Entidades Room, DAOs, AppDatabase, preferencias
+├── domain/          # Casos de uso: completar, subtareas, avisos, borrar tarea/lista
 ├── repository/      # TaskRepository, CategoryRepository
-├── viewmodel/       # TaskViewModel, CategoryViewModel, ThemeViewModel,
-│                    # SplashViewModel, BackupViewModel, StatsViewModel,
-│                    # ReminderViewModel
+├── viewmodel/       # Task, Category, Theme, Backup y Stats ViewModels
 ├── ui/
-│   ├── screens/     # CategoryList, TasksByCategory, TaskDetail,
-│   │                # Reminders, DailyReminder, ThemeSettings,
-│   │                # LanguageSettings, About, Backup, Stats,
-│   │                # Onboarding, Splash
-│   ├── components/  # Diálogos, items de lista, chips, etc.
-│   └── theme/       # Color, Theme, Type
-├── service/         # ReminderScheduler(+Contract), DailyReminderService,
-│                    # NotificationService
-├── receiver/        # ReminderReceiver
-├── widget/          # TaskWidgetProvider, TaskWidgetService
-├── di/              # DatabaseModule (Hilt)
-├── utils/           # BackupManager, LocaleHelper, DateUtils,
-│                    # CategoryUtils, DeviceUtils
+│   ├── navigation/  # NavHost y menú lateral
+│   ├── screens/     # Inicio, búsqueda, lista, detalle, ajustes, estadísticas, etc.
+│   ├── components/  # Diálogos, selectores de fecha/aviso, filas de tarea, etc.
+│   └── theme/       # Colores, paleta y tipografía
+├── service/         # Programación de alarmas, notificaciones, recordatorios diarios
+├── receiver/        # ReminderReceiver (avisos y reinicio del móvil)
+├── widget/          # Widget de pendientes
+├── di/              # Módulo de Hilt
+├── utils/           # Copia de seguridad, fechas, categorías, idioma
+├── MainActivity.kt
 └── TaksyApplication.kt
 ```
 
-## Instalación
+La documentación técnica detallada está en [`CLAUDE.md`](CLAUDE.md).
 
-### Requisitos
-- Android Studio Hedgehog o superior
-- Min SDK: 26 (Android 8.0)
-- Target SDK: 35 (Android 15)
-- JDK 11
+## Tecnologías
 
-### Pasos
-1. Clona el repositorio
-2. Abre el proyecto en Android Studio
-3. Sincroniza las dependencias de Gradle
-4. Ejecuta en un dispositivo o emulador
+- **Kotlin** 2.0.21, Java 11
+- **Jetpack Compose** (BOM 2024.09.00) y Material 3
+- **Room** 2.6.1 con KSP
+- **Hilt** 2.51.1
+- **AGP** 8.10.1
+- Min SDK 26 (Android 8.0), Target SDK 35 (Android 15)
 
-### Comandos Gradle
+## Compilación
 
 ```bash
 ./gradlew assembleDebug        # APK de debug
-./gradlew assembleRelease      # APK de release
+./gradlew assembleRelease      # APK de release (R8 activado)
 ./gradlew testDebugUnitTest    # Tests unitarios
 ./gradlew connectedAndroidTest # Tests instrumentados
 ./gradlew lint                 # Análisis de lint
 ```
 
-En Windows usar `gradlew.bat` si `./gradlew` no funciona.
-
-## Uso
-
-1. **Añadir tarea**: pulsa el campo de entrada inline en una categoría
-2. **Editar / añadir subtareas**: toca la tarea para abrir el detalle
-3. **Completar**: marca el checkbox; las recurrentes se regeneran automáticamente
-4. **Archivar**: swipe de izquierda a derecha
-5. **Eliminar**: swipe de derecha a izquierda (con opción de deshacer)
-6. **Reordenar**: mantén pulsado y arrastra
-7. **Recordatorios**: configúralos en el detalle de la tarea o desde el drawer
-8. **Estadísticas, copia de seguridad, tema e idioma**: desde el menú lateral
-
-## Configuración de compilación
-
-- Kotlin 2.0.21, Java 11
-- Compose BOM 2024.09.00
-- Room 2.6.1 + KSP
-- Hilt 2.48
-- ProGuard/R8 habilitado en release
-- Esquemas de Room exportados a `app/schemas/`
+En Windows usar `gradlew.bat` si `./gradlew` no funciona. Los esquemas de Room se exportan a `app/schemas/`.
 
 ## Tests
 
-74 tests unitarios cubriendo `BackupManager`, `TaskViewModel`, `TaskRepository` y `CategoryRepository`.
+111 tests unitarios: casos de uso (completar tareas, avisos, fechas, repetición), repositorios, ViewModels y copia de seguridad.
 
 ## Licencia
 
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+Este proyecto está bajo la Licencia MIT.

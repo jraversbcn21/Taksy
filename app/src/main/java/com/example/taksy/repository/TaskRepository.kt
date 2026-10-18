@@ -27,11 +27,8 @@ class TaskRepository @Inject constructor(
     fun searchAllTasks(query: String): Flow<List<Task>> =
         taskDao.searchAllTasks(query)
 
-    fun getTasksByFilter(filter: TaskFilter): Flow<List<Task>> = when (filter) {
-        TaskFilter.TODAS -> getAllTasks()
-        TaskFilter.PENDIENTES -> taskDao.getReallyPendingTasks()
-        TaskFilter.COMPLETADAS -> taskDao.getReallyCompletedTasks()
-    }
+    /** Pendientes sin subtareas pendientes (resumen del recordatorio diario). */
+    fun getReallyPendingTasks(): Flow<List<Task>> = taskDao.getReallyPendingTasks()
 
     suspend fun getTaskById(id: Long): Task? = taskDao.getTaskById(id)
     suspend fun insertTask(task: Task): Long = taskDao.insertTask(task)
@@ -136,4 +133,3 @@ class TaskRepository @Inject constructor(
 /** Una tarea borrada junto con sus subtareas y recordatorios, para poder deshacer el borrado. */
 data class DeletedTask(val task: Task, val subtasks: List<Subtask>, val reminders: List<Reminder>)
 
-enum class TaskFilter { TODAS, PENDIENTES, COMPLETADAS }

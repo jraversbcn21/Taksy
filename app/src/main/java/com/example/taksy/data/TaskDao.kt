@@ -17,18 +17,6 @@ interface TaskDao {
     fun getAllTasks(): Flow<List<Task>>
     
     /**
-     * Obtiene todas las tareas pendientes
-     */
-    @Query("SELECT * FROM tasks WHERE estado = 'PENDIENTE' ORDER BY CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
-    fun getPendingTasks(): Flow<List<Task>>
-    
-    /**
-     * Obtiene todas las tareas completadas
-     */
-    @Query("SELECT * FROM tasks WHERE estado = 'COMPLETADA' ORDER BY fechaCreacion DESC")
-    fun getCompletedTasks(): Flow<List<Task>>
-    
-    /**
      * Obtiene una tarea por su ID
      */
     @Query("SELECT * FROM tasks WHERE id = :id")
@@ -79,12 +67,6 @@ interface TaskDao {
     /** Todas las tareas de una categoría, incluidas las completadas (para borrarla). */
     @Query("SELECT * FROM tasks WHERE categoriaId = :categoryId")
     suspend fun getAllTasksByCategorySync(categoryId: Long): List<Task>
-    
-    /**
-     * Obtiene tareas sin categoría
-     */
-    @Query("SELECT * FROM tasks WHERE categoriaId IS NULL ORDER BY fechaCreacion DESC")
-    fun getTasksWithoutCategory(): Flow<List<Task>>
 
     @Query("SELECT * FROM tasks ORDER BY id ASC")
     suspend fun getAllTasksSync(): List<Task>
@@ -94,42 +76,6 @@ interface TaskDao {
 
     @Query("DELETE FROM tasks")
     suspend fun deleteAllTasks()
-    
-    /**
-     * Obtiene tareas que vencen hoy
-     */
-    @Query("""
-        SELECT * FROM tasks 
-        WHERE fechaVencimiento IS NOT NULL 
-        AND fechaVencimiento >= :startOfDay 
-        AND fechaVencimiento < :endOfDay
-        ORDER BY fechaCreacion DESC
-    """)
-    suspend fun getTasksDueToday(startOfDay: Long, endOfDay: Long): List<Task>
-    
-    /**
-     * Obtiene tareas que vencen pronto (próximos 7 días)
-     */
-    @Query("""
-        SELECT * FROM tasks 
-        WHERE fechaVencimiento IS NOT NULL 
-        AND fechaVencimiento >= :now 
-        AND fechaVencimiento <= :nextWeek
-        ORDER BY fechaVencimiento ASC
-    """)
-    suspend fun getTasksDueSoon(now: Long, nextWeek: Long): List<Task>
-    
-    /**
-     * Obtiene tareas vencidas
-     */
-    @Query("""
-        SELECT * FROM tasks 
-        WHERE fechaVencimiento IS NOT NULL 
-        AND fechaVencimiento < :now
-        AND estado = 'PENDIENTE'
-        ORDER BY fechaVencimiento ASC
-    """)
-    suspend fun getOverdueTasks(now: Long): List<Task>
     
     /**
      * Busca tareas por título dentro de una categoría
@@ -143,26 +89,6 @@ interface TaskDao {
      */
     @Query("SELECT * FROM tasks WHERE NOT (estado = 'COMPLETADA' AND recurrencia != 'NINGUNA') AND titulo LIKE '%' || :query || '%' ORDER BY CASE WHEN estado = 'PENDIENTE' THEN 0 ELSE 1 END, CASE prioridad WHEN 'ALTA' THEN 0 WHEN 'MEDIA' THEN 1 WHEN 'BAJA' THEN 2 ELSE 3 END, fechaCreacion DESC")
     fun searchAllTasks(query: String): Flow<List<Task>>
-
-    /**
-     * Obtiene tareas que están realmente completadas (con todas las subtareas completadas)
-     * Esto requiere una consulta más compleja que considere las subtareas
-     */
-    @Query("""
-        SELECT DISTINCT t.* FROM tasks t
-        WHERE t.id IN (
-            SELECT s.taskId FROM subtasks s
-            WHERE s.taskId = t.id
-            GROUP BY s.taskId
-            HAVING COUNT(*) = (
-                SELECT COUNT(*) FROM subtasks s2 
-                WHERE s2.taskId = s.taskId AND s2.estado = 'COMPLETADA'
-            )
-        )
-        OR (t.id NOT IN (SELECT DISTINCT taskId FROM subtasks) AND t.estado = 'COMPLETADA')
-        ORDER BY t.fechaCreacion DESC
-    """)
-    fun getReallyCompletedTasks(): Flow<List<Task>>
     
     /**
      * Obtiene tareas que están realmente pendientes (no completamente terminadas)

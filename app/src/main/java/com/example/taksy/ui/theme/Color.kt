@@ -17,14 +17,10 @@ val IconTeal40 = Color(0xFF00695C)         // Verde-azul intenso
 
 // Colores adicionales del gradiente del icono
 val IconLightYellow = Color(0xFFC5E1A5)    // Amarillo-verde muy claro
-val IconLightGreen = Color(0xFFA5D6A7)     // Verde claro
 val IconLightTeal = Color(0xFF4DB6AC)      // Verde-azul claro
-val IconDarkGreen = Color(0xFF1B5E20)      // Verde oscuro
 val IconDarkTeal = Color(0xFF004D40)       // Verde-azul oscuro
 
 // Colores de acento del icono
-val IconAccent = Color(0xFF4CAF50)         // Verde principal del icono
-val IconAccentLight = Color(0xFF81C784)    // Verde claro del icono
 val IconAccentDark = Color(0xFF2E7D32)     // Verde oscuro del icono
 
 // Colores suaves para el gradiente del splash (tonos light)
@@ -42,9 +38,4 @@ val DueOverdueRed = Color(0xFFE53935)
 val DueTodayOrange = Color(0xFFFF6F00)
 val DueTomorrowOrange = Color(0xFFF57C00)
 
-val RecurrencePurple = Color(0xFF7E57C2)
-
 val SwipeDeleteBg = Color(0xFFE53935)
-val SwipeDeleteBgLight = Color(0xFFE57373)
-
-val SuccessGreen = Color(0xFF4CAF50)
