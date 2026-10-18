@@ -26,6 +26,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
@@ -50,6 +52,7 @@ import com.example.taksy.ui.theme.PlusJakartaSans
 import com.example.taksy.ui.theme.accentColor
 import com.example.taksy.utils.CategoryUtils
 import com.example.taksy.utils.getCategoryIcon
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Date
 
@@ -80,6 +83,10 @@ fun TasksByCategoryScreen(
     var showSearch by remember { mutableStateOf(false) }
     var taskForReminder by remember { mutableStateOf<Task?>(null) }
     var showExactAlarmDialog by remember { mutableStateOf(false) }
+    var idsBeforeAdd by remember { mutableStateOf<Set<Long>?>(null) }
+    var highlightedTaskId by remember { mutableStateOf<Long?>(null) }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val context = LocalContext.current
     val focusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -147,8 +154,29 @@ fun TasksByCategoryScreen(
             onShowToast = showSnackbar,
             onReminderClick = { taskForReminder = it },
             onEditTask = { taskViewModel.updateTask(it) },
+            highlighted = task.id == highlightedTaskId,
             modifier = modifier
         )
+    }
+
+    // La tarea recién añadida es la que aparece en la lista y no estaba antes de añadir
+    LaunchedEffect(tasks, idsBeforeAdd) {
+        val before = idsBeforeAdd ?: return@LaunchedEffect
+        val added = tasks.firstOrNull { it.id !in before } ?: return@LaunchedEffect
+        idsBeforeAdd = null
+        highlightedTaskId = added.id
+    }
+    // Efecto aparte: el de arriba se relanza al limpiar idsBeforeAdd y cortaría la espera
+    LaunchedEffect(highlightedTaskId) {
+        val id = highlightedTaskId ?: return@LaunchedEffect
+        // top_bar, header, composer y la etiqueta de pendientes van antes de las tareas
+        val index = pendingTasks.indexOfFirst { it.id == id }
+        if (index >= 0) {
+            val offset = -listState.layoutInfo.viewportSize.height / 3
+            listState.animateScrollToItem(4 + index, offset)
+        }
+        delay(1600)
+        highlightedTaskId = null
     }
 
     Scaffold(
@@ -209,10 +237,17 @@ fun TasksByCategoryScreen(
                             onPriorityChange = { selectedPriority = it },
                             selectedRecurrence = selectedRecurrence,
                             onRecurrenceChange = { selectedRecurrence = it },
-                            onAddTask = { title ->
+                            onAddTask = { title, keepOpen ->
                                 // Sin fecha: se pone en el detalle o con el recordatorio
                                 onAddTask(title, null, selectedPriority, selectedRecurrence)
                                 resetComposer()
+                                if (!keepOpen) {
+                                    // Se cierra y, cuando la tarea llegue a la lista, se muestra resaltada
+                                    idsBeforeAdd = tasks.map { it.id }.toSet()
+                                    showInlineInput = false
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                }
                             },
                             onCancel = {
                                 resetComposer()

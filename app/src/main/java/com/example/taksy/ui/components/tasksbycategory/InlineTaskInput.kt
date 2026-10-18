@@ -44,7 +44,8 @@ import com.example.taksy.ui.theme.PriorityMediumOrange
 
 /**
  * Tarjeta para crear una tarea en la lista: título, prioridad y repetición.
- * Se queda abierta tras añadir para poder encadenar varias tareas.
+ * El botón "Añadir tarea" guarda y cierra (keepOpen = false); el Enter del teclado guarda
+ * y la deja abierta para encadenar otra (keepOpen = true).
  */
 @Composable
 fun InlineTaskInput(
@@ -54,7 +55,7 @@ fun InlineTaskInput(
     onPriorityChange: (TaskPrioridad) -> Unit,
     selectedRecurrence: TaskRecurrencia,
     onRecurrenceChange: (TaskRecurrencia) -> Unit,
-    onAddTask: (String) -> Unit,
+    onAddTask: (title: String, keepOpen: Boolean) -> Unit,
     onCancel: () -> Unit,
     focusRequester: FocusRequester,
     palette: HomePalette,
@@ -64,10 +65,10 @@ fun InlineTaskInput(
     var hasSubmitted by remember { mutableStateOf(false) }
     LaunchedEffect(taskTitle) { if (taskTitle.isEmpty()) hasSubmitted = false }
 
-    fun submit() {
+    fun submit(keepOpen: Boolean) {
         if (taskTitle.isNotBlank() && !hasSubmitted) {
             hasSubmitted = true
-            onAddTask(taskTitle.trim())
+            onAddTask(taskTitle.trim(), keepOpen)
         }
     }
 
@@ -105,7 +106,7 @@ fun InlineTaskInput(
                     capitalization = KeyboardCapitalization.Sentences,
                     imeAction = ImeAction.Done
                 ),
-                keyboardActions = KeyboardActions(onDone = { submit() }),
+                keyboardActions = KeyboardActions(onDone = { submit(keepOpen = true) }),
                 decorationBox = { innerTextField ->
                     if (taskTitle.isEmpty()) {
                         Text(
@@ -163,7 +164,7 @@ fun InlineTaskInput(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
                     .background(if (canAdd) accent else accent.copy(alpha = 0.35f))
-                    .clickable(enabled = canAdd, role = Role.Button) { submit() }
+                    .clickable(enabled = canAdd, role = Role.Button) { submit(keepOpen = false) }
                     .padding(horizontal = 16.dp, vertical = 10.dp)
             )
         }

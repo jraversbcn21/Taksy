@@ -1,5 +1,7 @@
 package com.example.taksy.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -76,8 +78,11 @@ fun TaskListItem(
     onShowToast: (String) -> Unit = {},
     onReminderClick: (Task) -> Unit = {},
     onEditTask: (Task) -> Unit = {},
+    highlighted: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    // Resalte breve con el color de la categoría (p. ej. la tarea recién añadida)
+    val highlight by animateFloatAsState(if (highlighted) 1f else 0f, tween(if (highlighted) 250 else 900), label = "highlight")
     var showEditDialog by remember { mutableStateOf(false) }
     var editTitle by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -125,8 +130,8 @@ fun TaskListItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(shape)
-                .background(if (isCompleted) palette.doneCard else palette.surface)
-                .border(1.dp, palette.border, shape)
+                .background(if (isCompleted) palette.doneCard else lerp(palette.surface, accent, highlight * if (palette.isDark) 0.22f else 0.12f))
+                .border(if (highlight > 0f) 1.5.dp else 1.dp, lerp(palette.border, accent, highlight), shape)
                 .combinedClickable(
                     onClick = { onTaskClick(task) },
                     onLongClick = {
