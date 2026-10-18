@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.taksy.R
+import com.example.taksy.ui.components.AppIcon
 import com.example.taksy.ui.theme.HomePalette
 import com.example.taksy.ui.theme.PlusJakartaSans
 
@@ -79,13 +80,7 @@ fun AboutScreen(
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ticksy_icon),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                    )
+                    AppIcon(size = 56.dp)
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
                             text = stringResource(R.string.app_name),

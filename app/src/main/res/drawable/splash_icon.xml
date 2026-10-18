@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Icono del splash. Las marcas del icono (check, líneas, TASKS) son transparentes en
+     ticksy_icon.png; ticksy_icon_splash.png es el mismo icono con un disco blanco detrás (fuera del
+     círculo sigue transparente), para que se vean blancas también sobre el fondo oscuro. -->
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/ticksy_icon"
+    android:drawable="@drawable/ticksy_icon_splash"
     android:insetLeft="24dp"
     android:insetTop="24dp"
     android:insetRight="24dp"

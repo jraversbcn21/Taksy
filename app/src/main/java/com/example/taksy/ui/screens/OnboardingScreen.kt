@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.taksy.R
+import com.example.taksy.ui.components.AppIcon
 import com.example.taksy.ui.theme.HomePalette
 import com.example.taksy.ui.theme.PlusJakartaSans
 import kotlinx.coroutines.launch
@@ -78,13 +79,7 @@ fun OnboardingScreen(
                     .fillMaxWidth()
                     .height(48.dp)
             ) {
-                Image(
-                    painter = painterResource(R.drawable.ticksy_icon),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(30.dp)
-                        .clip(CircleShape)
-                )
+                AppIcon(size = 24.dp)
                 Text(
                     text = stringResource(R.string.app_name),
                     fontFamily = PlusJakartaSans,

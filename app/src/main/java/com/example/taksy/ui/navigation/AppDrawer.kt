@@ -34,6 +34,7 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.taksy.R
+import com.example.taksy.ui.components.AppIcon
 import com.example.taksy.ui.components.HomeMessageDialog
 import com.example.taksy.ui.theme.HomePalette
 import com.example.taksy.ui.theme.PlusJakartaSans
@@ -197,13 +198,7 @@ private fun DrawerPanel(palette: HomePalette, onNavigate: (String) -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.padding(start = 8.dp, bottom = 24.dp)
         ) {
-            Image(
-                painter = painterResource(R.drawable.ticksy_icon),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-            )
+            AppIcon(size = 34.dp)
             Column {
                 Text(
                     text = stringResource(R.string.app_name),

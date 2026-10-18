@@ -118,8 +118,9 @@ Navigation drawer is an Android `DrawerLayout` wrapping a `ComposeView` (not a p
 - Widget layout: header (app name, task count plurals, refresh button) + `ListView` with empty state. Minimum 250×180 dp, resizable. Tapping header or items opens `MainActivity`. Registered in `AndroidManifest.xml` with `BIND_REMOTEVIEWS`.
 
 ### Splash Screen
-- Native Android splash (`Theme.SplashScreen`) uses `splash_icon.xml` — an `InsetDrawable` wrapping `ticksy_icon.png` with 24 dp inset.
+- Native Android splash (`Theme.SplashScreen`) uses `splash_icon.xml` — an `InsetDrawable` wrapping `ticksy_icon_splash.png` with 24 dp inset. The marks of `ticksy_icon.png` (check, lines, TASKS) are transparent, so they took the background colour (black on dark); `ticksy_icon_splash.png` is the same icon with a white disc baked in behind them (outside the circle stays transparent). In Compose the icon is always drawn with `ui/components/AppIcon` (white disc + the PNG scaled so its circle — the central 76 %, 780 of 1024 px — fills `size`).
 - There is no Compose splash: the native one is the only splash.
+- Background `@color/splash_background` = the app background (`HomePalette.background`): `#FBFAF6` in `values/`, `#121212` in `values-night/`. It follows the system dark mode, not the app's theme setting (the system draws it before the app runs).
 
 ## Key Tech Details
 

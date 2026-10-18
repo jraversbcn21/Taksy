@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.example.taksy.R
+import com.example.taksy.ui.components.AppIcon
 import com.example.taksy.data.Category
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
@@ -303,15 +304,7 @@ private fun HomeHeader(palette: HomePalette, onMenuClick: () -> Unit, modifier: 
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.fillMaxWidth()
     ) {
-        Image(
-            painter = painterResource(R.drawable.ticksy_icon),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(26.dp)
-                .clip(CircleShape)
-                .graphicsLayer { scaleX = 1.3f; scaleY = 1.3f }
-        )
+        AppIcon(size = 26.dp)
         Spacer(Modifier.width(8.dp))
         Text(
             text = stringResource(R.string.app_name),
