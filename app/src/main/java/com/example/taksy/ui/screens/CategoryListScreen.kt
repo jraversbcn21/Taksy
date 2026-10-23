@@ -79,9 +79,11 @@ fun CategoryListScreen(
     taskCountByCategory: Map<Long, Int> = emptyMap(),
     totalTaskCountByCategory: Map<Long, Int> = emptyMap(),
     todayTasks: List<Task> = emptyList(),
+    streakDays: Int = 0,
     isDarkMode: Boolean = false,
     currentLanguage: String = "es",
     onSettingsClick: () -> Unit = {},
+    onStreakClick: () -> Unit = {},
     onCategoryClick: (Category) -> Unit = {},
     onEditCategoryClick: (Category) -> Unit = {},
     onDeleteCategoryClick: (Category) -> Unit = {},
@@ -196,7 +198,9 @@ fun CategoryListScreen(
                 item(key = "greeting") {
                     HomeGreeting(
                         todayTasks = todayTasks,
+                        streakDays = streakDays,
                         palette = palette,
+                        onStreakClick = onStreakClick,
                         modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 26.dp)
                     )
                 }
@@ -317,7 +321,13 @@ private fun rememberNow(): State<Calendar> = produceState(initialValue = Calenda
 
 @OptIn(ExperimentalTextApi::class)
 @Composable
-private fun HomeGreeting(todayTasks: List<Task>, palette: HomePalette, modifier: Modifier = Modifier) {
+private fun HomeGreeting(
+    todayTasks: List<Task>,
+    streakDays: Int,
+    palette: HomePalette,
+    onStreakClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val now by rememberNow()
     val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
     val datePattern = stringResource(R.string.home_date_pattern)
@@ -334,13 +344,18 @@ private fun HomeGreeting(todayTasks: List<Task>, palette: HomePalette, modifier:
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = modifier) {
-        Text(
-            text = dateText,
-            fontFamily = PlusJakartaSans,
-            fontWeight = FontWeight.Medium,
-            fontSize = 14.sp,
-            color = palette.muted
-        )
+        // La racha comparte la fila de la fecha para no añadir altura a la cabecera
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = dateText,
+                fontFamily = PlusJakartaSans,
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp,
+                color = palette.muted,
+                modifier = Modifier.weight(1f)
+            )
+            if (streakDays >= MIN_STREAK_SHOWN) StreakPill(streakDays, palette, onStreakClick)
+        }
         Text(
             text = buildAnnotatedString {
                 append(greeting)
@@ -357,6 +372,33 @@ private fun HomeGreeting(todayTasks: List<Task>, palette: HomePalette, modifier:
                 letterSpacing = (-1).sp,
                 color = palette.ink
             )
+        )
+    }
+}
+
+/** Una racha de 1 día no es racha todavía: la pastilla aparece a partir de 2. */
+private const val MIN_STREAK_SHOWN = 2
+
+@Composable
+private fun StreakPill(days: Int, palette: HomePalette, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(50)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier
+            .clip(shape)
+            .background(palette.surface)
+            .border(1.dp, palette.border, shape)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+    ) {
+        Text(text = "🔥", fontSize = 12.sp)
+        Text(
+            text = pluralStringResource(R.plurals.stats_days, days, days),
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp,
+            color = palette.ink
         )
     }
 }

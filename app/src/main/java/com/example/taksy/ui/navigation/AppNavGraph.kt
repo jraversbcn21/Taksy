@@ -18,6 +18,7 @@ import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.TaskRecurrencia
 import com.example.taksy.data.preferences.PreferencesRepository
+import com.example.taksy.domain.StreakCalculator
 import com.example.taksy.ui.screens.AboutScreen
 import com.example.taksy.ui.screens.BackupScreen
 import com.example.taksy.ui.screens.CategoryListScreen
@@ -95,6 +96,8 @@ fun AppNavGraph(
                     .sortedWith(compareBy<Task> { it.estado == TaskEstado.COMPLETADA }.thenBy { it.fechaVencimiento })
             }
 
+            val streakDays = remember(allTasks) { StreakCalculator.compute(allTasks.mapNotNull { it.fechaCompletada }) }
+
             var globalSearchQuery by remember { mutableStateOf("") }
             val searchResults by taskViewModel.searchAllTasks(globalSearchQuery)
                 .collectAsState(initial = emptyList())
@@ -104,9 +107,11 @@ fun AppNavGraph(
                 taskCountByCategory = taskCountByCategory,
                 totalTaskCountByCategory = totalTaskCountByCategory,
                 todayTasks = todayTasks,
+                streakDays = streakDays,
                 isDarkMode = isDarkMode,
                 currentLanguage = currentLanguage,
                 onSettingsClick = onMenuClick,
+                onStreakClick = { navController.navigate("stats") { launchSingleTop = true } },
                 onCategoryClick = { category ->
                     navController.navigate("tasks_by_category/${category.id}")
                 },

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.taksy.data.Category
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
+import com.example.taksy.domain.StreakCalculator
 import com.example.taksy.repository.CategoryRepository
 import com.example.taksy.repository.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -66,7 +67,7 @@ class StatsViewModel @Inject constructor(
             .size
 
         val last7Days = buildLast7Days(tasks)
-        val streak = computeStreak(tasks)
+        val streak = StreakCalculator.compute(tasks.mapNotNull { it.fechaCompletada })
 
         val topCategories = categories
             .map { cat ->
@@ -110,27 +111,6 @@ class StatsViewModel @Inject constructor(
         return result
     }
 
-    private fun computeStreak(tasks: List<Task>): Int {
-        val completionDays = tasks.mapNotNull { it.fechaCompletada }.map { dayBucket(it) }.toSet()
-        if (completionDays.isEmpty()) return 0
-        val cal = Calendar.getInstance()
-        startOfDay(cal)
-        var streak = 0
-        // If today has no completions, streak can still continue from yesterday
-        var checking = cal.timeInMillis
-        if (checking !in completionDays) checking -= 86_400_000L
-        while (checking in completionDays) {
-            streak++
-            checking -= 86_400_000L
-        }
-        return streak
-    }
-
-    private fun dayBucket(date: Date): Long {
-        val cal = Calendar.getInstance().apply { time = date }
-        startOfDay(cal)
-        return cal.timeInMillis
-    }
 
     private fun startOfDay(cal: Calendar) {
         cal.set(Calendar.HOUR_OF_DAY, 0)
