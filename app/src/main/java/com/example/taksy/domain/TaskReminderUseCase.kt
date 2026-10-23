@@ -49,6 +49,14 @@ class TaskReminderUseCase @Inject constructor(
         }
     }
 
+    /**
+     * Mueve el aviso de la tarea a [option] sin tocar su fecha de vencimiento. El aviso queda con
+     * una hora propia, que la tarea muestra como "Personalizado".
+     */
+    suspend fun snooze(task: Task, option: SnoozeOption, now: Date = Date()) {
+        replace(task, option.from(now))
+    }
+
     suspend fun deleteAllForTask(taskId: Long) {
         repository.getRemindersByTaskIdSync(taskId).forEach {
             scheduler.cancelReminder(it.id)

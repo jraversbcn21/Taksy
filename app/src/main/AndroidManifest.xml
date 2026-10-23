@@ -43,6 +43,11 @@
             </intent-filter>
         </receiver>
             
+        <!-- Botones Hecho / Posponer de la notificación de un recordatorio -->
+        <receiver
+            android:name=".receiver.ReminderActionReceiver"
+            android:exported="false" />
+
         <!-- BroadcastReceiver para recordatorios diarios -->
         <receiver
             android:name=".service.DailyReminderService"

@@ -15,6 +15,7 @@ import com.example.taksy.MainActivity
 import com.example.taksy.R
 import com.example.taksy.data.Reminder
 import com.example.taksy.data.Task
+import com.example.taksy.receiver.ReminderActionReceiver
 
 /**
  * Servicio para manejar notificaciones de recordatorios
@@ -44,6 +45,25 @@ class NotificationService(private val context: Context) {
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
+    }
+
+    // Un request code por recordatorio y acción: con el mismo, los tres botones compartirían PendingIntent
+    private fun actionIntent(action: String, reminder: Reminder, task: Task): PendingIntent {
+        val intent = Intent(context, ReminderActionReceiver::class.java).apply {
+            this.action = action
+            putExtra(ReminderActionReceiver.EXTRA_TASK_ID, task.id)
+            putExtra(ReminderActionReceiver.EXTRA_NOTIFICATION_ID, reminder.id.toInt())
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            reminder.id.toInt() * 3 + when (action) {
+                ReminderActionReceiver.ACTION_DONE -> 0
+                ReminderActionReceiver.ACTION_SNOOZE_1H -> 1
+                else -> 2
+            },
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 
     fun showReminderNotification(reminder: Reminder, task: Task) {
@@ -77,6 +97,9 @@ class NotificationService(private val context: Context) {
             .setVibrate(longArrayOf(0, 300, 200, 300))
             .setLights(0xFF4CAF50.toInt(), 1000, 1000)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .addAction(0, context.getString(R.string.notification_action_done), actionIntent(ReminderActionReceiver.ACTION_DONE, reminder, task))
+            .addAction(0, context.getString(R.string.notification_action_snooze_1h), actionIntent(ReminderActionReceiver.ACTION_SNOOZE_1H, reminder, task))
+            .addAction(0, context.getString(R.string.notification_action_snooze_tomorrow), actionIntent(ReminderActionReceiver.ACTION_SNOOZE_TOMORROW, reminder, task))
             .build()
 
         // Sin el permiso (Android 13+) la notificación no se puede mostrar
