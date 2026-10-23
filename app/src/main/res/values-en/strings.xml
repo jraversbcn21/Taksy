@@ -206,6 +206,13 @@
     <string name="stats_subtitle">%1$d of %2$d tasks completed</string>
     <string name="stats_pending">Pending</string>
     <string name="stats_completion_rate">Completion rate</string>
+    <string name="stats_plant">Your plant</string>
+    <string name="plant_stage_seed">Seed</string>
+    <string name="plant_stage_sprout">Sprout</string>
+    <string name="plant_stage_seedling">Seedling</string>
+    <string name="plant_stage_plant">Plant</string>
+    <string name="plant_stage_tree">Tree</string>
+    <string name="plant_complete">Your tree is fully grown</string>
     <string name="stats_streak">Streak</string>
     <string name="stats_active_categories">Active categories</string>
     <string name="stats_last_7_days">Last 7 days</string>

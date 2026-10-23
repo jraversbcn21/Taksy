@@ -16,6 +16,10 @@
         <item quantity="one">%d día</item>
         <item quantity="other">%d días</item>
     </plurals>
+    <plurals name="plant_to_next">
+        <item quantity="one">Falta %1$d tarea para: %2$s</item>
+        <item quantity="other">Faltan %1$d tareas para: %2$s</item>
+    </plurals>
     <plurals name="home_today_left">
         <item quantity="one">Solo 1 tarea hoy.</item>
         <item quantity="other">%d tareas para hoy.</item>

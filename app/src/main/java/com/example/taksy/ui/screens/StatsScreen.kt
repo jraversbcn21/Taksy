@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.taksy.R
+import com.example.taksy.ui.components.PlantCard
 import com.example.taksy.ui.theme.DueTodayOrange
 import com.example.taksy.ui.theme.HomePalette
 import com.example.taksy.ui.theme.PlusJakartaSans
@@ -114,6 +115,7 @@ fun StatsScreen(
             }
 
             HeroCard(state, palette)
+            PlantCard(state.completedTasks, palette)
             CountersRow(state, palette)
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

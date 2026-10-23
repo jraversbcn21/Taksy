@@ -209,6 +209,13 @@
     <string name="stats_subtitle">%1$d de %2$d tareas completadas</string>
     <string name="stats_pending">Pendientes</string>
     <string name="stats_completion_rate">Tasa de finalización</string>
+    <string name="stats_plant">Tu planta</string>
+    <string name="plant_stage_seed">Semilla</string>
+    <string name="plant_stage_sprout">Brote</string>
+    <string name="plant_stage_seedling">Plántula</string>
+    <string name="plant_stage_plant">Planta</string>
+    <string name="plant_stage_tree">Árbol</string>
+    <string name="plant_complete">Tu árbol está completo</string>
     <string name="stats_streak">Racha</string>
     <string name="stats_active_categories">Categorías activas</string>
     <string name="stats_last_7_days">Últimos 7 días</string>
