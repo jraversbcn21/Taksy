@@ -173,6 +173,9 @@
     <string name="daily_notification_channel_description">Daily notifications to remind you to review your tasks</string>
 
     <!-- Notification content -->
+    <string name="share_title">Add to Taksy</string>
+    <string name="share_list">List</string>
+    <string name="share_added">Added to %s</string>
     <string name="notification_action_done">Done</string>
     <string name="notification_action_snooze_1h">+1 h</string>
     <string name="notification_action_snooze_tomorrow">Tomorrow</string>

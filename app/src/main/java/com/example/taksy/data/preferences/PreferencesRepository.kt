@@ -23,6 +23,7 @@ class PreferencesRepository @Inject constructor(
     private val languagePrefs get() = context.getSharedPreferences(LANGUAGE_PREFS, Context.MODE_PRIVATE)
     private val dailyReminderPrefs get() = context.getSharedPreferences(DAILY_REMINDER_PREFS, Context.MODE_PRIVATE)
     private val onboardingPrefs get() = context.getSharedPreferences(ONBOARDING_PREFS, Context.MODE_PRIVATE)
+    private val sharePrefs get() = context.getSharedPreferences(SHARE_PREFS, Context.MODE_PRIVATE)
 
     // ── Theme ──────────────────────────────────────────────────────────────
 
@@ -82,7 +83,19 @@ class PreferencesRepository @Inject constructor(
         onboardingPrefs.edit { putBoolean(KEY_ONBOARDING_COMPLETED, completed) }
     }
 
+    // ── Compartir hacia Taksy ──────────────────────────────────────────────
+
+    /** Lista elegida la última vez al compartir un texto, para ofrecerla de nuevo; null si no hay. */
+    fun getLastShareCategoryId(): Long? =
+        sharePrefs.getLong(KEY_LAST_SHARE_CATEGORY, -1L).takeIf { it >= 0 }
+
+    fun setLastShareCategoryId(categoryId: Long) {
+        sharePrefs.edit { putLong(KEY_LAST_SHARE_CATEGORY, categoryId) }
+    }
+
     companion object {
+        private const val SHARE_PREFS = "share_prefs"
+        private const val KEY_LAST_SHARE_CATEGORY = "last_category_id"
         private const val THEME_PREFS = "theme_pref"
         private const val LANGUAGE_PREFS = "language_pref"
         private const val DAILY_REMINDER_PREFS = "daily_reminder_prefs"

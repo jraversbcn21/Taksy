@@ -14,6 +14,13 @@
         <item name="colorOnSurface">@android:color/black</item>
     </style>
 
+    <!-- Pantalla de compartir: transparente, el diálogo flota sobre la app de origen -->
+    <style name="Theme.Ticksy.Share" parent="Theme.Ticksy">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+
     <style name="Theme.Ticksy.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>

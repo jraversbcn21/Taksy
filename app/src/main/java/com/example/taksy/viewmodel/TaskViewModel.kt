@@ -25,6 +25,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -37,7 +38,8 @@ data class TaskInput(
     val fechaVencimiento: Date? = null,
     val categoriaId: Long? = null,
     val prioridad: TaskPrioridad = TaskPrioridad.NINGUNA,
-    val recurrencia: TaskRecurrencia = TaskRecurrencia.NINGUNA
+    val recurrencia: TaskRecurrencia = TaskRecurrencia.NINGUNA,
+    val descripcion: String? = null
 )
 
 @HiltViewModel
@@ -72,11 +74,13 @@ class TaskViewModel @Inject constructor(
     fun searchAllTasks(query: String): Flow<List<Task>> =
         repository.searchAllTasks(query)
 
-    fun addTask(input: TaskInput) {
-        if (input.titulo.isBlank()) return
-        launchSafe(R.string.error_add_task) {
+    /** Devuelve el trabajo para quien deba esperar a que se guarde (p. ej. la pantalla de compartir, que se cierra después). */
+    fun addTask(input: TaskInput): Job {
+        if (input.titulo.isBlank()) return Job().apply { complete() }
+        return launchSafe(R.string.error_add_task) {
             val task = Task(
                 titulo = input.titulo.trim(),
+                descripcion = input.descripcion?.trim()?.takeIf { it.isNotEmpty() },
                 fechaVencimiento = input.fechaVencimiento,
                 categoriaId = input.categoriaId,
                 prioridad = input.prioridad,
@@ -184,7 +188,7 @@ class TaskViewModel @Inject constructor(
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
-    private fun launchSafe(@StringRes errorMessage: Int, block: suspend () -> Unit) {
+    private fun launchSafe(@StringRes errorMessage: Int, block: suspend () -> Unit): Job =
         viewModelScope.launch {
             try {
                 block()
@@ -195,7 +199,6 @@ class TaskViewModel @Inject constructor(
                 _errors.trySend(errorMessage)
             }
         }
-    }
 
     private companion object {
         const val TAG = "TaskViewModel"
