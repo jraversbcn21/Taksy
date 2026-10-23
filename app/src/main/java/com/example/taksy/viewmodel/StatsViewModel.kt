@@ -6,6 +6,7 @@ import com.example.taksy.data.Category
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
 import com.example.taksy.data.preferences.PreferencesRepository
+import com.example.taksy.domain.DailyCompletions
 import com.example.taksy.domain.StreakCalculator
 import com.example.taksy.repository.CategoryRepository
 import com.example.taksy.repository.TaskRepository
@@ -14,7 +15,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import java.util.Calendar
 import java.util.Date
 import javax.inject.Inject
 
@@ -99,28 +99,7 @@ class StatsViewModel @Inject constructor(
         )
     }
 
-    private fun buildLast7Days(tasks: List<Task>): List<DayCompletion> {
-        val result = mutableListOf<DayCompletion>()
-        val cal = Calendar.getInstance()
-        startOfDay(cal)
-        val today = cal.timeInMillis
-        for (i in 6 downTo 0) {
-            val dayStart = today - i * 86_400_000L
-            val dayEnd = dayStart + 86_400_000L
-            val count = tasks.count {
-                val d = it.fechaCompletada?.time ?: return@count false
-                d in dayStart until dayEnd
-            }
-            result.add(DayCompletion(Date(dayStart), count))
-        }
-        return result
-    }
-
-
-    private fun startOfDay(cal: Calendar) {
-        cal.set(Calendar.HOUR_OF_DAY, 0)
-        cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0)
-        cal.set(Calendar.MILLISECOND, 0)
-    }
+    private fun buildLast7Days(tasks: List<Task>): List<DayCompletion> =
+        DailyCompletions.lastDays(tasks.mapNotNull { it.fechaCompletada })
+            .map { (day, count) -> DayCompletion(day, count) }
 }
