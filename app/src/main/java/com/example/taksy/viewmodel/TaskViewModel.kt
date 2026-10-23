@@ -75,15 +75,18 @@ class TaskViewModel @Inject constructor(
     fun addTask(input: TaskInput) {
         if (input.titulo.isBlank()) return
         launchSafe(R.string.error_add_task) {
-            repository.insertTask(
-                Task(
-                    titulo = input.titulo.trim(),
-                    fechaVencimiento = input.fechaVencimiento,
-                    categoriaId = input.categoriaId,
-                    prioridad = input.prioridad,
-                    recurrencia = input.recurrencia
-                )
+            val task = Task(
+                titulo = input.titulo.trim(),
+                fechaVencimiento = input.fechaVencimiento,
+                categoriaId = input.categoriaId,
+                prioridad = input.prioridad,
+                recurrencia = input.recurrencia
             )
+            val id = repository.insertTask(task)
+            // Una tarea con fecha nace con su aviso por defecto, sin tener que abrir la campanita
+            task.fechaVencimiento?.let {
+                reminderUseCase.setLead(task.copy(id = id), ReminderLead.defaultFor(it))
+            }
             TaskWidgetProvider.refreshAll(context)
         }
     }

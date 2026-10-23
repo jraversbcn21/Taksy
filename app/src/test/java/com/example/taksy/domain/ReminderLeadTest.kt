@@ -42,6 +42,12 @@ class ReminderLeadTest {
     }
 
     @Test
+    fun `new tasks default to at time, or 9 00 same day when there is no time`() {
+        assertEquals(ReminderLead.AT_TIME, ReminderLead.defaultFor(at(17, 30)))
+        assertEquals(ReminderLead.SAME_DAY_9, ReminderLead.defaultFor(at(0, 0)))
+    }
+
+    @Test
     fun `an offset that is not an option is custom`() {
         // Como "pope": vence a las 17:20 y avisa a las 17:25
         assertNull(ReminderLead.match(at(17, 20), at(17, 25)))

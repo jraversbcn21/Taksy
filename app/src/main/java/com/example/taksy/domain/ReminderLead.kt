@@ -25,6 +25,9 @@ enum class ReminderLead(val offsetMinutes: Long, val allDay: Boolean) {
             return cal.get(Calendar.HOUR_OF_DAY) == 0 && cal.get(Calendar.MINUTE) == 0
         }
 
+        /** Aviso que lleva una tarea nueva con fecha: a la hora si tiene hora, a las 9:00 del mismo día si no. */
+        fun defaultFor(due: Date): ReminderLead = if (isAllDay(due)) SAME_DAY_9 else AT_TIME
+
         fun optionsFor(due: Date): List<ReminderLead> = entries.filter { it.allDay == isAllDay(due) }
 
         /** Opción que corresponde a un recordatorio existente, o null si es una hora personalizada. */
