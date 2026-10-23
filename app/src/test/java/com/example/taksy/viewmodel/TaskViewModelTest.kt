@@ -76,7 +76,7 @@ class TaskViewModelTest {
         val mockContext = mockk<Context>(relaxed = true)
         every { mockApp.applicationContext } returns mockContext
 
-        val completeUseCase = com.example.taksy.domain.CompleteTaskUseCase(repo, fakeScheduler)
+        val completeUseCase = com.example.taksy.domain.CompleteTaskUseCase(repo, fakeScheduler, mockk(relaxed = true))
         val subtaskUseCase = com.example.taksy.domain.SubtaskUseCase(repo, completeUseCase)
         val reminderUseCase = com.example.taksy.domain.TaskReminderUseCase(repo, fakeScheduler)
         val deleteTaskUseCase = com.example.taksy.domain.DeleteTaskUseCase(repo, fakeScheduler)

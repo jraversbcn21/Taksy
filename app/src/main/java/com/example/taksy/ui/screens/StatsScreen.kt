@@ -115,7 +115,7 @@ fun StatsScreen(
             }
 
             HeroCard(state, palette)
-            PlantCard(state.completedTasks, palette)
+            PlantCard(state.plantCompleted, palette)
             CountersRow(state, palette)
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

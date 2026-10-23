@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.taksy.data.Category
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskEstado
+import com.example.taksy.data.preferences.PreferencesRepository
 import com.example.taksy.domain.StreakCalculator
 import com.example.taksy.repository.CategoryRepository
 import com.example.taksy.repository.TaskRepository
@@ -33,6 +34,8 @@ data class StatsUiState(
     val completionRate: Int = 0,
     val activeCategoriesCount: Int = 0,
     val streakDays: Int = 0,
+    /** Completadas acumuladas para la planta; no baja al borrar tareas (ver PreferencesRepository). */
+    val plantCompleted: Int = 0,
     val last7Days: List<DayCompletion> = emptyList(),
     val topCategories: List<CategoryStats> = emptyList()
 )
@@ -40,7 +43,8 @@ data class StatsUiState(
 @HiltViewModel
 class StatsViewModel @Inject constructor(
     taskRepository: TaskRepository,
-    categoryRepository: CategoryRepository
+    categoryRepository: CategoryRepository,
+    private val preferences: PreferencesRepository
 ) : ViewModel() {
 
     val uiState: StateFlow<StatsUiState> = combine(
@@ -89,6 +93,7 @@ class StatsViewModel @Inject constructor(
             completionRate = rate,
             activeCategoriesCount = activeCategoriesCount,
             streakDays = streak,
+            plantCompleted = preferences.raisePlantCompleted(completed),
             last7Days = last7Days,
             topCategories = topCategories
         )

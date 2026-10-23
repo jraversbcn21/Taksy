@@ -17,6 +17,8 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.unmockkStatic
+import io.mockk.verify
+import com.example.taksy.data.preferences.PreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -127,6 +129,7 @@ class CompleteTaskUseCaseTest {
     private lateinit var taskDao: FakeTaskDao
     private lateinit var reminderDao: FakeReminderDao
     private lateinit var scheduler: FakeScheduler
+    private lateinit var preferences: PreferencesRepository
     private lateinit var useCase: CompleteTaskUseCase
 
     @Before
@@ -143,7 +146,8 @@ class CompleteTaskUseCaseTest {
         coEvery { db.withTransaction(capture(blockSlot)) } coAnswers { blockSlot.captured.invoke() }
 
         val repository = TaskRepository(db, taskDao, FakeSubtaskDao(), reminderDao)
-        useCase = CompleteTaskUseCase(repository, scheduler)
+        preferences = mockk(relaxed = true)
+        useCase = CompleteTaskUseCase(repository, scheduler, preferences)
     }
 
     @After
@@ -201,6 +205,26 @@ class CompleteTaskUseCaseTest {
         assertFalse(second)
         assertEquals(1, taskDao.tasks.size)
         assertEquals(TaskEstado.COMPLETADA, taskDao.tasks[0].estado)
+    }
+
+    @Test
+    fun `only the call that wins the race counts for the plant`() = runTest {
+        taskDao.tasks.add(Task(id = 1L, titulo = "Simple", estado = TaskEstado.PENDIENTE))
+        val staleSnapshot = taskDao.tasks[0]
+
+        useCase.execute(staleSnapshot)
+        useCase.execute(staleSnapshot)
+
+        verify(exactly = 1) { preferences.addPlantCompleted() }
+    }
+
+    @Test
+    fun `completing a recurring task counts once for the plant`() = runTest {
+        taskDao.tasks.add(recurringTask())
+
+        useCase.execute(taskDao.tasks[0])
+
+        verify(exactly = 1) { preferences.addPlantCompleted() }
     }
 
     @Test

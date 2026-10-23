@@ -24,6 +24,7 @@ class PreferencesRepository @Inject constructor(
     private val dailyReminderPrefs get() = context.getSharedPreferences(DAILY_REMINDER_PREFS, Context.MODE_PRIVATE)
     private val onboardingPrefs get() = context.getSharedPreferences(ONBOARDING_PREFS, Context.MODE_PRIVATE)
     private val sharePrefs get() = context.getSharedPreferences(SHARE_PREFS, Context.MODE_PRIVATE)
+    private val progressPrefs get() = context.getSharedPreferences(PROGRESS_PREFS, Context.MODE_PRIVATE)
 
     // ── Theme ──────────────────────────────────────────────────────────────
 
@@ -83,6 +84,25 @@ class PreferencesRepository @Inject constructor(
         onboardingPrefs.edit { putBoolean(KEY_ONBOARDING_COMPLETED, completed) }
     }
 
+    // ── Planta de Estadísticas ─────────────────────────────────────────────
+
+    /**
+     * Tareas completadas acumuladas para la planta. Solo sube: borrar tareas completadas no la
+     * hace retroceder. Cada completado suma uno (CompleteTaskUseCase); [raisePlantCompleted]
+     * recoge lo que ya hubiera en la base de datos antes de existir el contador.
+     */
+    fun addPlantCompleted() {
+        progressPrefs.edit { putInt(KEY_PLANT_COMPLETED, progressPrefs.getInt(KEY_PLANT_COMPLETED, 0) + 1) }
+    }
+
+    /** Sube el contador a [atLeast] si estaba por debajo y devuelve el valor resultante. */
+    fun raisePlantCompleted(atLeast: Int): Int {
+        val current = progressPrefs.getInt(KEY_PLANT_COMPLETED, 0)
+        if (atLeast <= current) return current
+        progressPrefs.edit { putInt(KEY_PLANT_COMPLETED, atLeast) }
+        return atLeast
+    }
+
     // ── Compartir hacia Taksy ──────────────────────────────────────────────
 
     /** Lista elegida la última vez al compartir un texto, para ofrecerla de nuevo; null si no hay. */
@@ -94,6 +114,8 @@ class PreferencesRepository @Inject constructor(
     }
 
     companion object {
+        private const val PROGRESS_PREFS = "progress_prefs"
+        private const val KEY_PLANT_COMPLETED = "plant_completed"
         private const val SHARE_PREFS = "share_prefs"
         private const val KEY_LAST_SHARE_CATEGORY = "last_category_id"
         private const val THEME_PREFS = "theme_pref"

@@ -2,6 +2,7 @@ package com.example.taksy.domain
 
 import com.example.taksy.data.Task
 import com.example.taksy.data.TaskRecurrencia
+import com.example.taksy.data.preferences.PreferencesRepository
 import com.example.taksy.repository.TaskRepository
 import com.example.taksy.service.ReminderSchedulerContract
 import java.util.Date
@@ -9,7 +10,8 @@ import javax.inject.Inject
 
 class CompleteTaskUseCase @Inject constructor(
     private val repository: TaskRepository,
-    private val reminderScheduler: ReminderSchedulerContract
+    private val reminderScheduler: ReminderSchedulerContract,
+    private val preferences: PreferencesRepository
 ) {
     /**
      * Completa la tarea de forma idempotente. Devuelve true solo si esta llamada
@@ -19,7 +21,13 @@ class CompleteTaskUseCase @Inject constructor(
      * Si la tarea es recurrente, la siguiente ocurrencia hereda sus recordatorios,
      * adelantados con la misma recurrencia que la tarea.
      */
-    suspend fun execute(task: Task): Boolean {
+    suspend fun execute(task: Task): Boolean =
+        complete(task).also { won ->
+            // Solo cuenta la llamada que ganó la carrera: una segunda no suma otra vez a la planta
+            if (won) preferences.addPlantCompleted()
+        }
+
+    private suspend fun complete(task: Task): Boolean {
         val reminders = repository.getRemindersByTaskIdSync(task.id)
         reminders.forEach { reminderScheduler.cancelReminder(it.id) }
         repository.cancelAllRemindersForTask(task.id)
